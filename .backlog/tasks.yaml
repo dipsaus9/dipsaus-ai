@@ -1,0 +1,149 @@
+version: 1
+tasks:
+  - id: task_001
+    title: Boilerplate setup
+    description: "Repo-as-plugin scaffold: bun, oxlint, Vitest, tsconfig, .claude
+      context, plugin.json + marketplace.json, base dirs. Root IS the single
+      plugin."
+    source_links: []
+    status: ready
+    priority: P0
+    labels:
+      - epic
+      - boilerplate
+    repo_targets:
+      - dipsaus-ai
+    acceptance_criteria:
+      - bun install + oxlint + tsc + vitest all run green
+      - .claude/CLAUDE.md, settings.json, agents/skill-evaluator.md present
+      - .claude-plugin/plugin.json + marketplace.json valid
+      - LICENSE(MIT) + README skeleton committed
+    dependencies: []
+    planning:
+      split_status: done
+      risk: medium
+    execution_defaults:
+      manual_approval_required: false
+      auto_commit: false
+      push_when_done: false
+      create_pr: false
+      merge_pr: false
+      worktree_mode: direct
+      preferred_agents: []
+      max_subagents: 5
+    sync:
+      source_of_truth: backlog
+      push_status: false
+      push_comments: false
+    created_at: 2026-06-29T05:13:12.547Z
+    updated_at: 2026-06-29T07:21:23.349Z
+  - id: task_002
+    title: "Epic: React-architecture skill + eval harness"
+    description: "Self-contained react-architecture SKILL.md (standards inline,
+      report+apply modes). LLM-judge eval harness: headless runner
+      (AI_CLI??claude -p) runs skill on fixture, judge scores vs
+      tests/rubrics/react.md, assert >=80. Local-only."
+    source_links: []
+    status: ready
+    priority: P1
+    labels:
+      - epic
+      - skill
+    repo_targets:
+      - dipsaus-ai
+    acceptance_criteria:
+      - skills/react-architecture/SKILL.md works standalone in ~/.claude/skills
+      - bun run test:eval runs skill headless on a react fixture and asserts
+        judge score
+      - fixtures/react + tests/rubrics/react.md exist
+    dependencies: []
+    planning:
+      split_status: done
+      risk: medium
+    execution_defaults:
+      manual_approval_required: false
+      auto_commit: false
+      push_when_done: false
+      create_pr: false
+      merge_pr: false
+      worktree_mode: direct
+      preferred_agents: []
+      max_subagents: 5
+    sync:
+      source_of_truth: backlog
+      push_status: false
+      push_comments: false
+    created_at: 2026-06-29T05:13:12.651Z
+    updated_at: 2026-06-29T07:21:23.465Z
+  - id: task_003
+    title: "Epic: Example MCP (hello stub)"
+    description: Minimal TS MCP (stdio, @modelcontextprotocol/sdk) with one hello
+      tool. Deterministic test via MCP client. Registered in root .mcp.json.
+    source_links: []
+    status: ready
+    priority: P2
+    labels:
+      - epic
+      - mcp
+    repo_targets:
+      - dipsaus-ai
+    acceptance_criteria:
+      - mcp/example builds + runs with bun
+      - Vitest spins server, calls tool, asserts response (no LLM)
+      - root .mcp.json registers the server
+    dependencies: []
+    planning:
+      split_status: done
+      risk: medium
+    execution_defaults:
+      manual_approval_required: false
+      auto_commit: false
+      push_when_done: false
+      create_pr: false
+      merge_pr: false
+      worktree_mode: direct
+      preferred_agents: []
+      max_subagents: 5
+    sync:
+      source_of_truth: backlog
+      push_status: false
+      push_comments: false
+    created_at: 2026-06-29T05:13:12.757Z
+    updated_at: 2026-06-29T07:21:23.581Z
+  - id: task_004
+    title: "Epic: Plugin + marketplace wiring"
+    description: Single umbrella plugin = repo root. marketplace.json lists it.
+      Installing pulls all skills + the mcp. Standalone skill install = copy
+      skills/<name> into ~/.claude/skills. Verify manifests + README install
+      docs.
+    source_links: []
+    status: ready
+    priority: P2
+    labels:
+      - epic
+      - plugin
+    repo_targets:
+      - dipsaus-ai
+    acceptance_criteria:
+      - /plugin marketplace add dipsaus9/dipsaus-ai resolves the plugin
+      - installed plugin exposes react skill + example mcp
+      - README documents install-all + install-one-skill paths
+    dependencies: []
+    planning:
+      split_status: done
+      risk: medium
+    execution_defaults:
+      manual_approval_required: false
+      auto_commit: false
+      push_when_done: false
+      create_pr: false
+      merge_pr: false
+      worktree_mode: direct
+      preferred_agents: []
+      max_subagents: 5
+    sync:
+      source_of_truth: backlog
+      push_status: false
+      push_comments: false
+    created_at: 2026-06-29T05:13:12.867Z
+    updated_at: 2026-06-29T07:21:23.696Z

@@ -1,0 +1,46 @@
+version: 1
+agents:
+  - id: claude-code
+    provider: claude
+    model: sonnet
+    success_mode: complete
+    enabled: true
+    max_concurrent_runs: 1
+    allowed_repos: []
+    allowed_risk: [low, medium]
+    capabilities: [plan, edit_code, run_tests, review, shell, git_read, git_write]
+    sandbox_mode: workspace-write
+    environment: {}
+  - id: claude-opus
+    provider: claude
+    model: opus
+    success_mode: complete
+    enabled: true
+    max_concurrent_runs: 1
+    allowed_repos: []
+    allowed_risk: [low, medium, high]
+    capabilities: [plan, edit_code, run_tests, review, shell, git_read, git_write]
+    sandbox_mode: workspace-write
+    environment: {}
+  - id: claude-haiku
+    provider: claude
+    model: haiku
+    success_mode: complete
+    enabled: true
+    max_concurrent_runs: 1
+    allowed_repos: []
+    allowed_risk: [low, medium]
+    capabilities: [plan, edit_code, run_tests, review, shell, git_read, git_write]
+    sandbox_mode: workspace-write
+    environment: {}
+  - id: codex
+    provider: codex
+    model: gpt-5.5
+    success_mode: complete
+    enabled: false
+    max_concurrent_runs: 1
+    allowed_repos: []
+    allowed_risk: [low, medium]
+    capabilities: [plan, edit_code, run_tests, review, shell, git_read, git_write]
+    sandbox_mode: workspace-write
+    environment: {}

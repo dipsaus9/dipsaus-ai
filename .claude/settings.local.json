@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(backlog)",
+      "Bash(backlog init *)",
+      "Bash(backlog task *)",
+      "Bash(backlog subtask *)",
+      "Bash(backlog repositories *)",
+      "Bash(backlog status *)",
+      "Bash(git add *)",
+      "Bash(bun --version)"
+    ]
+  }
+}

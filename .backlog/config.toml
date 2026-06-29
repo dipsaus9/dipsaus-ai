@@ -1,0 +1,33 @@
+version = 1
+project_id = "WS-6520c734"
+project_name = "dipsaus-ai"
+project_mode = "embedded"
+project_location = "in_repo"
+default_branch = "main"
+autonomy_mode = "assist"
+max_agents = 2
+ai_provider = "anthropic"
+
+[claims]
+ttl_minutes = 30
+enforce_on_commit = true
+auto_claim_on_commit = true
+
+[git]
+branch_strategy = "isolated_worktree"
+merge_strategy = "fast_forward"
+cleanup_worktree_on_approve = true
+delete_branch_after_merge = true
+
+[board]
+show_backlog_column = true
+
+[review]
+show_review_column = false
+
+[[repos]]
+id = "dipsaus-ai"
+path = "/Users/dennisspierenburg/Projects/Divotion/dipsaus-ai-2"
+default_branch = "main"
+enabled = true
+location = "local"

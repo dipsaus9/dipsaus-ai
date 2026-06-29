@@ -1,0 +1,426 @@
+version: 1
+subtasks:
+  - id: subtask_001
+    task_id: task_001
+    title: bun + tsconfig + package.json scripts (lint/typecheck/test/test:eval)
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - "package.json defines scripts: lint(oxlint), typecheck(tsc --noEmit),
+          test(vitest run), test:eval(vitest eval suite only)"
+        - "tsconfig.json: strict, moduleResolution bundler, target ES2022"
+        - bun install succeeds; bun.lock committed; bun is sole package manager
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:26.096Z
+    updated_at: 2026-06-29T07:02:51.513Z
+  - id: subtask_002
+    task_id: task_001
+    title: oxlint config + Vitest config
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - .oxlintrc.json present and bun run lint passes on seed source
+        - vitest.config.ts separates unit vs eval suites so CI can run unit only
+        - bun run test green with zero tests
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:26.197Z
+    updated_at: 2026-06-29T07:02:44.956Z
+  - id: subtask_003
+    task_id: task_001
+    title: .claude-plugin/plugin.json + marketplace.json (root=plugin)
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - ".claude-plugin/plugin.json valid: name, description, version, author"
+        - .claude-plugin/marketplace.json lists this plugin with git source
+          dipsaus9/dipsaus-ai
+        - manifests pass a JSON/schema validation step
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:26.299Z
+    updated_at: 2026-06-29T07:02:45.064Z
+  - id: subtask_004
+    task_id: task_001
+    title: ".claude/: CLAUDE.md + settings.json + agents/skill-evaluator.md"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - .claude/CLAUDE.md documents purpose, root=plugin layout, eval
+          commands, backlog conventions
+        - .claude/settings.json grants bun/oxlint/vitest permissions
+        - .claude/agents/skill-evaluator.md defines an agent that runs the eval
+          harness and reports the score
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:26.401Z
+    updated_at: 2026-06-29T07:02:45.168Z
+  - id: subtask_005
+    task_id: task_001
+    title: LICENSE(MIT) + README skeleton + base dirs (skills/mcp/fixtures/tests)
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - LICENSE is MIT, (c) 2026 dipsaus9
+        - README skeleton has why-this-exists + install-all + install-one-skill
+          sections (stubs)
+        - "base dirs created: skills/, mcp/, fixtures/, tests/ (no standards/)"
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:26.504Z
+    updated_at: 2026-06-29T07:03:57.679Z
+  - id: subtask_006
+    task_id: task_002
+    title: "SPIKE: reliable headless skill invocation (claude -p triggers project
+      skill on fixture)"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: high
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_001
+      - subtask_005
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - Documented repeatable way to trigger a project skill via 'claude -p'
+          headless on a fixture
+        - Working command/script activates the skill and yields capturable
+          output (stdout/json)
+        - Records the skill-discovery mechanism (temp dir + .claude/skills
+          symlink, trigger phrase, or --append-system-prompt)
+        - Fallback documented if claude -p cannot reliably trigger a skill
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:40.179Z
+    updated_at: 2026-06-29T07:08:51.724Z
+  - id: subtask_007
+    task_id: task_002
+    title: Write react-architecture SKILL.md (standards inline, report+apply modes)
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_005
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - skills/react-architecture/SKILL.md has valid frontmatter (name,
+          description)
+        - "Standards encoded inline: component size, hook extraction,
+          derived-state misuse, prop-drilling, etc."
+        - Supports report mode (default, read-only) and apply mode (file edits)
+        - Activates and works standalone when dropped in ~/.claude/skills/
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:40.282Z
+    updated_at: 2026-06-29T07:08:51.826Z
+  - id: subtask_008
+    task_id: task_002
+    title: fixtures/react bad-code inputs + tests/rubrics/react.md rubric
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_005
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - fixtures/react/ has >=1 deliberately bad component (god component,
+          derived state in useEffect, prop drilling)
+        - tests/rubrics/react.md is a scored checklist matching the inline
+          standards
+        - "Rubric is judge-consumable: clear criteria + 0-100 scoring guidance"
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:40.384Z
+    updated_at: 2026-06-29T07:08:51.928Z
+  - id: subtask_009
+    task_id: task_002
+    title: "Eval harness: abstracted runner (AI_CLI??claude -p) + LLM judge +
+      assert>=80; wire test:eval"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_002
+      - subtask_006
+      - subtask_007
+      - subtask_008
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - Runner abstraction reads AI_CLI (default claude) and JUDGE_MODEL
+          (default claude-sonnet-4-6), both env-overridable
+        - Invokes skill headless in REPORT mode using the st_006 method
+        - Judge scores report vs tests/rubrics/react.md -> 0-100
+        - Vitest eval asserts score >= 80 on react fixture; bun run test:eval
+          only; excluded from unit/CI
+        - Missing ANTHROPIC_API_KEY skips the eval gracefully with a message
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:40.488Z
+    updated_at: 2026-06-29T07:08:52.031Z
+  - id: subtask_010
+    task_id: task_003
+    title: "mcp/example: stdio hello tool (@modelcontextprotocol/sdk, TS, bun)"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_001
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - mcp/example is a TS project that builds and runs with bun
+        - Server uses @modelcontextprotocol/sdk over stdio
+        - Exposes one tool (e.g. hello/ping) with an input schema and typed
+          response
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:40.592Z
+    updated_at: 2026-06-29T07:09:24.599Z
+  - id: subtask_011
+    task_id: task_003
+    title: Vitest MCP client test + register server in root .mcp.json
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_010
+      - subtask_003
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - Vitest test spins the server, connects an MCP client over stdio, calls
+          the tool, asserts the response (no LLM)
+        - Root .mcp.json registers the example server (command + args)
+        - Test runs in the deterministic unit suite (CI-safe)
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:40.695Z
+    updated_at: 2026-06-29T07:09:24.705Z
+  - id: subtask_012
+    task_id: task_004
+    title: Finalize umbrella plugin.json + marketplace.json listing all skills + mcp
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_003
+      - subtask_007
+      - subtask_010
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - plugin.json lists the react-architecture skill and references the
+          example mcp via .mcp.json
+        - marketplace.json entry resolves the plugin from dipsaus9/dipsaus-ai
+        - "Verified: marketplace add + enable exposes both the skill and the mcp"
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:40.800Z
+    updated_at: 2026-06-29T07:09:24.809Z
+  - id: subtask_013
+    task_id: task_004
+    title: README install docs (install-all via marketplace + install-one-skill
+      copy) + verify paths
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_012
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - README documents install-all (marketplace add), install-one-skill
+          (copy skills/<name> to ~/.claude/skills), and mcp standalone
+        - README has a 'why this project exists' section
+        - Install steps verified against the actual repo layout
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T05:13:40.902Z
+    updated_at: 2026-06-29T07:09:24.912Z
+  - id: subtask_014
+    task_id: task_001
+    title: "GitHub Actions CI: oxlint + tsc + vitest unit on push/PR (no API key, no
+      evals)"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_001
+      - subtask_002
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - .github/workflows/ci.yml runs on push and pull_request
+        - "CI steps: bun install, bun run lint, bun run typecheck, bun run test
+          (unit only)"
+        - no ANTHROPIC_API_KEY / eval suite in CI; pipeline green on main
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T07:02:45.376Z
+    updated_at: 2026-06-29T07:02:51.616Z
+  - id: subtask_015
+    task_id: task_002
+    title: "Apply-mode eval: run skill apply mode on sandboxed fixture copy, judge
+      refactored code"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: high
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_009
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - Fixture copied to a temp dir; skill apply mode edits files there,
+          original fixture untouched
+        - Judge scores the refactored code vs tests/rubrics/react.md -> 0-100;
+          assert >= 80
+        - Temp dir cleaned up after run; executes under bun run test:eval (not
+          in CI)
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T07:08:52.134Z
+    updated_at: 2026-06-29T07:08:57.272Z
