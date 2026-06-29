@@ -378,7 +378,7 @@ subtasks:
     title: "GitHub Actions CI: oxlint + tsc + vitest unit on push/PR (no API key, no
       evals)"
     repo: dipsaus-ai
-    status: queued
+    status: completed
     priority_score: 50
     risk: medium
     scopes: []
@@ -387,6 +387,7 @@ subtasks:
       - subtask_001
       - subtask_002
     blockers: []
+    progress_percent: 100
     execution:
       preferred_agents: []
       required_capabilities: []
@@ -401,7 +402,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-06-29T07:02:45.376Z
-    updated_at: 2026-06-29T07:02:51.616Z
+    updated_at: 2026-06-29T12:01:56.052Z
   - id: subtask_015
     task_id: task_002
     title: "Apply-mode eval: run skill apply mode on sandboxed fixture copy, judge
