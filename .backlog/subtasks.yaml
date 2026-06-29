@@ -84,13 +84,14 @@ subtasks:
     task_id: task_001
     title: ".claude/: CLAUDE.md + settings.json + agents/skill-evaluator.md"
     repo: dipsaus-ai
-    status: queued
+    status: completed
     priority_score: 50
     risk: medium
     scopes: []
     claim_mode: exclusive
     depends_on: []
     blockers: []
+    progress_percent: 100
     execution:
       preferred_agents: []
       required_capabilities: []
@@ -106,7 +107,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-06-29T05:13:26.401Z
-    updated_at: 2026-06-29T07:02:45.168Z
+    updated_at: 2026-06-29T08:37:00.928Z
   - id: subtask_005
     task_id: task_001
     title: LICENSE(MIT) + README skeleton + base dirs (skills/mcp/fixtures/tests)
@@ -245,17 +246,20 @@ subtasks:
     completion:
       done_when:
         - Runner abstraction reads AI_CLI (default claude) and JUDGE_MODEL
-          (default claude-sonnet-4-6), both env-overridable
-        - Invokes skill headless in REPORT mode using the st_006 method
-        - Judge scores report vs tests/rubrics/react.md -> 0-100
+          (default sonnet), both env-overridable
+        - Invokes skill headless in REPORT mode using the st_006 method, via the
+          logged-in claude CLI session (no ANTHROPIC_API_KEY)
+        - Judge (also via claude -p) scores report vs tests/rubrics/react.md ->
+          0-100
         - Vitest eval asserts score >= 80 on react fixture; bun run test:eval
           only; excluded from unit/CI
-        - Missing ANTHROPIC_API_KEY skips the eval gracefully with a message
+        - If claude CLI is missing or not logged in, the eval skips gracefully
+          with a message
     planner:
       origin: manual
       locked: false
     created_at: 2026-06-29T05:13:40.488Z
-    updated_at: 2026-06-29T07:08:52.031Z
+    updated_at: 2026-06-29T08:39:37.470Z
   - id: subtask_010
     task_id: task_003
     title: "mcp/example: stdio hello tool (@modelcontextprotocol/sdk, TS, bun)"
