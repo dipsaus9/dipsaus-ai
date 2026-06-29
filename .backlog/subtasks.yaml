@@ -112,13 +112,14 @@ subtasks:
     task_id: task_001
     title: LICENSE(MIT) + README skeleton + base dirs (skills/mcp/fixtures/tests)
     repo: dipsaus-ai
-    status: queued
+    status: completed
     priority_score: 50
     risk: medium
     scopes: []
     claim_mode: exclusive
     depends_on: []
     blockers: []
+    progress_percent: 100
     execution:
       preferred_agents: []
       required_capabilities: []
@@ -133,7 +134,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-06-29T05:13:26.504Z
-    updated_at: 2026-06-29T07:03:57.679Z
+    updated_at: 2026-06-29T09:54:53.864Z
   - id: subtask_006
     task_id: task_002
     title: "SPIKE: reliable headless skill invocation (claude -p triggers project
