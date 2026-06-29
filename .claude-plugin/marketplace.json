@@ -1,0 +1,15 @@
+{
+  "name": "dipsaus-ai",
+  "owner": {
+    "name": "dipsaus9"
+  },
+  "description": "Dipsaus AI marketplace — install the dipsaus-ai plugin (skills + MCP) for Claude Code.",
+  "plugins": [
+    {
+      "name": "dipsaus-ai",
+      "source": "./",
+      "description": "Skills + an MCP for frontend / full-stack work, each tested against the author's standards.",
+      "version": "0.1.0"
+    }
+  ]
+}
