@@ -8,11 +8,18 @@
       "Bash(backlog repositories *)",
       "Bash(backlog status *)",
       "Bash(git add *)",
+      "Bash(git -c user.name=dipsaus9 -c user.email=dennis.spierenburg@hotmail.com commit -q -m 'chore\\(backlog\\): seed epics + subtasks *)",
       "Bash(backlog doctor *)",
+      "Bash(curl -s http://127.0.0.1:7878/board.json)",
       "Bash(bun --version)",
       "Bash(bun add *)",
       "Bash(bun run *)",
-      "Bash(echo \"tsc exit: $?\")"
+      "Bash(echo \"tsc exit: $?\")",
+      "Bash(git commit -q -m 'build\\(boilerplate\\): bun + tsconfig + package.json scripts \\(st_001\\) *)",
+      "Bash(echo \"lint exit: $?\")",
+      "Read(//tmp/**)",
+      "Bash(echo \"typecheck exit: $?\")",
+      "Bash(echo \"test exit: $?\")"
     ]
   }
 }

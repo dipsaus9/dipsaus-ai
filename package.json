@@ -16,8 +16,8 @@
   "scripts": {
     "lint": "oxlint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:eval": "vitest run --dir tests/eval"
+    "test": "vitest run --project unit --passWithNoTests",
+    "test:eval": "vitest run --project eval --passWithNoTests"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",
