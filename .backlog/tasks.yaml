@@ -74,7 +74,7 @@ tasks:
       push_status: false
       push_comments: false
     created_at: 2026-06-29T05:13:12.651Z
-    updated_at: 2026-06-29T12:28:11.199Z
+    updated_at: 2026-06-29T12:51:37.269Z
   - id: task_003
     title: "Epic: Example MCP (hello stub)"
     description: Minimal TS MCP (stdio, @modelcontextprotocol/sdk) with one hello

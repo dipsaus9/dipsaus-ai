@@ -172,7 +172,7 @@ subtasks:
     task_id: task_002
     title: Write react-architecture SKILL.md (standards inline, report+apply modes)
     repo: dipsaus-ai
-    status: queued
+    status: completed
     priority_score: 50
     risk: medium
     scopes: []
@@ -180,6 +180,7 @@ subtasks:
     depends_on:
       - subtask_005
     blockers: []
+    progress_percent: 100
     execution:
       preferred_agents: []
       required_capabilities: []
@@ -196,7 +197,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-06-29T05:13:40.282Z
-    updated_at: 2026-06-29T07:08:51.826Z
+    updated_at: 2026-06-29T12:51:37.259Z
   - id: subtask_008
     task_id: task_002
     title: fixtures/react bad-code inputs + tests/rubrics/react.md rubric
@@ -249,8 +250,9 @@ subtasks:
       done_when:
         - Runner abstraction reads AI_CLI (default claude) and JUDGE_MODEL
           (default sonnet), both env-overridable
-        - Invokes skill headless in REPORT mode using the st_006 method, via the
-          logged-in claude CLI session (no ANTHROPIC_API_KEY)
+        - Invokes skill headless in REPORT mode via claude -p --plugin-dir
+          <repo> (no ANTHROPIC_API_KEY); pins a clean output style so eval
+          output is not polluted by user output-styles
         - Judge (also via claude -p) scores report vs tests/rubrics/react.md ->
           0-100
         - Vitest eval asserts score >= 80 on react fixture; bun run test:eval
@@ -261,7 +263,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-06-29T05:13:40.488Z
-    updated_at: 2026-06-29T08:39:37.470Z
+    updated_at: 2026-06-29T12:51:37.033Z
   - id: subtask_010
     task_id: task_003
     title: "mcp/example: stdio hello tool (@modelcontextprotocol/sdk, TS, bun)"
