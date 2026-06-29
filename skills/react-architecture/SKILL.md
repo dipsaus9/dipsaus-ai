@@ -36,6 +36,22 @@ Hard caps — exceeding any is a **high** finding:
   keep a presentational component. **[high]**
 - Prefer presentational components driven by props/children, with logic in hooks. **[med]**
 
+**Feature boundaries** — a component must not know about another feature's internals.
+Flag any of these as **[high]**:
+
+- **Deep imports** into another feature's internal modules instead of its public
+  API/barrel (e.g. `import { calcTax } from "@/features/billing/lib/tax"` inside a
+  `profile` component).
+- **Embedded foreign domain logic** — logic/knowledge that belongs to a different feature
+  (e.g. a profile card computing invoice/tax rules).
+- **Cross-feature internal state/types** — depending on another feature's store, context,
+  or internal types instead of receiving data via props/events at the boundary.
+- **Hardwired child-feature rendering** — rendering another feature's concrete components
+  inline instead of via composition / slots / routing.
+
+Fix: depend only on the other feature's **public API**; receive data via **props/events**;
+move misplaced logic to the **owning feature**; invert rendering via **composition/slots**.
+
 ### 2. Compound components & composition
 
 - A component with distinct **regions** (header / body / footer / actions) must expose them

@@ -202,7 +202,7 @@ subtasks:
     task_id: task_002
     title: fixtures/react bad-code inputs + tests/rubrics/react.md rubric
     repo: dipsaus-ai
-    status: queued
+    status: completed
     priority_score: 50
     risk: medium
     scopes: []
@@ -210,6 +210,7 @@ subtasks:
     depends_on:
       - subtask_005
     blockers: []
+    progress_percent: 100
     execution:
       preferred_agents: []
       required_capabilities: []
@@ -225,7 +226,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-06-29T05:13:40.384Z
-    updated_at: 2026-06-29T07:08:51.928Z
+    updated_at: 2026-06-29T12:59:25.437Z
   - id: subtask_009
     task_id: task_002
     title: "Eval harness: abstracted runner (AI_CLI??claude -p) + LLM judge +
