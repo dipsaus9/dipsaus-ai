@@ -140,7 +140,7 @@ subtasks:
     title: "SPIKE: reliable headless skill invocation (claude -p triggers project
       skill on fixture)"
     repo: dipsaus-ai
-    status: queued
+    status: completed
     priority_score: 50
     risk: high
     scopes: []
@@ -149,6 +149,7 @@ subtasks:
       - subtask_001
       - subtask_005
     blockers: []
+    progress_percent: 100
     execution:
       preferred_agents: []
       required_capabilities: []
@@ -166,7 +167,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-06-29T05:13:40.179Z
-    updated_at: 2026-06-29T07:08:51.724Z
+    updated_at: 2026-06-29T12:28:11.188Z
   - id: subtask_007
     task_id: task_002
     title: Write react-architecture SKILL.md (standards inline, report+apply modes)
