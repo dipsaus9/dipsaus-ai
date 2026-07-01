@@ -413,7 +413,7 @@ subtasks:
     title: "Apply-mode eval: run skill apply mode on sandboxed fixture copy, judge
       refactored code"
     repo: dipsaus-ai
-    status: queued
+    status: completed
     priority_score: 50
     risk: high
     scopes: []
@@ -427,14 +427,50 @@ subtasks:
       manual_approval_required: false
     completion:
       done_when:
-        - Fixture copied to a temp dir; skill apply mode edits files there,
-          original fixture untouched
-        - Judge scores the refactored code vs tests/rubrics/react.md -> 0-100;
-          assert >= 80
-        - Temp dir cleaned up after run; executes under bun run test:eval (not
-          in CI)
+        - Fixture copied to a temp dir; skill apply mode edits files there via
+          claude -p --permission-mode acceptEdits; original untouched; temp
+          cleaned up
+        - Per-rule BINARY AI checks (separate context, PASS/FAIL) validate the
+          refactored code; skill must pass all rules
+        - Runs under bun run test:eval only (not CI)
     planner:
       origin: manual
       locked: false
     created_at: 2026-06-29T07:08:52.134Z
-    updated_at: 2026-06-29T07:08:57.272Z
+    updated_at: 2026-07-01T12:46:08.666Z
+  - id: subtask_016
+    task_id: task_002
+    title: "Harden eval validity: exactness rubric + baseline-delta gate +
+      contrarian fixtures"
+    repo: dipsaus-ai
+    status: completed
+    priority_score: 50
+    risk: high
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_009
+    blockers: []
+    progress_percent: 100
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - "Eval discriminates skill content: skill refactor vs no-skill baseline
+          refactor compared per-rule; skill must pass all rules AND score >=
+          baseline"
+        - Per-rule checks are BINARY (PASS/FAIL) in a separate AI context —
+          stable across repeated runs (fixed the 0-100 judge variance of 5<->97)
+        - Rules ('the liking') defined in the test as plain-English strings per
+          fixture
+        - "Verified empirically: baseline uses Context and FAILS the composition
+          rule while skill PASSES; gutting the skill loses the opinionated
+          rules"
+        - Runs via bun run test:eval only; excluded from unit/CI
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-06-29T13:39:27.997Z
+    updated_at: 2026-07-01T12:46:08.935Z

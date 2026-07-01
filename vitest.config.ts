@@ -20,8 +20,9 @@ export default defineConfig({
           name: "eval",
           include: ["tests/eval/**/*.test.ts"],
           environment: "node",
-          // Headless CLI + judge round-trips are slow.
-          testTimeout: 120_000,
+          // Each eval case does up to 4 headless CLI round-trips (skill + baseline,
+          // each scored by the judge), so allow generous time.
+          testTimeout: 300_000,
           hookTimeout: 120_000,
         },
       },

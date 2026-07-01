@@ -26,6 +26,8 @@ export type RunOptions = {
   addDir?: string[];
   /** Whitelist of tools (e.g. ["Read"]). Omit for a no-tool text call (judge). */
   allowedTools?: string[];
+  /** Permission mode, e.g. "acceptEdits" for apply-mode file edits. */
+  permissionMode?: string;
   /** Model alias passed to --model. */
   model?: string;
 };
@@ -46,6 +48,7 @@ export function runCli(prompt: string, opts: RunOptions): CliResult {
   if (opts.pluginDir) args.push("--plugin-dir", opts.pluginDir);
   for (const dir of opts.addDir ?? []) args.push("--add-dir", dir);
   if (opts.allowedTools?.length) args.push("--allowedTools", opts.allowedTools.join(" "));
+  if (opts.permissionMode) args.push("--permission-mode", opts.permissionMode);
   if (opts.model) args.push("--model", opts.model);
 
   const stdout = execFileSync(AI_CLI, args, {

@@ -45,16 +45,23 @@ skill's final text) and checks `.is_error`:
 { "subtype": "success", "is_error": false, "num_turns": 2, "result": "<skill output>" }
 ```
 
-## The judge
+## The eval: apply mode + binary checks (skill vs baseline)
 
-A second `claude -p` call (no tools), default model `sonnet`:
+A passing report alone does not prove the skill works — the base model already reviews React
+well. So the eval measures the **refactor** (apply mode), compared **with and without** the
+skill, against per-rule binary checks:
 
-```bash
-claude -p "<rubric + skill output, ask for a 0-100 score as JSON>" \
-  --output-format json --model "${JUDGE_MODEL:-sonnet}"
-```
+1. Copy a fixture to a temp dir; run `/react-architecture apply` (skill) → refactored code.
+   Also run a generic "refactor for better architecture" with **no plugin** → baseline code.
+2. For each rule (the "liking", defined in the test), a **separate `claude -p` context**
+   answers **PASS/FAIL** on the refactored code. Binary judgments — not 0–100 scores — so
+   they are stable.
+3. Gate: the skill refactor must pass **all** its rules **and** score `>=` the baseline.
 
-Parse `.result` for the score; assert `>= 80`.
+Why binary: a 0–100 rubric score was catastrophically noisy (same input scored 5 and 97
+across runs). The same yes/no check returns identically across repeated runs. Files:
+`apply.ts` (sandboxed refactor), `check.ts` (binary check), `react-architecture.test.ts`
+(rules per fixture).
 
 ## Knobs
 
@@ -69,6 +76,24 @@ Parse `.result` for the score; assert `>= 80`.
 - If the `claude` CLI is missing or not logged in, the eval **skips** (does not guess).
 - LLM output is non-deterministic; a single run is asserted against the threshold. Re-run
   if a score is borderline.
+
+## Evidence it discriminates
+
+On `prop-drilling.tsx`, the no-skill baseline refactors with **React Context** (drilling gone,
+but not the preferred fix). The skill refactors with **composition/slots**:
+
+| rule | skill | baseline |
+|------|-------|----------|
+| `user` drilling eliminated | PASS | PASS |
+| fixed via composition, not just Context | **PASS** | **FAIL** |
+
+The gap is exactly the opinionated rule — the skill's distinctive value. The binary check
+returned the same verdict on 3 repeated runs (no variance).
+
+## Adding a skill's checks
+
+Each fixture in the test carries a `rules: string[]` — plain-English PASS/FAIL statements
+that encode "my liking". To raise or change the bar, edit those strings; no rubric file.
 
 ## Fallbacks (if invocation ever fails)
 
