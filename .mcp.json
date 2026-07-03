@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dipsaus-example": {
+      "command": "bun",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/example/server.ts"]
+    }
+  }
+}
