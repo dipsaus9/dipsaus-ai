@@ -297,7 +297,7 @@ subtasks:
     task_id: task_003
     title: Vitest MCP client test + register server in root .mcp.json
     repo: dipsaus-ai
-    status: running
+    status: completed
     priority_score: 50
     risk: medium
     scopes: []
@@ -320,12 +320,12 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-06-29T05:13:40.695Z
-    updated_at: 2026-07-03T09:47:25.010Z
+    updated_at: 2026-07-03T09:50:37.186Z
   - id: subtask_012
     task_id: task_004
     title: Finalize umbrella plugin.json + marketplace.json listing all skills + mcp
     repo: dipsaus-ai
-    status: queued
+    status: running
     priority_score: 50
     risk: medium
     scopes: []
@@ -349,7 +349,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-06-29T05:13:40.800Z
-    updated_at: 2026-06-29T07:09:24.809Z
+    updated_at: 2026-07-03T09:51:04.689Z
   - id: subtask_013
     task_id: task_004
     title: README install docs (install-all via marketplace + install-one-skill
