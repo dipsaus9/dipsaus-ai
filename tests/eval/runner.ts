@@ -1,8 +1,47 @@
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { delimiter, join } from "node:path";
 
 // Which CLI runs the skill + judge. Defaults to `claude`; override to swap in another
 // AI CLI (it must accept claude-compatible -p / --output-format json flags).
 export const AI_CLI = process.env.AI_CLI ?? "claude";
+
+// Resolve AI_CLI to a runnable path. GUI-launched editors (VS Code, JetBrains) inherit a
+// minimal launchd PATH that omits shell additions like ~/.local/bin, so a bare `claude`
+// fails with ENOENT inside the test runner even though it works in a terminal. Fall back to
+// known install locations so the eval runs regardless of how the process was launched.
+const CLI_FALLBACK_DIRS = [
+  join(homedir(), ".local", "bin"),
+  join(homedir(), ".claude", "local"),
+  "/opt/homebrew/bin",
+  "/usr/local/bin",
+  "/usr/bin",
+];
+
+let resolvedCli: string | undefined;
+export function resolveCli(): string {
+  if (resolvedCli) return resolvedCli;
+  const runs = (cmd: string): boolean => {
+    try {
+      execFileSync(cmd, ["--version"], { stdio: "ignore" });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  // Trust it as-is first (already on PATH, or an explicit path override).
+  if (runs(AI_CLI)) return (resolvedCli = AI_CLI);
+  // Bare name not on the runner's PATH — probe common install dirs + PATH entries.
+  if (!AI_CLI.includes("/")) {
+    const dirs = [...CLI_FALLBACK_DIRS, ...(process.env.PATH?.split(delimiter) ?? [])];
+    for (const dir of dirs) {
+      const candidate = join(dir, AI_CLI);
+      if (existsSync(candidate) && runs(candidate)) return (resolvedCli = candidate);
+    }
+  }
+  return (resolvedCli = AI_CLI); // give up; downstream call surfaces a clear ENOENT
+}
 // Model alias for the judge call.
 export const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "sonnet";
 
@@ -35,7 +74,7 @@ export type RunOptions = {
 /** Is the CLI binary present? (Login is verified separately by an actual probe call.) */
 export function isCliInstalled(): boolean {
   try {
-    execFileSync(AI_CLI, ["--version"], { stdio: "ignore" });
+    execFileSync(resolveCli(), ["--version"], { stdio: "ignore" });
     return true;
   } catch {
     return false;
@@ -51,7 +90,7 @@ export function runCli(prompt: string, opts: RunOptions): CliResult {
   if (opts.permissionMode) args.push("--permission-mode", opts.permissionMode);
   if (opts.model) args.push("--model", opts.model);
 
-  const stdout = execFileSync(AI_CLI, args, {
+  const stdout = execFileSync(resolveCli(), args, {
     cwd: opts.cwd,
     encoding: "utf8",
     maxBuffer: 32 * 1024 * 1024,
@@ -64,13 +103,31 @@ export function runCli(prompt: string, opts: RunOptions): CliResult {
   return parsed;
 }
 
-/** Cheap probe: confirms the CLI is installed AND authenticated. Returns false if not. */
+/**
+ * Cheap probe: confirms the CLI is installed AND authenticated. Returns false if not,
+ * logging the reason so a skipped eval is explained in the (VS Code) test output rather
+ * than silently vanishing.
+ */
 export function isCliReady(cwd: string): boolean {
-  if (!isCliInstalled()) return false;
+  if (!isCliInstalled()) {
+    console.warn(
+      `[eval] skipped: AI CLI "${AI_CLI}" not found (looked on PATH + ${CLI_FALLBACK_DIRS.join(", ")}). ` +
+        `Install it or set AI_CLI to an absolute path.`,
+    );
+    return false;
+  }
   try {
     const r = runCli("Reply with exactly: READY", { cwd });
-    return r.result.includes("READY");
-  } catch {
+    if (!r.result.includes("READY")) {
+      console.warn(`[eval] skipped: CLI "${resolveCli()}" responded but not as expected.`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.warn(
+      `[eval] skipped: CLI "${resolveCli()}" not authenticated or errored — run \`${AI_CLI}\` once to log in. ` +
+        `(${error instanceof Error ? error.message : String(error)})`,
+    );
     return false;
   }
 }
