@@ -355,7 +355,7 @@ subtasks:
     title: README install docs (install-all via marketplace + install-one-skill
       copy) + verify paths
     repo: dipsaus-ai
-    status: running
+    status: completed
     priority_score: 50
     risk: medium
     scopes: []
@@ -377,7 +377,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-06-29T05:13:40.902Z
-    updated_at: 2026-07-03T09:55:45.365Z
+    updated_at: 2026-07-03T09:58:30.670Z
   - id: subtask_014
     task_id: task_001
     title: "GitHub Actions CI: oxlint + tsc + vitest unit on push/PR (no API key, no
