@@ -5,8 +5,6 @@ with Claude (or any AI CLI), packaged as a **single Claude Code plugin**. Every 
 tested against the author's own standards by an **eval harness**, so a skill ships only
 when it behaves the way it's expected to.
 
-> Status: early scaffolding. Sections marked _(stub)_ are finalised in a later task.
-
 ## Why this exists
 
 AI CLIs are only as good as the skills, plugins, and MCPs you give them. This repo is a
@@ -23,34 +21,66 @@ plugins, and MCPs get added over time, each with the same test-first bar.
 
 ## Install
 
-### Everything (the plugin) _(stub — verified in st_013)_
+There is no npm package — everything installs straight from GitHub.
 
-```bash
+### Everything (the plugin)
+
+In Claude Code, add the marketplace and install the plugin:
+
+```
 /plugin marketplace add dipsaus9/dipsaus-ai
 /plugin install dipsaus-ai@dipsaus-ai
 ```
 
-This installs all skills and the MCP at once.
+`dipsaus-ai@dipsaus-ai` is `<plugin>@<marketplace>` — both are named `dipsaus-ai`.
+This registers every skill (`skills/`) and the example MCP (`.mcp.json`) at once;
+the MCP entry uses `${CLAUDE_PLUGIN_ROOT}`, so its path resolves wherever the plugin
+is installed. Requires [bun](https://bun.sh) on your PATH (the MCP server runs as
+TypeScript, no build step).
 
-### A single skill, standalone _(stub — verified in st_013)_
+### A single skill, standalone
 
-Copy just the skill folder into your user skills directory:
+Each skill is self-contained (`SKILL.md` with the standards inline), so you can copy
+just the folder into your user skills directory — no plugin, no build:
 
 ```bash
 git clone https://github.com/dipsaus9/dipsaus-ai.git
 cp -r dipsaus-ai/skills/react-architecture ~/.claude/skills/
 ```
 
-### The MCP, standalone _(stub — verified in st_013)_
+The eval harness stays behind in this repo; the skill itself works on its own.
 
-Register the example server in your MCP config (`.mcp.json`). Details once the MCP lands.
+### The MCP, standalone
+
+The example server ships as TypeScript run by bun. Clone, install its deps, then point
+your MCP config at it with an absolute path:
+
+```bash
+git clone https://github.com/dipsaus9/dipsaus-ai.git
+cd dipsaus-ai && bun install   # pulls @modelcontextprotocol/sdk + zod
+```
+
+```jsonc
+// ~/.claude.json or a project .mcp.json — "mcpServers" entry:
+{
+  "mcpServers": {
+    "dipsaus-example": {
+      "command": "bun",
+      "args": ["/absolute/path/to/dipsaus-ai/mcp/example/server.ts"]
+    }
+  }
+}
+```
+
+Outside the plugin there is no `${CLAUDE_PLUGIN_ROOT}`, so use an absolute path. The
+server exposes one `hello` tool.
 
 ## Contents
 
 | Type | Path | Notes |
 |------|------|-------|
 | Skills | `skills/` | one folder per skill (`SKILL.md` + inline standards) |
-| MCP | `mcp/` | TypeScript MCP server(s) |
+| MCP | `mcp/` | TypeScript MCP server(s), run by bun; `example/` = `hello` tool |
 | Plugin manifest | `.claude-plugin/` | `plugin.json` + `marketplace.json` (repo root = the plugin) |
 | Fixtures | `fixtures/` | inputs for skill evals (e.g. bad React) |
 | Tests | `tests/` | `unit/` (CI-safe) + `eval/` (LLM-judge, local) |
