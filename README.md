@@ -79,11 +79,49 @@ server exposes one `hello` tool.
 
 | Type | Path | Notes |
 |------|------|-------|
-| Skills | `skills/` | one folder per skill (`SKILL.md` + inline standards) |
+| Skills | `skills/` | one folder per skill (`SKILL.md` + reference/); incl. `backlog-plan` + `backlog-deliver` (see [Backlog workflow skills](#backlog-workflow-skills)) |
 | MCP | `mcp/` | TypeScript MCP server(s), run by bun; `example/` = `hello` tool |
 | Plugin manifest | `.claude-plugin/` | `plugin.json` + `marketplace.json` (repo root = the plugin) |
 | Fixtures | `fixtures/` | inputs for skill evals (e.g. bad React) |
 | Tests | `tests/` | `unit/` (CI-safe) + `eval/` (LLM-judge, local) |
+
+## Backlog workflow skills
+
+Two portable skills turn the [`backlog` CLI](https://github.com/osmove/backlog) into a
+standards-driven, AI-runnable workflow in **any** repo — install the plugin and they work
+everywhere. They form a loop: **plan** a backlog, then **deliver** its stories one at a time.
+
+| Skill | Command | Does |
+|-------|---------|------|
+| `backlog-plan` | `/backlog-plan` | Grills you (one question at a time, recommends answers, reads the repo) into a well-formed backlog: an epic + AI-first stories that meet a story standard, then **materializes on approval** — subtasks, companion docs, config. |
+| `backlog-deliver` | `/backlog-deliver DIP-12` | Drives **one** story `[PREFIX-n]` from queued to done: readiness gate → guarded implement/self-check/verify loop → commit (id-referenced) → branch + push. Handles `Type: spike` stories via a research + interview loop. |
+
+**The loop**
+
+```
+/backlog-plan            → interview → draft epic + [DIP-n] stories → approve → materialize
+/backlog-deliver DIP-12  → gate → implement → verify → commit + push
+                           (a spike spawns new [DIP-n] stories, feeding back into the plan)
+```
+
+**Story standard** — every story: one outcome · concrete title · objective `done-when` ·
+real `depends-on` · pickup-sized · verifiable. Optional: technical notes, `needs-refinement`,
+`needs-info`, `Type: spike`. Each carries a JIRA-style id `[PREFIX-n]` (derived from the
+subtask number) and a companion doc `.backlog/stories/<PREFIX>-<n>.md`. Full contract:
+`skills/backlog-plan/reference/`.
+
+**Config** — auto-inferred; write only what can't be. `.backlog/standards.json`:
+
+```jsonc
+{
+  "prefix": "DIP",                                  // JIRA-style story key (asked once)
+  "verify": ["bun run lint", "bun run typecheck"],  // optional; else auto-detected from package.json
+  "gates": { "commit": "require-approval", "deliver": "push" }  // optional; safe defaults shown
+}
+```
+
+Verify falls back to `package.json` scripts (`lint`/`typecheck`/`test`/`build`), then to
+per-story checks + self-review — so a repo with no pipeline still works.
 
 ## Development
 
