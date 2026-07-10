@@ -19,17 +19,20 @@ const CLI_FALLBACK_DIRS = [
   "/usr/bin",
 ];
 
+/** Does `cmd --version` run without throwing? */
+function cliRuns(cmd: string): boolean {
+  try {
+    execFileSync(cmd, ["--version"], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 let resolvedCli: string | undefined;
 export function resolveCli(): string {
   if (resolvedCli) return resolvedCli;
-  const runs = (cmd: string): boolean => {
-    try {
-      execFileSync(cmd, ["--version"], { stdio: "ignore" });
-      return true;
-    } catch {
-      return false;
-    }
-  };
+  const runs = cliRuns;
   // Trust it as-is first (already on PATH, or an explicit path override).
   if (runs(AI_CLI)) return (resolvedCli = AI_CLI);
   // Bare name not on the runner's PATH — probe common install dirs + PATH entries.
@@ -81,7 +84,34 @@ export function isCliInstalled(): boolean {
   }
 }
 
-/** Run a single headless prompt and return the parsed JSON result. Throws on failure. */
+// Transient API/network failures that are worth retrying rather than failing the eval —
+// they reflect infra flakiness, not the skill under test.
+const TRANSIENT = /API Error|Connection closed|Overloaded|ECONNRESET|ETIMEDOUT|network|rate.?limit|\b(429|500|502|503|529)\b/i;
+const MAX_ATTEMPTS = 3;
+
+/** Blocking sleep (sync context — execFileSync is synchronous). */
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/** Run the CLI once; return parsed JSON even when the CLI exits non-zero but still emitted it. */
+function runOnce(args: string[], opts: RunOptions): CliResult {
+  try {
+    const stdout = execFileSync(resolveCli(), args, {
+      cwd: opts.cwd,
+      encoding: "utf8",
+      maxBuffer: 32 * 1024 * 1024,
+    });
+    return JSON.parse(stdout) as CliResult;
+  } catch (error) {
+    // Non-zero exit: the CLI often still printed a JSON result (e.g. is_error) to stdout.
+    const stdout = (error as { stdout?: Buffer | string }).stdout?.toString() ?? "";
+    if (stdout.trim().startsWith("{")) return JSON.parse(stdout) as CliResult;
+    throw error;
+  }
+}
+
+/** Run a headless prompt and return the parsed JSON result. Retries transient failures. */
 export function runCli(prompt: string, opts: RunOptions): CliResult {
   const args = ["-p", prompt, "--output-format", "json", "--settings", CLEAN_SETTINGS];
   if (opts.pluginDir) args.push("--plugin-dir", opts.pluginDir);
@@ -90,17 +120,30 @@ export function runCli(prompt: string, opts: RunOptions): CliResult {
   if (opts.permissionMode) args.push("--permission-mode", opts.permissionMode);
   if (opts.model) args.push("--model", opts.model);
 
-  const stdout = execFileSync(resolveCli(), args, {
-    cwd: opts.cwd,
-    encoding: "utf8",
-    maxBuffer: 32 * 1024 * 1024,
-  });
+  let lastReason = "unknown";
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let result: CliResult;
+    try {
+      result = runOnce(args, opts);
+    } catch (error) {
+      lastReason = error instanceof Error ? error.message : String(error);
+      if (attempt < MAX_ATTEMPTS && TRANSIENT.test(lastReason)) {
+        sleepSync(2000 * attempt);
+        continue;
+      }
+      throw error;
+    }
+    if (!result.is_error) return result;
 
-  const parsed = JSON.parse(stdout) as CliResult;
-  if (parsed.is_error) {
-    throw new Error(`${AI_CLI} returned is_error for prompt: ${prompt.slice(0, 80)}`);
+    lastReason = result.result ?? "is_error";
+    if (attempt < MAX_ATTEMPTS && TRANSIENT.test(lastReason)) {
+      console.warn(`[eval] transient error (attempt ${attempt}/${MAX_ATTEMPTS}), retrying: ${lastReason.slice(0, 80)}`);
+      sleepSync(2000 * attempt);
+      continue;
+    }
+    break;
   }
-  return parsed;
+  throw new Error(`${AI_CLI} failed after ${MAX_ATTEMPTS} attempts for "${prompt.slice(0, 60)}": ${lastReason.slice(0, 120)}`);
 }
 
 /**

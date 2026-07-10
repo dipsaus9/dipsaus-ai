@@ -7,23 +7,28 @@ import { runCli } from "./runner";
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 
 /**
- * Refactor a fixture in a sandbox copy and return the resulting source.
- * withSkill=true loads the plugin and triggers `/react-architecture apply`.
- * withSkill=false is the no-skill baseline: a generic "refactor for better architecture".
+ * How the fixture gets refactored:
+ * - "skill"    — the real react-architecture skill (plugin loaded, /react-architecture apply).
+ * - "baseline" — no plugin: a generic "improve the architecture" prompt. Reference point
+ *                for how much of the standard is met *without* the skill's guidance.
  */
-export function refactor(fixturePath: string, withSkill: boolean): string {
+export type Variant = "skill" | "baseline";
+
+/** Refactor a fixture in a sandbox copy and return the resulting source. */
+export function refactor(fixturePath: string, variant: Variant): string {
   const abs = resolve(repoRoot, fixturePath);
   const name = basename(fixturePath);
   const dir = mkdtempSync(join(tmpdir(), "eval-"));
   const dest = join(dir, name);
   try {
     copyFileSync(abs, dest);
-    const prompt = withSkill
-      ? `/react-architecture apply ${name}`
-      : `Refactor the React + TypeScript component in ${name} to improve its architecture. Edit the file in place and preserve behavior.`;
+    const prompt =
+      variant === "skill"
+        ? `/react-architecture apply ${name}`
+        : `Refactor the React + TypeScript component in ${name} to improve its architecture. Edit the file in place and preserve behavior.`;
     runCli(prompt, {
       cwd: dir,
-      pluginDir: withSkill ? repoRoot : undefined,
+      pluginDir: variant === "skill" ? repoRoot : undefined,
       addDir: [dir],
       allowedTools: ["Read", "Edit", "Write"],
       permissionMode: "acceptEdits",
