@@ -3,5 +3,8 @@ dist
 .DS_Store
 *.log
 
+# Local eval benchmark trend (regenerated each run)
+tests/eval/results.jsonl
+
 # Per-user Claude Code state (never commit)
 .claude/settings.local.json

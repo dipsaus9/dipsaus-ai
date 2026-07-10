@@ -181,19 +181,38 @@ export function score(code: string, fixturePath: string): Scorecard {
   return { total: checks.length, pass: results.filter((r) => r.pass).length, results };
 }
 
+export type Benchmark = {
+  n: number;
+  total: number;
+  skillMean: number;
+  baselineMean: number;
+  delta: number;
+  /** Fraction of paired samples where skill scored higher than baseline (ties count ½). */
+  winRate: number;
+};
+
+const mean = (xs: number[]): number => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0);
+
 /**
- * Collapse several scorecards (repeated samples of the same fixture) into one by majority
- * vote per check: a check counts as passed if it passed in at least half the samples.
- * This is the de-flake — one LLM refactor varies run to run, so a single sample is a
- * coin-flip near the boundary; the majority of K samples is stable.
+ * Turn paired skill/baseline score samples into an A/B measurement. This is the de-flake:
+ * we stop asserting a pass/fail cliff on one stochastic run and instead REPORT how much
+ * the skill beats the baseline across samples — a number you track as the skill changes.
  */
-export function majority(cards: Scorecard[]): Scorecard {
-  const first = cards[0];
-  if (!first) throw new Error("majority() needs at least one scorecard");
-  const n = cards.length;
-  const results = first.results.map((r, i) => {
-    const passes = cards.filter((c) => c.results[i]?.pass).length;
-    return { ...r, pass: passes * 2 >= n }; // passed in ≥ half the samples
-  });
-  return { total: first.total, pass: results.filter((r) => r.pass).length, results };
+export function summarize(skill: number[], baseline: number[], total: number): Benchmark {
+  const n = Math.min(skill.length, baseline.length);
+  let winScore = 0;
+  for (let i = 0; i < n; i++) {
+    const s = skill[i]!;
+    const b = baseline[i]!;
+    winScore += s > b ? 1 : s === b ? 0.5 : 0;
+  }
+  return {
+    n,
+    total,
+    skillMean: mean(skill),
+    baselineMean: mean(baseline),
+    delta: mean(skill) - mean(baseline),
+    winRate: n ? winScore / n : 0,
+  };
 }
+

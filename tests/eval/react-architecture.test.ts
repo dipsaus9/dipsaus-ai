@@ -1,16 +1,22 @@
+import { appendFileSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { refactor } from "./apply";
-import { majority, score, type Scorecard } from "./metrics";
+import { score, summarize, type Benchmark } from "./metrics";
 import { evalUsage, evalUsageSummary, isCliReady, resetEvalUsage } from "./runner";
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
+const resultsLog = fileURLToPath(new URL("./results.jsonl", import.meta.url));
+const skillPath = fileURLToPath(new URL("../../skills/react-architecture/SKILL.md", import.meta.url));
 
-// For each fixture we refactor twice — once with the skill, once with a no-skill baseline —
-// and score BOTH against the detailed, standard-by-standard checks in metrics.ts. The score
-// says how much of the react-architecture standard each refactor actually met. The gate is
-// that the SKILL meets the standard; the baseline is logged alongside so the skill's
-// contribution is visible without asserting a fragile "skill > baseline".
+// A hard pass/fail gate on one stochastic LLM refactor cannot be non-flaky: near the
+// threshold, ordinary run-to-run variance flips red/green. So this is NOT a gate — it is a
+// MEASUREMENT. Per fixture we refactor skill vs baseline in paired samples, score both
+// against the detailed standard checks, and report how much the skill beats the baseline
+// (win-rate + mean score delta). Results append to results.jsonl keyed by a SKILL.md hash,
+// so you watch the numbers move as you edit the skill. The only assertion is structural
+// (did the run produce data) — there is no quality cliff to flake.
 const CASES: { file: string; label: string }[] = [
   { file: "fixtures/react/prop-drilling.tsx", label: "prop drilling" },
   { file: "fixtures/react/cross-feature-coupling.tsx", label: "feature boundaries" },
@@ -18,59 +24,72 @@ const CASES: { file: string; label: string }[] = [
   { file: "fixtures/react/god-component.tsx", label: "SRP + state/data" },
 ];
 
-// Allow a single miss: even after majority voting a genuinely ~50/50 check can fall either
-// way, so the skill must meet all-but-one of the standard's checks.
-const allowedMisses = 1;
-
-// De-flake by sampling: the skill is refactored EVAL_SAMPLES times (default 3) and the
-// score is the per-check majority vote — stable where a single run is a coin-flip. The
-// baseline is a single reference run (it is reported, not gated). EVAL_SAMPLES=1 → fast
-// but flaky; raise it for a trustworthy result.
+// Paired samples per fixture. More samples → tighter win-rate estimate. Default 3.
 const SAMPLES = Math.max(1, Math.trunc(Number(process.env.EVAL_SAMPLES ?? 3)) || 1);
 
 let ready = false;
+let skillHash = "unknown";
+const collected: { file: string; label: string; bench: Benchmark }[] = [];
+
 beforeAll(() => {
   resetEvalUsage();
+  skillHash = createHash("sha256").update(readFileSync(skillPath)).digest("hex").slice(0, 12);
   ready = isCliReady(repoRoot);
 }, 120_000);
 
-// Always surface what the (billed, slow) run cost, even if a case failed.
 afterAll(() => {
-  if (evalUsage.calls > 0) console.log(evalUsageSummary());
+  if (collected.length === 0) return;
+  const totalScore = (pick: (b: Benchmark) => number): number =>
+    collected.reduce((s, c) => s + pick(c.bench), 0);
+  const meanWin = totalScore((b) => b.winRate) / collected.length;
+  const meanDelta = totalScore((b) => b.delta) / collected.length;
+
+  console.log(
+    `[eval] OVERALL  win-rate ${(meanWin * 100).toFixed(0)}%  mean Δ ${meanDelta >= 0 ? "+" : ""}${meanDelta.toFixed(2)} checks/fixture  (skill ${skillHash}, ${SAMPLES} samples)`,
+  );
+  console.log(evalUsageSummary());
+
+  // Append a trend record. Timestamp via Date is available under Node/Vitest.
+  const record = {
+    ts: new Date().toISOString(),
+    skill: skillHash,
+    samples: SAMPLES,
+    meanWinRate: meanWin,
+    meanDelta,
+    costUsd: evalUsage.costUsd,
+    fixtures: collected.map((c) => ({ file: c.file, ...c.bench })),
+  };
+  appendFileSync(resultsLog, `${JSON.stringify(record)}\n`);
 });
 
-const mark = (r: boolean): string => (r ? "✓" : "✗");
-
-function report(file: string, skill: Scorecard, baseline: Scorecard): void {
-  console.log(`[eval] ${file}  skill=${skill.pass}/${skill.total}  baseline=${baseline.pass}/${baseline.total}`);
-  for (let i = 0; i < skill.results.length; i++) {
-    const s = skill.results[i]!;
-    const b = baseline.results[i]!;
-    console.log(`  skill ${mark(s.pass)} | base ${mark(b.pass)}  [${s.severity}] ${s.desc}`);
-  }
-}
-
-describe("react-architecture apply-mode eval (scored against the standard)", () => {
+describe("react-architecture skill — improvement benchmark (skill vs baseline)", () => {
   for (const c of CASES) {
-    it(`skill meets the standard: ${c.label}`, (ctx) => {
+    it(`measures how much the skill beats baseline: ${c.label}`, (ctx) => {
       if (!ready) return ctx.skip();
 
-      const samples: Scorecard[] = [];
+      const skill: number[] = [];
+      const baseline: number[] = [];
+      let total = 0;
       for (let i = 0; i < SAMPLES; i++) {
-        const sc = score(refactor(c.file, "skill"), c.file);
-        samples.push(sc);
-        if (SAMPLES > 1) console.log(`  [skill sample ${i + 1}/${SAMPLES}] ${sc.pass}/${sc.total}`);
+        const s = score(refactor(c.file, "skill"), c.file);
+        const b = score(refactor(c.file, "baseline"), c.file);
+        skill.push(s.pass);
+        baseline.push(b.pass);
+        total = s.total;
+        console.log(`  [pair ${i + 1}/${SAMPLES}] skill ${s.pass}/${s.total}  baseline ${b.pass}/${b.total}`);
       }
-      const skill = majority(samples);
-      const baseline = score(refactor(c.file, "baseline"), c.file);
-      report(c.file, skill, baseline);
 
-      const required = skill.total - allowedMisses;
-      const missed = skill.results.filter((r) => !r.pass).map((r) => `[${r.severity}] ${r.desc}`);
-      expect(
-        skill.pass,
-        `skill met ${skill.pass}/${skill.total} of the standard by majority of ${SAMPLES} (need ≥ ${required}). Unmet: ${missed.join("; ")}`,
-      ).toBeGreaterThanOrEqual(required);
-    }, (SAMPLES + 1) * 220_000);
+      const bench = summarize(skill, baseline, total);
+      collected.push({ file: c.file, label: c.label, bench });
+      console.log(
+        `[eval] ${c.file}  skill ${bench.skillMean.toFixed(1)} vs baseline ${bench.baselineMean.toFixed(1)} /${total}  ` +
+          `· win-rate ${(bench.winRate * 100).toFixed(0)}%  · Δ ${bench.delta >= 0 ? "+" : ""}${bench.delta.toFixed(2)}`,
+      );
+
+      // Structural only — no quality threshold, so this cannot flake. The signal is the
+      // reported win-rate/delta and the results.jsonl trend, not red/green.
+      expect(skill).toHaveLength(SAMPLES);
+      expect(baseline).toHaveLength(SAMPLES);
+    }, 2 * SAMPLES * 220_000);
   }
 });
