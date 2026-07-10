@@ -17,7 +17,11 @@ story in this epic assumes yes. This story proves it before code is written agai
 - none
 
 ## Affected area
-- `hooks/dad-joke/` (throwaway smoke-test hook; may be deleted or kept as the DIP-32 skeleton)
+- `hooks/dad-joke/spike-smoke.ts` (throwaway smoke-test hook; delete once the finding is recorded)
+
+Scoped to a single file on purpose: a directory scope here would overlap DIP-29/30/31/32's file
+scopes, and with `claim_mode: exclusive` that makes the scheduler treat those stories as
+contended with this one.
 
 ## Verify
 Manual smoke test, no automated verify:
