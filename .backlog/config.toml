@@ -27,7 +27,8 @@ show_review_column = false
 
 [[repos]]
 id = "dipsaus-ai"
-path = "/Users/dennisspierenburg/Projects/Divotion/dipsaus-ai-2"
+path = "/Users/dennisspierenburg/Projects/Divotion/dipsaus-ai"
 default_branch = "main"
 enabled = true
 location = "local"
+checkout_path = "/Users/dennisspierenburg/Projects/Divotion/dipsaus-ai"

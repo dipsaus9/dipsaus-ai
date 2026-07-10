@@ -20,10 +20,11 @@ export default defineConfig({
           name: "eval",
           include: ["tests/eval/**/*.test.ts"],
           environment: "node",
-          // Each eval case does up to 4 headless CLI round-trips (skill + baseline,
-          // each scored by the judge), so allow generous time.
-          testTimeout: 300_000,
-          hookTimeout: 120_000,
+          // beforeAll drives the entire matrix (models × fixtures × samples × 2 variants)
+          // through a bounded pool, so the long timeout lives on the hook. The tests
+          // themselves are pure aggregation over data the hook already collected.
+          testTimeout: 30_000,
+          hookTimeout: 60 * 60_000,
         },
       },
     ],

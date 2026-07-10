@@ -479,7 +479,7 @@ subtasks:
     title: "runner.ts: async execFile + bounded concurrency pool, so the model
       matrix does not scale wall-clock linearly"
     repo: dipsaus-ai
-    status: review
+    status: canceled
     priority_score: 50
     risk: medium
     scopes:
@@ -502,13 +502,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-10T12:54:38.033Z
-    updated_at: 2026-07-10T13:39:34.936Z
+    updated_at: 2026-07-10T14:31:11.183Z
   - id: subtask_018
     task_id: task_005
     title: "apply.ts: return { before, after } and accept a per-run model, so pre()
       can assert the fixture actually violated the check"
     repo: dipsaus-ai
-    status: review
+    status: canceled
     priority_score: 50
     risk: medium
     scopes:
@@ -532,13 +532,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-10T12:54:38.146Z
-    updated_at: 2026-07-10T13:39:35.053Z
+    updated_at: 2026-07-10T14:31:11.310Z
   - id: subtask_019
     task_id: task_005
     title: "gate.ts: coherence typecheck of a refactored sample (fail on TS1xxx
       syntax + TS2304 cannot-find-name; ignore TS2307 unresolved module)"
     repo: dipsaus-ai
-    status: review
+    status: canceled
     priority_score: 50
     risk: medium
     scopes:
@@ -563,13 +563,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-10T12:54:38.257Z
-    updated_at: 2026-07-10T13:39:35.171Z
+    updated_at: 2026-07-10T14:31:11.436Z
   - id: subtask_020
     task_id: task_005
     title: "metrics.ts: Check{goal,pre,post,guard} contract; -1 when post && !guard;
       port all 18 existing checks onto it"
     repo: dipsaus-ai
-    status: review
+    status: canceled
     priority_score: 50
     risk: medium
     scopes:
@@ -598,13 +598,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-10T12:54:38.368Z
-    updated_at: 2026-07-10T13:39:35.288Z
+    updated_at: 2026-07-10T14:31:11.563Z
   - id: subtask_021
     task_id: task_005
     title: "metrics.ts: aggregate per skill goal across fixtures; bootstrap 95% CI
       on paired delta; HELPS/NO EFFECT/HURTS verdict"
     repo: dipsaus-ai
-    status: review
+    status: canceled
     priority_score: 50
     risk: medium
     scopes:
@@ -631,14 +631,14 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-10T12:54:38.479Z
-    updated_at: 2026-07-10T13:39:35.405Z
+    updated_at: 2026-07-10T14:31:11.700Z
   - id: subtask_022
     task_id: task_005
     title: "react-architecture.test.ts: sweep EVAL_MODELS matrix (default
       haiku,sonnet), print goal x model table, append to results.jsonl,
       structural asserts only"
     repo: dipsaus-ai
-    status: review
+    status: canceled
     priority_score: 50
     risk: medium
     scopes:
@@ -664,13 +664,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-10T12:54:38.588Z
-    updated_at: 2026-07-10T13:39:35.521Z
+    updated_at: 2026-07-10T14:31:11.827Z
   - id: subtask_023
     task_id: task_005
     title: Delete tests/eval/check.ts (dead binaryCheck) and drop its LLM-judge
       references from tests/eval/README.md
     repo: dipsaus-ai
-    status: review
+    status: canceled
     priority_score: 50
     risk: medium
     scopes:
@@ -692,7 +692,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-10T12:54:38.705Z
-    updated_at: 2026-07-10T13:39:35.645Z
+    updated_at: 2026-07-10T14:31:11.952Z
   - id: subtask_024
     task_id: task_006
     title: "Authoring skill: standard + PREFIX-n.md template + standards.json +
@@ -796,7 +796,7 @@ subtasks:
     title: "checks.ts: write the 5 feature-boundaries guards (replace TODO_GUARD) so
       the billing panel cannot be deleted for points"
     repo: dipsaus-ai
-    status: queued
+    status: canceled
     priority_score: 50
     risk: medium
     scopes:
@@ -820,4 +820,274 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-10T13:39:35.763Z
-    updated_at: 2026-07-10T13:39:35.982Z
+    updated_at: 2026-07-10T14:31:12.073Z
+  - id: subtask_028
+    task_id: task_007
+    title: "[DIP-28] SPIKE: prove PostToolUse systemMessage renders to the user
+      mid-turn"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: high
+    scopes:
+      - hooks/dad-joke/
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - "Recorded finding: does a PostToolUse hook printing
+          {\"systemMessage\":\"...\"} on stdout with exit 0 render text to the
+          user's terminal? yes/no, with the exact observed output pasted into
+          the story doc Findings section"
+        - "Recorded finding: does the hook fire once per tool call during a
+          multi-tool turn, and does systemMessage stay out of Claude's context?
+          Confirmed by asking Claude afterwards whether it saw the joke text"
+        - "Decision recorded with rationale: proceed with the PostToolUse plan
+          as designed, or the replan required for DIP-32/DIP-33 if the mechanism
+          does not render"
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T14:28:38.423Z
+    updated_at: 2026-07-10T14:29:17.366Z
+  - id: subtask_029
+    task_id: task_007
+    title: "[DIP-29] jokes.json pool + seeded picker with no repeat until pool
+      exhausts"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: low
+    scopes:
+      - hooks/dad-joke/jokes.json
+      - hooks/dad-joke/pick.ts
+      - tests/unit/dad-joke-pick.test.ts
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - hooks/dad-joke/jokes.json holds >= 40 dad jokes, each an object with
+          setup and punchline string fields, valid JSON, no duplicate setups
+        - pick.ts exports pickJoke(jokes, recentIds, rand) returning a joke
+          never present in recentIds unless every joke is in recentIds (pool
+          exhausted), in which case it may repeat
+        - "pickJoke takes its randomness as an injected rand: () => number
+          argument and never calls Math.random() internally, so tests are
+          deterministic"
+        - "tests/unit/dad-joke-pick.test.ts passes under bun run test and
+          covers: no-repeat across a full pool cycle, exhaustion wraparound, and
+          a single-joke pool"
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T14:28:38.542Z
+    updated_at: 2026-07-10T14:29:57.209Z
+  - id: subtask_030
+    task_id: task_007
+    title: "[DIP-30] pure shouldTellJoke(now, state, cfg) + env config parsing"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: low
+    scopes:
+      - hooks/dad-joke/trigger.ts
+      - hooks/dad-joke/config.ts
+      - tests/unit/dad-joke-trigger.test.ts
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - "trigger.ts exports shouldTellJoke(now: number, state: {turnStart,
+          lastJokeAt}, cfg: {thresholdMs, cooldownMs, disabled}): boolean and
+          reads no clock and no env internally"
+        - Returns false when cfg.disabled, false when now - state.turnStart <
+          thresholdMs, false when state.lastJokeAt is set and now -
+          state.lastJokeAt < cooldownMs, true otherwise
+        - config.ts exports loadConfig(env) parsing DAD_JOKE_THRESHOLD_MS
+          (default 30000), DAD_JOKE_COOLDOWN_MS (default 60000),
+          DAD_JOKE_DISABLE (any non-empty value except '0' disables)
+        - loadConfig falls back to the default for a non-numeric, negative, or
+          NaN override rather than throwing
+        - tests/unit/dad-joke-trigger.test.ts passes under bun run test and
+          covers each false branch, the true branch, both threshold and cooldown
+          boundaries at exactly ==, and malformed env values
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T14:28:38.661Z
+    updated_at: 2026-07-10T14:29:57.328Z
+  - id: subtask_031
+    task_id: task_007
+    title: "[DIP-31] per-session state store: atomic write, tolerant of
+      missing/corrupt file"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - hooks/dad-joke/state.ts
+      - tests/unit/dad-joke-state.test.ts
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - state.ts exports readState(dir, sessionId) and writeState(dir,
+          sessionId, state), keyed per session so concurrent Claude Code
+          sessions never share or clobber state
+        - readState returns a usable default state (not a throw) when the file
+          is missing, empty, truncated, or invalid JSON
+        - "writeState is atomic: writes to a temp file in the same directory
+          then renames, so a killed process can never leave a half-written state
+          file"
+        - The state directory is passed in as an argument (never hardcoded), so
+          tests point it at a tmpdir
+        - "tests/unit/dad-joke-state.test.ts passes under bun run test and
+          covers: missing file, corrupt JSON, round-trip write-then-read, and
+          two session ids not colliding"
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T14:28:38.781Z
+    updated_at: 2026-07-10T14:29:57.447Z
+  - id: subtask_032
+    task_id: task_007
+    title: "[DIP-32] two hook entrypoints wiring picker + trigger + state, always
+      exit 0"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - hooks/dad-joke/on-user-prompt-submit.ts
+      - hooks/dad-joke/on-post-tool-use.ts
+    claim_mode: exclusive
+    depends_on:
+      - subtask_028
+      - subtask_029
+      - subtask_030
+      - subtask_031
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - "on-user-prompt-submit.ts reads the hook JSON from stdin, takes
+          session_id, and writes state {turnStart: now, lastJokeAt: null,
+          recentIds: []} via DIP-31's writeState, printing nothing"
+        - 'on-post-tool-use.ts reads stdin session_id, loads state + config, and
+          when shouldTellJoke() is true prints exactly {"systemMessage":
+          "<setup>\n<punchline>"} to stdout, then persists lastJokeAt = now and
+          the joke id appended to recentIds'
+        - When shouldTellJoke() is false the hook prints nothing at all to stdout
+        - "Both entrypoints wrap their whole body so that ANY thrown error,
+          malformed stdin, missing state dir, or unreadable jokes.json results
+          in exit code 0 and no stdout: a broken hook must never block or fail a
+          tool call"
+        - Neither entrypoint emits additionalContext or hookSpecificOutput, so
+          the joke text never enters Claude's context
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T14:28:55.888Z
+    updated_at: 2026-07-10T14:30:18.323Z
+  - id: subtask_033
+    task_id: task_007
+    title: "[DIP-33] hooks.json plugin wiring with ${CLAUDE_PLUGIN_ROOT} + README
+      install and env knobs"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - hooks/hooks.json
+      - README.md
+      - .claude-plugin/plugin.json
+    claim_mode: exclusive
+    depends_on:
+      - subtask_032
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - hooks/hooks.json registers UserPromptSubmit ->
+          on-user-prompt-submit.ts and PostToolUse -> on-post-tool-use.ts,
+          invoking them via bun with paths built from ${CLAUDE_PLUGIN_ROOT}
+        - The PostToolUse matcher covers all tools (not a single tool name), so
+          the joke can fire during any tool loop
+        - Installing the plugin fresh and running a turn with several tool calls
+          that exceeds the threshold prints a dad joke to the terminal; the
+          observed output is pasted into the PR or story doc
+        - "README documents both plugin install and standalone hook install, and
+          the four env knobs: DAD_JOKE_THRESHOLD_MS, DAD_JOKE_COOLDOWN_MS,
+          DAD_JOKE_DISABLE, DAD_JOKE_API"
+        - "README states the known limitation plainly: a long turn with zero
+          tool calls will not fire a joke, because no Claude Code hook is
+          timer-driven"
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T14:28:56.007Z
+    updated_at: 2026-07-10T14:30:18.445Z
+  - id: subtask_034
+    task_id: task_007
+    title: "[DIP-34] opt-in DAD_JOKE_API=1 live fetch with timeout and fallback to
+      bundled pool"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - hooks/dad-joke/source.ts
+      - tests/unit/dad-joke-source.test.ts
+    claim_mode: exclusive
+    depends_on:
+      - subtask_029
+      - subtask_032
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - source.ts exports getJoke(cfg, deps) returning a joke from
+          icanhazdadjoke.com only when cfg.apiEnabled, otherwise straight from
+          the bundled pool with zero network access
+        - "The fetch sends an Accept: application/json header and a User-Agent
+          identifying this repo, per the icanhazdadjoke API terms"
+        - The fetch is bounded by a timeout (default 800ms, override
+          DAD_JOKE_API_TIMEOUT_MS) via AbortController, and any timeout, non-2xx
+          status, or malformed body falls back silently to the bundled pool
+        - fetch is injected through deps (never imported globally) so
+          tests/unit/dad-joke-source.test.ts covers success, timeout, non-2xx,
+          and malformed-body fallback with no real network call
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T14:28:56.127Z
+    updated_at: 2026-07-10T14:30:18.571Z
