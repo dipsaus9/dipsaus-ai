@@ -147,3 +147,101 @@ tasks:
       push_comments: false
     created_at: 2026-06-29T05:13:12.867Z
     updated_at: 2026-07-03T09:58:30.680Z
+  - id: task_005
+    title: "Goal-scoped skill eval: anti-cheat guards, coherence gate, model matrix"
+    description: "Rework the eval harness so it measures whether a SKILL delivers
+      each of its GOALS, per model, instead of scoring whole fixtures with
+      gameable negative-only checks. Today: checks are all negative assertions
+      (!/calcTax\\(/), so a baseline that deletes the feature scores perfect —
+      this is why baseline 'beat' the skill 4.67 vs 3.67 on
+      cross-feature-coupling. Nothing asserts the fixture actually violated the
+      check before refactor, output is never typechecked, and the aggregation
+      unit is the fixture rather than the skill goal. Reframe: unit of
+      measurement = goal; each check gains pre() applicability + guard()
+      capability-survival predicates; a coherence typecheck gates each sample;
+      results reported per goal x model with bootstrap CIs. Report-only, never
+      fails on quality."
+    source_links: []
+    status: ready
+    priority: P1
+    labels: []
+    repo_targets: []
+    acceptance_criteria:
+      - Check contract is { goal, severity, desc, pre, post, guard }; a check is
+        scored only when pre(before) is true
+      - post(after) && !guard(after) scores -1, so removing the feature to
+        satisfy a negative check is penalised, not rewarded
+      - Each sample passes a coherence typecheck (syntax TS1xxx + TS2304 only)
+        or scores 0 across all goals; unresolved-module errors (TS2307) are
+        ignored
+      - Results aggregate per skill goal across fixtures, not per fixture
+      - Eval sweeps a configurable model matrix (default haiku, sonnet) and
+        reports a goal x model verdict table
+      - Each goal reports delta + bootstrap 95% CI and a HELPS / NO EFFECT /
+        HURTS verdict
+      - Test asserts structure only; no quality threshold, so it cannot flake
+      - CLI calls run through a concurrency pool; wall-clock does not scale
+        linearly with the model matrix
+      - tests/eval/check.ts (dead binaryCheck) removed
+    dependencies: []
+    planning:
+      split_status: pending
+      risk: medium
+    execution_defaults:
+      manual_approval_required: false
+      auto_commit: true
+      push_when_done: true
+      create_pr: false
+      merge_pr: false
+      worktree_mode: direct
+      preferred_agents: []
+      max_subagents: 5
+    sync:
+      source_of_truth: backlog
+      push_status: false
+      push_comments: false
+    created_at: 2026-07-10T12:45:19.684Z
+    updated_at: 2026-07-10T12:54:38.711Z
+  - id: task_006
+    title: "Epic: Backlog standards + AI workflow skills"
+    description: "Two portable plugin skills for any osmove/backlog + Claude repo: a
+      grill-embed authoring skill that produces standard-conformant stories, and
+      a pickup skill that drives one story end-to-end. Establishes an AI-first
+      story standard ([PREFIX-n] ids, companion PREFIX-n.md docs, done-when,
+      spike type), auto-detected config (verify from package.json, prefix in
+      .backlog/standards.json), and a guarded pickup workflow (readiness gate, 7
+      golden constraints, verify, require-approval commit, branch+push)."
+    source_links: []
+    status: ready
+    priority: P2
+    labels: []
+    repo_targets: []
+    acceptance_criteria:
+      - Two skills shipped in skills/ and auto-discovered by the plugin
+      - "Story standard documented: 6 core + optional fields, [PREFIX-n] id,
+        AI-first PREFIX-n.md template"
+      - Authoring skill drafts a full backlog then materializes on approval
+        (subtasks + docs + standards.json)
+      - "Pickup skill drives one [PREFIX-n] end-to-end: readiness gate, verify
+        auto-detect, require-approval commit, branch+push"
+      - README documents the author->pickup loop; component-completeness test
+        passes
+    dependencies: []
+    planning:
+      split_status: pending
+      risk: medium
+    execution_defaults:
+      manual_approval_required: false
+      auto_commit: true
+      push_when_done: true
+      create_pr: false
+      merge_pr: false
+      worktree_mode: direct
+      preferred_agents: []
+      max_subagents: 5
+    sync:
+      source_of_truth: backlog
+      push_status: false
+      push_comments: false
+    created_at: 2026-07-10T13:02:31.501Z
+    updated_at: 2026-07-10T13:38:03.300Z

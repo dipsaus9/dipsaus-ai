@@ -474,3 +474,320 @@ subtasks:
       locked: false
     created_at: 2026-06-29T13:39:27.997Z
     updated_at: 2026-07-01T12:46:08.935Z
+  - id: subtask_017
+    task_id: task_005
+    title: "runner.ts: async execFile + bounded concurrency pool, so the model
+      matrix does not scale wall-clock linearly"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - tests/eval
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - runCli is async (execFile promisified); no execFileSync in the request
+          path
+        - A bounded pool (default 4, EVAL_CONCURRENCY) caps in-flight CLI calls
+        - Transient-error retry + usage/cost tallying still work under
+          concurrency
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T12:54:38.033Z
+    updated_at: 2026-07-10T12:54:52.588Z
+  - id: subtask_018
+    task_id: task_005
+    title: "apply.ts: return { before, after } and accept a per-run model, so pre()
+      can assert the fixture actually violated the check"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - tests/eval
+    claim_mode: exclusive
+    depends_on:
+      - subtask_017
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - refactor() returns { before, after }; before is the unmodified fixture
+          source
+        - refactor() accepts a model argument, threaded to --model for the apply
+          call
+        - Sandbox temp dir is still cleaned up on both success and throw
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T12:54:38.146Z
+    updated_at: 2026-07-10T12:59:18.148Z
+  - id: subtask_019
+    task_id: task_005
+    title: "gate.ts: coherence typecheck of a refactored sample (fail on TS1xxx
+      syntax + TS2304 cannot-find-name; ignore TS2307 unresolved module)"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - tests/eval
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - gate() runs tsc --noEmit over the sandbox dir with strict:false,
+          jsx:preserve, and an ambient 'declare module "*"' catch-all
+        - Only TS1xxx (syntax) and TS2304 (cannot find name) diagnostics fail
+          the sample; TS2307 (cannot find module) is ignored so new imports like
+          @tanstack/react-query do not punish a good refactor
+        - Returns { ok, diagnostics } so a failed gate is explained in the log,
+          not silently zeroed
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T12:54:38.257Z
+    updated_at: 2026-07-10T12:59:18.258Z
+  - id: subtask_020
+    task_id: task_005
+    title: "metrics.ts: Check{goal,pre,post,guard} contract; -1 when post && !guard;
+      port all 18 existing checks onto it"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - tests/eval
+    claim_mode: exclusive
+    depends_on:
+      - subtask_018
+      - subtask_019
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - Check is { goal, severity, desc, pre, post, guard }
+        - A check with pre(before) === false is skipped, not counted as a pass
+        - "Scoring: post && guard => +1; !post => 0; post && !guard => -1"
+        - Every cross-feature-coupling check has a guard asserting the billing
+          capability survived (invoice table still rendered, tax still reaches
+          the view)
+        - A sample failing the coherence gate scores 0 for every goal
+        - Unit test in tests/unit covers the scoring table incl. the -1 cheat
+          case, using synthetic before/after strings
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T12:54:38.368Z
+    updated_at: 2026-07-10T12:59:18.366Z
+  - id: subtask_021
+    task_id: task_005
+    title: "metrics.ts: aggregate per skill goal across fixtures; bootstrap 95% CI
+      on paired delta; HELPS/NO EFFECT/HURTS verdict"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - tests/eval
+    claim_mode: exclusive
+    depends_on:
+      - subtask_020
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - GOALS map skill goal ids to their checks; scores aggregate per goal
+          across all fixtures
+        - Paired skill/baseline samples yield delta + bootstrap 95% CI per goal
+        - Verdict is HELPS when CI lower bound > 0, HURTS when upper < 0, else
+          NO EFFECT
+        - Bootstrap is seeded/deterministic so the same samples always give the
+          same CI
+        - Unit test in tests/unit pins the CI + verdict on fixed sample arrays
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T12:54:38.479Z
+    updated_at: 2026-07-10T12:59:18.474Z
+  - id: subtask_022
+    task_id: task_005
+    title: "react-architecture.test.ts: sweep EVAL_MODELS matrix (default
+      haiku,sonnet), print goal x model table, append to results.jsonl,
+      structural asserts only"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - tests/eval
+    claim_mode: exclusive
+    depends_on:
+      - subtask_021
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - EVAL_MODELS (default 'haiku,sonnet') drives a model sweep; each model
+          gets its own paired skill/baseline samples
+        - Console prints a goal x model table of delta, CI and verdict
+        - results.jsonl record includes skill hash, model, goal, delta, CI,
+          verdict, cost
+        - The only expect() calls are structural (sample counts); no quality
+          threshold anywhere
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T12:54:38.588Z
+    updated_at: 2026-07-10T12:59:18.583Z
+  - id: subtask_023
+    task_id: task_005
+    title: Delete tests/eval/check.ts (dead binaryCheck) and drop its LLM-judge
+      references from tests/eval/README.md
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - tests/eval
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - tests/eval/check.ts deleted; no remaining import of binaryCheck
+        - tests/eval/README.md describes the goal-scoped guard/gate/matrix
+          design, not an LLM judge
+        - bun run lint && bun run typecheck && bun run test all pass
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T12:54:38.705Z
+    updated_at: 2026-07-10T12:59:18.691Z
+  - id: subtask_024
+    task_id: task_006
+    title: "Authoring skill: standard + PREFIX-n.md template + standards.json +
+      grill-embed draft->materialize flow"
+    repo: dipsaus-ai
+    status: completed
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - SKILL.md drives a grill-style interview (one question at a time,
+          recommend answers, explore repo)
+        - "reference/story-standard.md defines 6 core + optional fields
+          (tech-notes, needs-refinement, needs-info, Type: spike) + [PREFIX-n]
+          id rule"
+        - PREFIX-n.md template has fixed AI-first headings (Outcome, Done-when,
+          Depends-on, Affected area, Technical notes, Open questions, Type)
+        - standards.json schema defined (prefix, optional verify, gates); prefix
+          auto-derived from package.json name and confirmed
+        - "drafts epic+stories then materializes only on approval: creates
+          subtasks + PREFIX-n.md docs + standards.json"
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T13:04:19.096Z
+    updated_at: 2026-07-10T13:38:03.286Z
+  - id: subtask_025
+    task_id: task_006
+    title: "Pickup skill: guarded end-to-end story delivery (intake, gates, verify,
+      commit, spike flow)"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_024
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - "SKILL.md: intake (id or ready-shortlist + ask), readiness gate
+          (ill-formed -> refine), restate, implement->self-check->verify loop
+          with escape hatches"
+        - 7 golden constraints block (scope, backlog-source-of-truth, no blind
+          commits, secrets, halt-on-irreversible, project-rules-win, one-story)
+        - verify auto-detected from package.json scripts; degrades cleanly when
+          absent
+        - commit references [PREFIX-n]; require-approval default (autonomous
+          opt-in); deliver branch+push (PR opt-in, host-aware)
+        - "spike flow: web-search + interview loop until acceptance; records
+          findings + proposes follow-up [PREFIX-n] stories"
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T13:05:21.787Z
+    updated_at: 2026-07-10T13:05:21.909Z
+  - id: subtask_026
+    task_id: task_006
+    title: Wire + document the two skills (register, README author->pickup loop,
+      completeness test)
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_024
+      - subtask_025
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - both skills discoverable by the plugin; component-completeness test
+          passes
+        - README documents the author->pickup loop + standards.json config
+        - install/usage examples for any osmove/backlog repo
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-10T13:05:22.026Z
+    updated_at: 2026-07-10T13:05:22.144Z

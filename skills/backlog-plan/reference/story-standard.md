@@ -1,0 +1,54 @@
+# Story standard
+
+The contract every backlog story must meet. `backlog-plan` produces stories that satisfy it;
+`backlog-deliver` refuses to start a story that violates the **required** items. Stories are
+written **for an AI to read and write** — structured, explicit, unambiguous. No prose that
+only a human can disambiguate.
+
+A **story** is an executable subtask. A **task** is its parent epic (a coarse grouping, not
+picked up directly).
+
+## Required — every story
+
+1. **One outcome.** A single shippable slice. If the title needs "and", split into two stories.
+2. **Concrete title.** States *what* + *where* (area/files). No vague verbs ("improve", "handle").
+3. **Done-when.** ≥1 objective, checkable pass/fail criterion. Never "works well" / "looks good".
+   Each criterion is something a machine or a command can decide.
+4. **Depends-on.** Real ordering by story id; no hidden prerequisites.
+5. **Pickup-sized.** Completable in one sitting. Epic-sized ⇒ it is a *task*, not a story.
+6. **Verifiable.** How you would *prove* it: a command, a test, or an observable behaviour.
+   (This is what lets the delivery skill self-check honestly.)
+
+## Optional — add when useful
+
+- **Technical notes** — implementation guidance, constraints, links, gotchas.
+- **`needs-refinement`** — the story is not yet ready; do not pick up until refined.
+- **`needs-info`** — an open question blocks readiness; capture it, ask, resolve before pickup.
+- **`Type: spike`** — a research/decision story. Its done-when is "question answered / decision
+  recorded with rationale", not "tests pass". Delivery resolves it via web search + interview.
+
+## Story id — `[PREFIX-n]`
+
+- Every story carries a JIRA-style id: `[PREFIX-n]`, embedded at the front of the title:
+  `[DIP-12] <scope>`.
+- `PREFIX` is the per-project key (see `standards-schema.md`), e.g. `DIP`.
+- `n` is the story's **native subtask number** (`subtask_012` → `DIP-12`). Derived, never
+  hand-assigned — so it cannot drift. `subtask_012` stays the canonical id the CLI operates on;
+  `[DIP-12]` is the handle the AI reads in the title and the companion doc.
+- **Only stories (subtasks) get a `[PREFIX-n]` id.** Epics keep their native `task_NNN` + a title,
+  to avoid `DIP-12` ambiguity between a `task_012` and a `subtask_012`.
+
+## Where content lives
+
+A subtask has no free-form description field, so rich content lives in a **companion doc**:
+
+- `.backlog/stories/<PREFIX>-<n>.md` — the AI-first story spec (single source of truth for
+  content). See `story-template.md` for the fixed headings.
+- The native subtask mirrors only the *schedulable* bits: `--title` (with `[PREFIX-n]`),
+  `--done-when`, `--depends-on`, `--scope`, `--risk`.
+
+## Readiness
+
+A story is **ready** when: all six required items hold, and it is neither `needs-refinement`
+nor carrying unresolved `needs-info` / open questions. `backlog-deliver`'s readiness gate
+checks exactly this before touching code.
