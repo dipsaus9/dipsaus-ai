@@ -1,8 +1,8 @@
 import { fileURLToPath } from "node:url";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { refactor } from "./apply";
 import { score, type Scorecard } from "./metrics";
-import { isCliReady } from "./runner";
+import { evalUsage, evalUsageSummary, isCliReady, resetEvalUsage } from "./runner";
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -24,8 +24,14 @@ const allowedMisses = 1;
 
 let ready = false;
 beforeAll(() => {
+  resetEvalUsage();
   ready = isCliReady(repoRoot);
 }, 120_000);
+
+// Always surface what the (billed, slow) run cost, even if a case failed.
+afterAll(() => {
+  if (evalUsage.calls > 0) console.log(evalUsageSummary());
+});
 
 const mark = (r: boolean): string => (r ? "✓" : "✗");
 

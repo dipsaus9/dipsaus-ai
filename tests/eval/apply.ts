@@ -32,6 +32,7 @@ export function refactor(fixturePath: string, variant: Variant): string {
       addDir: [dir],
       allowedTools: ["Read", "Edit", "Write"],
       permissionMode: "acceptEdits",
+      label: `${variant}:${name}`,
     });
     return readFileSync(dest, "utf8");
   } finally {

@@ -52,12 +52,54 @@ export const JUDGE_MODEL = process.env.JUDGE_MODEL ?? "sonnet";
 // output is deterministic.
 const CLEAN_SETTINGS = JSON.stringify({ outputStyle: "default" });
 
+export type CliUsage = {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+};
+
 export type CliResult = {
   is_error: boolean;
   subtype?: string;
   num_turns?: number;
   result: string;
+  total_cost_usd?: number;
+  duration_ms?: number;
+  usage?: CliUsage;
 };
+
+// Running tally across an eval file so a slow, billed run can report what it cost.
+export const evalUsage = { calls: 0, costUsd: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, durationMs: 0 };
+
+export function resetEvalUsage(): void {
+  evalUsage.calls = 0;
+  evalUsage.costUsd = 0;
+  evalUsage.inputTokens = 0;
+  evalUsage.outputTokens = 0;
+  evalUsage.cacheReadTokens = 0;
+  evalUsage.durationMs = 0;
+}
+
+function track(r: CliResult): void {
+  const u = r.usage ?? {};
+  evalUsage.calls += 1;
+  evalUsage.costUsd += r.total_cost_usd ?? 0;
+  evalUsage.inputTokens += u.input_tokens ?? 0;
+  evalUsage.outputTokens += u.output_tokens ?? 0;
+  evalUsage.cacheReadTokens += u.cache_read_input_tokens ?? 0;
+  evalUsage.durationMs += r.duration_ms ?? 0;
+}
+
+/** One-line, human-readable summary of everything spent so far. */
+export function evalUsageSummary(): string {
+  const secs = (evalUsage.durationMs / 1000).toFixed(0);
+  return (
+    `[eval] SPENT: ${evalUsage.calls} CLI calls · ${secs}s · ` +
+    `in ${evalUsage.inputTokens.toLocaleString()} / out ${evalUsage.outputTokens.toLocaleString()} tok ` +
+    `(cache read ${evalUsage.cacheReadTokens.toLocaleString()}) · $${evalUsage.costUsd.toFixed(4)}`
+  );
+}
 
 export type RunOptions = {
   /** Working directory for the call. */
@@ -72,6 +114,8 @@ export type RunOptions = {
   permissionMode?: string;
   /** Model alias passed to --model. */
   model?: string;
+  /** Short human label for progress/cost logs (e.g. "skill:god-component.tsx"). */
+  label?: string;
 };
 
 /** Is the CLI binary present? (Login is verified separately by an actual probe call.) */
@@ -120,30 +164,42 @@ export function runCli(prompt: string, opts: RunOptions): CliResult {
   if (opts.permissionMode) args.push("--permission-mode", opts.permissionMode);
   if (opts.model) args.push("--model", opts.model);
 
+  const label = opts.label ?? prompt.slice(0, 48);
   let lastReason = "unknown";
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const suffix = attempt > 1 ? ` (attempt ${attempt}/${MAX_ATTEMPTS})` : "";
+    console.log(`[eval] → running ${label}${suffix} …`);
     let result: CliResult;
     try {
       result = runOnce(args, opts);
     } catch (error) {
       lastReason = error instanceof Error ? error.message : String(error);
       if (attempt < MAX_ATTEMPTS && TRANSIENT.test(lastReason)) {
+        console.warn(`[eval] transient error on ${label}, retrying: ${lastReason.slice(0, 80)}`);
         sleepSync(2000 * attempt);
         continue;
       }
       throw error;
     }
-    if (!result.is_error) return result;
+    if (!result.is_error) {
+      track(result);
+      const secs = ((result.duration_ms ?? 0) / 1000).toFixed(1);
+      const u = result.usage ?? {};
+      console.log(
+        `[eval] ✓ ${label} — ${secs}s · in ${u.input_tokens ?? 0} / out ${u.output_tokens ?? 0} tok · $${(result.total_cost_usd ?? 0).toFixed(4)}`,
+      );
+      return result;
+    }
 
     lastReason = result.result ?? "is_error";
     if (attempt < MAX_ATTEMPTS && TRANSIENT.test(lastReason)) {
-      console.warn(`[eval] transient error (attempt ${attempt}/${MAX_ATTEMPTS}), retrying: ${lastReason.slice(0, 80)}`);
+      console.warn(`[eval] transient error on ${label} (attempt ${attempt}/${MAX_ATTEMPTS}), retrying: ${lastReason.slice(0, 80)}`);
       sleepSync(2000 * attempt);
       continue;
     }
     break;
   }
-  throw new Error(`${AI_CLI} failed after ${MAX_ATTEMPTS} attempts for "${prompt.slice(0, 60)}": ${lastReason.slice(0, 120)}`);
+  throw new Error(`${AI_CLI} failed after ${MAX_ATTEMPTS} attempts for "${label}": ${lastReason.slice(0, 120)}`);
 }
 
 /**
