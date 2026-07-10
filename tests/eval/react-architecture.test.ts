@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { refactor } from "./apply";
-import { score, type Scorecard } from "./metrics";
+import { majority, score, type Scorecard } from "./metrics";
 import { evalUsage, evalUsageSummary, isCliReady, resetEvalUsage } from "./runner";
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
@@ -18,9 +18,15 @@ const CASES: { file: string; label: string }[] = [
   { file: "fixtures/react/god-component.tsx", label: "SRP + state/data" },
 ];
 
-// Allow a single run-to-run miss: one LLM refactor varies, so demanding a perfect score
-// every run would flake. The skill must still meet all-but-one of the standard's checks.
+// Allow a single miss: even after majority voting a genuinely ~50/50 check can fall either
+// way, so the skill must meet all-but-one of the standard's checks.
 const allowedMisses = 1;
+
+// De-flake by sampling: the skill is refactored EVAL_SAMPLES times (default 3) and the
+// score is the per-check majority vote — stable where a single run is a coin-flip. The
+// baseline is a single reference run (it is reported, not gated). EVAL_SAMPLES=1 → fast
+// but flaky; raise it for a trustworthy result.
+const SAMPLES = Math.max(1, Math.trunc(Number(process.env.EVAL_SAMPLES ?? 3)) || 1);
 
 let ready = false;
 beforeAll(() => {
@@ -49,7 +55,13 @@ describe("react-architecture apply-mode eval (scored against the standard)", () 
     it(`skill meets the standard: ${c.label}`, (ctx) => {
       if (!ready) return ctx.skip();
 
-      const skill = score(refactor(c.file, "skill"), c.file);
+      const samples: Scorecard[] = [];
+      for (let i = 0; i < SAMPLES; i++) {
+        const sc = score(refactor(c.file, "skill"), c.file);
+        samples.push(sc);
+        if (SAMPLES > 1) console.log(`  [skill sample ${i + 1}/${SAMPLES}] ${sc.pass}/${sc.total}`);
+      }
+      const skill = majority(samples);
       const baseline = score(refactor(c.file, "baseline"), c.file);
       report(c.file, skill, baseline);
 
@@ -57,8 +69,8 @@ describe("react-architecture apply-mode eval (scored against the standard)", () 
       const missed = skill.results.filter((r) => !r.pass).map((r) => `[${r.severity}] ${r.desc}`);
       expect(
         skill.pass,
-        `skill met ${skill.pass}/${skill.total} of the standard (need ≥ ${required}). Unmet: ${missed.join("; ")}`,
+        `skill met ${skill.pass}/${skill.total} of the standard by majority of ${SAMPLES} (need ≥ ${required}). Unmet: ${missed.join("; ")}`,
       ).toBeGreaterThanOrEqual(required);
-    }, 600_000);
+    }, (SAMPLES + 1) * 220_000);
   }
 });

@@ -14,6 +14,9 @@ const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
  */
 export type Variant = "skill" | "baseline";
 
+// Pin a model for reproducibility (e.g. EVAL_APPLY_MODEL=sonnet). Unset → CLI default.
+const APPLY_MODEL = process.env.EVAL_APPLY_MODEL;
+
 /** Refactor a fixture in a sandbox copy and return the resulting source. */
 export function refactor(fixturePath: string, variant: Variant): string {
   const abs = resolve(repoRoot, fixturePath);
@@ -33,6 +36,7 @@ export function refactor(fixturePath: string, variant: Variant): string {
       allowedTools: ["Read", "Edit", "Write"],
       permissionMode: "acceptEdits",
       label: `${variant}:${name}`,
+      model: APPLY_MODEL,
     });
     return readFileSync(dest, "utf8");
   } finally {

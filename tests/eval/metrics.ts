@@ -180,3 +180,20 @@ export function score(code: string, fixturePath: string): Scorecard {
   }));
   return { total: checks.length, pass: results.filter((r) => r.pass).length, results };
 }
+
+/**
+ * Collapse several scorecards (repeated samples of the same fixture) into one by majority
+ * vote per check: a check counts as passed if it passed in at least half the samples.
+ * This is the de-flake — one LLM refactor varies run to run, so a single sample is a
+ * coin-flip near the boundary; the majority of K samples is stable.
+ */
+export function majority(cards: Scorecard[]): Scorecard {
+  const first = cards[0];
+  if (!first) throw new Error("majority() needs at least one scorecard");
+  const n = cards.length;
+  const results = first.results.map((r, i) => {
+    const passes = cards.filter((c) => c.results[i]?.pass).length;
+    return { ...r, pass: passes * 2 >= n }; // passed in ≥ half the samples
+  });
+  return { total: first.total, pass: results.filter((r) => r.pass).length, results };
+}
