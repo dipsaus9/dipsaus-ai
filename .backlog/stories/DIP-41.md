@@ -1,7 +1,7 @@
 # [DIP-41] backlog-plan sets scopes on every story; story standard requires them
 
 Type: deliverable
-Status: ready
+Status: queued
 
 ## Outcome
 Every story declares the files it will touch, so two agents can be told — before either writes a
@@ -47,8 +47,9 @@ Affected area. With scopes populated, DIP-43 catches that before any code is wri
 the two agents discover it at merge time.
 
 Do not retro-fill scopes for already-`completed` stories — pointless churn. Do consider backfilling
-the `queued` ones (`DIP-35`…`DIP-39`, `DIP-40`…`DIP-45`), since those are the ones that will
-actually be picked up in parallel.
+the `queued` ones (`DIP-35`…`DIP-39`, `DIP-40`…`DIP-45`, `DIP-48`), since those are the ones that
+will actually be picked up in parallel. The stories of this epic already carry `--scope`, set during
+planning — they are the worked example.
 
 ## Open questions
 none

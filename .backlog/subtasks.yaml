@@ -1294,13 +1294,18 @@ subtasks:
     updated_at: 2026-07-13T08:57:10.572Z
   - id: subtask_040
     task_id: task_009
-    title: "[DIP-40] SPIKE: where does the backlog CLI write from inside a worktree,
-      and do claims collide?"
+    title: "[DIP-40] configure the worktree environment: gitignore
+      .claude/worktrees, pin worktree.baseRef, record the min Claude Code
+      version"
     repo: dipsaus-ai
-    status: completed
+    status: queued
     priority_score: 50
-    risk: high
-    scopes: []
+    risk: low
+    scopes:
+      - .gitignore
+      - .claude/settings.json
+      - .worktreeinclude
+      - .claude/CLAUDE.md
     claim_mode: exclusive
     depends_on: []
     blockers: []
@@ -1310,29 +1315,29 @@ subtasks:
       manual_approval_required: false
     completion:
       done_when:
-        - "Recorded finding: when 'backlog subtask move <id> running' runs with
-          cwd inside a LINKED worktree, which file is mutated — the worktree's
-          .backlog/subtasks.yaml, or the main checkout's (config.toml pins
-          repos[].path to an absolute path)? Observed evidence pasted into the
-          story doc"
-        - "Recorded finding: do two concurrent 'backlog claim start' calls from
-          two different worktrees collide, queue, or silently both succeed? What
-          does 'backlog claim list' show across worktrees?"
-        - "Recorded finding: does 'backlog claim check' actually reject staged
-          paths outside the current claim's scope? Demonstrated by staging an
-          out-of-scope file and observing the result"
-        - "Recorded finding: if .backlog/*.yaml is mutated in the worktree, does
-          merging two story branches to main produce a YAML conflict?
-          Demonstrated with two throwaway branches, or explicitly ruled out
-          because writes land in the main checkout"
-        - "Decision recorded with rationale: whether .backlog mutable state
-          stays tracked, gets gitignored, or is left to the main checkout — and
-          what DIP-42/DIP-43/DIP-44 must therefore do"
+        - .claude/worktrees/ is added to .gitignore, so worktrees created under
+          the repo root never show as untracked in the main checkout — otherwise
+          they trip the dirty-tree gate and get swept into a git add -A
+        - .claude/settings.json (the SHARED file, not settings.local.json)
+          explicitly sets worktree.baseRef to "fresh", so every worktree
+          branches from origin/HEAD rather than local HEAD. Relying on the
+          default is not enough — pin it, because PR-per-story depends on
+          branching from the remote
+        - A .worktreeinclude file copies .claude/settings.local.json into each
+          new worktree, so a fresh worktree does not lose the per-user
+          permission state (it is gitignored and therefore absent from a clean
+          checkout)
+        - "The minimum Claude Code version is recorded in CLAUDE.md: v2.1.200,
+          below which project-scope plugins do NOT load inside a worktree —
+          meaning this repo's own /backlog-deliver skill would be unavailable in
+          exactly the place the epic needs it"
+        - "Verified by hand: create a worktree, then confirm git status in the
+          main checkout is still clean"
     planner:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:06:49.623Z
-    updated_at: 2026-07-13T09:38:46.883Z
+    updated_at: 2026-07-13T11:03:16.152Z
   - id: subtask_041
     task_id: task_009
     title: "[DIP-41] backlog-plan sets scopes on every story; story standard
@@ -1341,7 +1346,9 @@ subtasks:
     status: queued
     priority_score: 50
     risk: low
-    scopes: []
+    scopes:
+      - skills/backlog-plan/SKILL.md
+      - skills/backlog-plan/reference/
     claim_mode: exclusive
     depends_on: []
     blockers: []
@@ -1366,16 +1373,17 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:06:49.752Z
-    updated_at: 2026-07-13T09:07:22.335Z
+    updated_at: 2026-07-13T11:03:16.289Z
   - id: subtask_042
     task_id: task_009
-    title: "[DIP-42] backlog-deliver auto-detects a linked worktree and adapts its
-      readiness gate"
+    title: "[DIP-42] backlog-deliver self-isolates via EnterWorktree, bootstraps
+      with bun install, and runs every backlog call from BACKLOG_ROOT"
     repo: dipsaus-ai
     status: queued
     priority_score: 50
-    risk: medium
-    scopes: []
+    risk: high
+    scopes:
+      - skills/backlog-deliver/SKILL.md
     claim_mode: exclusive
     depends_on:
       - subtask_040
@@ -1386,29 +1394,34 @@ subtasks:
       manual_approval_required: false
     completion:
       done_when:
-        - "backlog-deliver detects parallel mode by comparing `git rev-parse
-          --git-common-dir` with `git rev-parse --git-dir`: different paths mean
-          a linked worktree"
-        - In a worktree, the readiness gate ACCEPTS being on a story branch
-          rather than aborting, and does NOT require being on the base branch
-        - In a worktree, Step 2 skips `git switch -c <branch>` because the
-          worktree already IS the story branch; it claims the story and proceeds
-          straight to the contract restatement
-        - "A solo run on main is unchanged in behaviour: same gate, same branch
-          creation, same commit flow. NO new invocation flags are introduced"
-        - A dirty working tree still aborts in BOTH modes — worktree mode
-          relaxes the branch check, never the uncommitted-changes check
+        - After the readiness gate passes, backlog-deliver calls the
+          EnterWorktree tool ITSELF with name <PREFIX>-<n>-<slug>; Claude
+          creates .claude/worktrees/<PREFIX>-<n>-<slug>/ on branch
+          worktree-<PREFIX>-<n>-<slug>. The operator never pre-launches claude
+          --worktree
+        - Isolation is UNCONDITIONAL — solo and parallel runs take the same
+          path. There is no dual-mode gate, no worktree-detection branch, and no
+          new invocation flag
+        - "Step 2's git switch -c is DELETED: the worktree already is the
+          branch, and Claude owns its name. Commits and the PR still reference
+          [PREFIX-n] even though the branch carries the worktree- prefix"
+        - The skill runs bun install in the fresh worktree BEFORE the first
+          verify — a worktree is a clean checkout with no node_modules, so
+          lint/typecheck/test would otherwise fail on arrival in a way that
+          looks like a real code error
         - The skill establishes BACKLOG_ROOT=$(dirname "$(git rev-parse
           --path-format=absolute --git-common-dir)") and EVERY backlog CLI call
-          runs with that cwd, in both modes
-        - The dirty-tree gate IGNORES .backlog/{tasks,subtasks}.yaml and
-          .backlog/id-counters.json churn in the main checkout — that state is
-          shared, expected to be dirty, and never staged by a worktree agent
+          runs with that cwd — in both the main checkout and a worktree, with no
+          special case
+        - The readiness gate ignores .backlog/{tasks,subtasks}.yaml and
+          .backlog/id-counters.json churn in the main checkout (that state is
+          shared, expected to be dirty while agents run, and is never the
+          agent's work). A genuinely dirty tree STILL aborts
     planner:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:07:00.630Z
-    updated_at: 2026-07-13T09:32:01.870Z
+    updated_at: 2026-07-13T11:03:16.424Z
   - id: subtask_043
     task_id: task_009
     title: "[DIP-43] claim + scope-contention pickup: reserve the story, refuse
@@ -1417,10 +1430,10 @@ subtasks:
     status: queued
     priority_score: 50
     risk: medium
-    scopes: []
+    scopes:
+      - skills/backlog-deliver/SKILL.md
     claim_mode: exclusive
     depends_on:
-      - subtask_040
       - subtask_041
       - subtask_042
     blockers: []
@@ -1430,40 +1443,45 @@ subtasks:
       manual_approval_required: false
     completion:
       done_when:
-        - Pickup reserves the story with `backlog claim start` BEFORE any code
-          is written, so two agents cannot take the same story
-        - Before claiming, the skill compares the candidate story scopes against
-          the scopes of all ACTIVE claims (`backlog claim list`) and REFUSES the
-          story when they overlap, offering the next non-contended ready story
-          instead
+        - Pickup reserves the story with backlog claim start BEFORE any code is
+          written and before EnterWorktree is called, so two agents cannot take
+          the same story
+        - Before claiming, the skill compares the candidate story's scopes
+          against the scopes of all ACTIVE claims (backlog claim list) and
+          REFUSES the story when they overlap, offering the next non-contended
+          ready story instead
         - "The DIP-37 / DIP-38 case is the acceptance example: no dependency
-          edge but both declare config.ts and on-post-tool-use.ts, so with one
-          claimed the other MUST be refused"
+          edge, but both declare config.ts and on-post-tool-use.ts. With one
+          claimed, the other MUST be refused rather than handed to a second
+          agent"
         - When no non-contended ready story exists, the skill says so and STOPS,
           rather than picking a contended one or inventing work
-        - The claim is released on completion AND on abort (`backlog claim
-          finish`), so a failed run does not leave a story reserved until the
+        - The claim is released on completion AND on abort (backlog claim
+          finish), so a failed run does not leave a story reserved until the
           30-minute TTL expires
-        - All claim commands run from BACKLOG_ROOT (DIP-42), so claims are
-          visible across agents — verified by DIP-40 that per-worktree claims
-          are mutually invisible
+        - The skill calls backlog claim check --staged EXPLICITLY before
+          committing, as an in-lane self-guard. It cannot rely on config.toml's
+          enforce_on_commit / auto_claim_on_commit — no pre-commit hook is
+          installed, so those settings are currently inert
     planner:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:07:00.762Z
-    updated_at: 2026-07-13T09:32:11.789Z
+    updated_at: 2026-07-13T11:03:38.571Z
   - id: subtask_044
     task_id: task_009
-    title: "[DIP-44] serialized rebase-and-retry integration: lock, rebase,
-      re-verify, fast-forward"
+    title: "[DIP-44] PR-per-story delivery: push the worktree branch, open a PR,
+      never touch main"
     repo: dipsaus-ai
     status: queued
     priority_score: 50
-    risk: high
-    scopes: []
+    risk: medium
+    scopes:
+      - skills/backlog-deliver/SKILL.md
     claim_mode: exclusive
     depends_on:
       - subtask_042
+      - subtask_048
     blockers: []
     execution:
       preferred_agents: []
@@ -1471,43 +1489,44 @@ subtasks:
       manual_approval_required: false
     completion:
       done_when:
-        - "Integration is serialized: an agent acquires an EXCLUSIVE lock before
-          touching main, so N agents finishing at once integrate one at a time
-          rather than racing a fast-forward that only the first can win"
-        - The agent rebases its story branch onto the latest origin/main before
-          merging
-        - The full verify suite RE-RUNS on the REBASED result, before the
-          fast-forward
-        - On a rebase conflict, or a verify failure after rebase, the agent
-          releases the lock, moves the story to review, reports what failed, and
-          STOPS — no indefinite retries, no automatic conflict resolution
-        - Retries are bounded (e.g. 3 attempts at re-acquiring the lock /
-          re-rebasing when main moved underneath), after which the story goes to
-          review and the agent stops
-        - The agent NEVER force-pushes and never rewrites main history; the lock
-          is released on every exit path, including failure, so a crashed agent
-          cannot deadlock the others
+        - On success the agent commits on its worktree branch, pushes it, opens
+          a PR titled [PREFIX-n] <scope>, and STOPS. It never merges to main,
+          never fast-forwards main, and NEVER force-pushes
         - The agent NEVER stages .backlog/{tasks,subtasks}.yaml or
-          .backlog/id-counters.json from its worktree (that state is owned by
-          the main checkout per DIP-40); .backlog/stories/*.md IS still
-          committed on the story branch
-        - Backlog WRITES (subtask move, claim start/finish) are serialized
-          behind the same lock, so two agents cannot lost-update the shared
-          .backlog/*.yaml
+          .backlog/id-counters.json — that state is owned by the main checkout
+          and the worktree's copy is stale by construction, so a git add -A
+          would hand main a regression that silently reverts another agent's
+          status moves. It DOES commit .backlog/stories/<PREFIX>-<n>.md (one
+          file per story, so they cannot collide)
+        - Protection against two stories that rebase cleanly but break each
+          other semantically comes from main's required check + up-to-date rule
+          (DIP-48), NOT from a lock in the skill. The skill contains no flock,
+          no rebase-retry loop, and no post-rebase re-verify
+        - The claim is released and the worktree exited on EVERY exit path,
+          including failure. The agent never removes a worktree that holds
+          unpushed commits — Claude's own cleanup discards commits, so the push
+          must happen first
+        - If gh is absent the push still succeeds and the skill prints the
+          compare URL; a missing CLI is never a story failure
+        - The operator — not the agent — commits the shared .backlog YAML from
+          the main checkout as a chore(backlog) commit
     planner:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:07:00.896Z
-    updated_at: 2026-07-13T09:32:24.386Z
+    updated_at: 2026-07-13T11:03:38.700Z
   - id: subtask_045
     task_id: task_009
-    title: "[DIP-45] document the parallel workflow: claude --worktree, claims,
-      scopes, integration lock, max_agents"
+    title: "[DIP-45] document the parallel workflow: EnterWorktree, claims, scopes,
+      PR-per-story, backlog ownership"
     repo: dipsaus-ai
     status: queued
     priority_score: 50
     risk: low
-    scopes: []
+    scopes:
+      - skills/backlog-deliver/SKILL.md
+      - README.md
+      - .claude/CLAUDE.md
     claim_mode: exclusive
     depends_on:
       - subtask_042
@@ -1520,22 +1539,66 @@ subtasks:
       manual_approval_required: false
     completion:
       done_when:
-        - "backlog-deliver SKILL.md documents parallel mode: how it is
-          auto-detected, how the gate differs in a worktree, and that the skill
-          still owns exactly ONE story from claim to delivery"
-        - "Documentation shows the actual operator workflow: launching N Claudes
-          with `claude --worktree`, each running /backlog-deliver, and what each
-          agent does on completion"
+        - backlog-deliver's SKILL.md documents that it ALWAYS self-isolates via
+          EnterWorktree, and that it owns exactly one story from claim to PR
+        - "The operator workflow is documented: run /backlog-deliver N times
+          against one backlog, what each agent does, and that no pre-launched
+          claude --worktree terminals are needed"
         - The claim + scope contention model is documented, including what
-          happens when EVERY ready story is contended
+          happens when EVERY ready story is contended (the agent stops and says
+          so)
+        - It is documented that .backlog operational state is owned by the MAIN
+          CHECKOUT (BACKLOG_ROOT), that the main checkout therefore carries an
+          uncommitted .backlog/*.yaml diff while agents run, that this is
+          EXPECTED rather than broken, and that the operator commits it
         - The max_agents ceiling in .backlog/config.toml (currently 2) is
-          documented as the cap on concurrent agents
-        - Docs explain that .backlog operational state is owned by the MAIN
-          checkout (BACKLOG_ROOT), that the main checkout therefore sits with an
-          uncommitted .backlog/*.yaml diff while agents run, and that this is
-          expected rather than broken
+          documented as the cap on concurrent agents, so an operator who
+          launches 5 Claudes understands what governs them
+        - "CLAUDE.md's working agreement (\"Review before commit … never
+          auto-commit at end of a story\") is RESOLVED explicitly, not left
+          contradicting the skill: the agent commits only on its own branch
+          behind a PR, so nothing reaches main without human review. The rule is
+          restated to say that, rather than two documents disagreeing"
     planner:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:07:01.039Z
-    updated_at: 2026-07-13T09:33:18.389Z
+    updated_at: 2026-07-13T11:03:38.824Z
+  - id: subtask_048
+    task_id: task_009
+    title: "[DIP-48] harden main's ruleset: require the CI check and require
+      branches up to date"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - .github/workflows/ci.yml
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - main's ruleset requires the CI workflow status check to pass before a
+          PR can merge
+        - main's ruleset requires branches to be up to date with main before
+          merging, so a PR that has not been updated onto the latest main cannot
+          land — this is the mechanism that re-tests the COMBINATION, replacing
+          the hand-rolled rebase-and-re-verify lock
+        - "Demonstrated with two throwaway branches that rebase cleanly but
+          break each other semantically (one adds a field to a type; the other
+          adds a different field plus a test asserting the object's exact
+          shape): the second PR is BLOCKED until updated, and CI then fails on
+          the updated combination"
+        - gh is installed and authenticated, so backlog-deliver can open PRs
+          directly instead of falling back to printing a compare URL
+        - Force-push to main remains blocked (already true — verified)
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-13T11:02:49.138Z
+    updated_at: 2026-07-13T11:03:16.017Z

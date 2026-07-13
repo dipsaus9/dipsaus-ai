@@ -391,83 +391,95 @@ tasks:
   - id: task_009
     title: "Epic: parallel story delivery — multiple Claudes, one backlog"
     description: >-
-      Run several Claude instances at once, each delivering a different story in
-      its own git worktree (claude --worktree), against one shared backlog.
+      Run several Claude instances at once, each delivering a different story
+      against one shared backlog, using Claude Code's NATIVE worktree system
+      (https://code.claude.com/docs/en/worktrees) rather than hand-rolled
+      machinery.
 
 
-      This is NOT a build-from-scratch epic. Both halves of the machinery
-      already exist:
-
-      - The backlog CLI describes itself as an 'orchestrator for AI coding
-      agents. Claims, isolated worktrees, parallel runs', and config.toml
-      already sets branch_strategy = isolated_worktree, max_agents = 2, and a
-      claims block (ttl 30m, enforce_on_commit, auto_claim_on_commit). backlog
-      claim start/check/finish exists.
-
-      - Claude Code already ships claude --worktree [name] (and --tmux).
+      Operator model (decided): the skill self-isolates. /backlog-deliver runs
+      from the main checkout, gates, claims, then calls the EnterWorktree tool
+      itself. Claude creates .claude/worktrees/<PREFIX>-<n>-<slug>/ on branch
+      worktree-<PREFIX>-<n>-<slug>. The operator never pre-launches 'claude
+      --worktree' in N terminals. Isolation is ALWAYS on — one code path, solo
+      and parallel alike.
 
 
-      The work is wiring backlog-deliver to that machinery, and fixing what
-      breaks.
+      Integration model (decided): PR per story. The agent pushes its worktree
+      branch, opens a PR, and stops. Nothing self-merges. GitHub's
+      required-status-check + require-branches-up-to-date rule IS the 're-verify
+      the merged combination' guarantee, and the repo's existing pull_request CI
+      job (bun install --frozen-lockfile, lint, typecheck, test) is that check.
+      This deletes the previously-planned integration flock, the
+      rebase-and-retry loop, the post-rebase re-verify, and the unsolved 'a
+      worktree cannot fast-forward local main' hazard — all of them
+      reimplementations of platform behaviour.
 
 
-      What is known to break today:
+      Backlog state (decided, evidence-backed): the backlog CLI resolves
+      .backlog by walking UP FROM CWD, not from config.toml's repos[].path. Run
+      from a worktree it therefore reads and writes the worktree's own private
+      copy — which makes claims mutually invisible between agents (two worktrees
+      were observed both taking an 'exclusive' claim on the same path, with
+      independent id counters and no warning), makes 'claim start' die with
+      ENOENT (.backlog/claims/ is gitignored so never checked out), and makes
+      the tracked .backlog/*.yaml conflict on merge over a semantically empty
+      updated_at.
 
-      - backlog-deliver's readiness gate demands 'clean git + on the base
-      branch' and 'no existing story branch'. A Claude launched with --worktree
-      starts ON a story branch in a fresh worktree, so the gate aborts on
-      exactly the setup it is meant to support. It must auto-detect the worktree
-      and adapt, not create one.
 
-      - .backlog/subtasks.yaml is git-tracked and rewritten by every status
-      move. N agents moving stories through running -> completed all rewrite the
-      same tracked file. Meanwhile config.toml pins repos[].path to an ABSOLUTE
-      path (the main checkout), so a backlog command run inside a worktree may
-      write to the main checkout rather than the worktree copy. Which of those
-      actually happens is unknown, and everything else depends on it — hence the
-      spike.
+      Therefore: EVERY backlog CLI call runs with cwd = BACKLOG_ROOT = dirname
+      "$(git rev-parse --path-format=absolute --git-common-dir)", which resolves
+      to the main checkout from a worktree AND from a plain checkout, so no
+      branching logic is needed. One .backlog means claims are cross-agent
+      visible and the worktree's YAML never diverges. Agents NEVER stage
+      .backlog/{tasks,subtasks}.yaml or id-counters.json; the operator commits
+      that state from the main checkout. Story docs (.backlog/stories/*.md) ARE
+      committed on the story branch — one file per story, so they cannot
+      collide.
 
-      - Two agents on DIFFERENT stories can still collide on files. Real example
-      already in this backlog: DIP-37 and DIP-38 have no dependency on each
-      other but both modify config.ts and on-post-tool-use.ts. A naive parallel
-      picker hands them out simultaneously and guarantees a conflict.
-      Scope-based contention prevents that, but only if stories declare scopes —
-      most today do not.
 
-      - Integration races. merge_strategy = fast_forward means the first agent
-      to finish wins and the rest find main has moved. Agents self-merge with
-      rebase-and-retry, serialized behind a lock. Critically: a clean rebase is
-      not a passing rebase. Two branches can rebase without textual conflict and
-      still break each other semantically (both adding a field to the same
-      Config type). Verify MUST re-run on the rebased result before the
-      fast-forward, or the agent pushes a combination nobody ever tested.
+      Contention: two agents on DIFFERENT stories can still collide on files.
+      Real example in this backlog: DIP-37 and DIP-38 have no dependency edge
+      but both modify config.ts and on-post-tool-use.ts. A dependency-only
+      picker hands them out together and guarantees a conflict. Scope-based
+      contention prevents it, but only if stories declare scopes — most today do
+      not.
+
+
+      Note: config.toml's enforce_on_commit / auto_claim_on_commit are currently
+      INERT — no pre-commit hook is installed. 'backlog claim check --staged' is
+      a real exit-1 gate, but only if the skill calls it explicitly.
     source_links: []
     status: ready
     priority: P2
     labels: []
     repo_targets: []
     acceptance_criteria:
-      - A spike records, with observed evidence, where a backlog CLI write lands
-        when run inside a linked worktree, whether concurrent claims collide,
-        whether claim check blocks an out-of-scope commit, and whether tracked
-        .backlog/*.yaml conflicts on merge
-      - "backlog-deliver auto-detects a linked worktree (git rev-parse
-        --git-common-dir != --git-dir) and adapts: accepts a story branch, skips
-        branch creation, claims the story. A solo run on main behaves exactly as
-        it does today, with no new flags"
+      - "The worktree environment is configured for Claude's native system:
+        .claude/worktrees/ is gitignored, worktree.baseRef is pinned explicitly,
+        and the minimum Claude Code version is recorded"
+      - "backlog-deliver self-isolates: it calls EnterWorktree itself from the
+        main checkout, bootstraps the fresh worktree with bun install before any
+        verify, and never requires the operator to pre-launch claude --worktree"
+      - Every backlog CLI call in both skills runs with cwd = BACKLOG_ROOT (the
+        main checkout), so claims are cross-agent visible and the worktree's
+        .backlog YAML never diverges
       - Pickup reserves the story via backlog claim start AND refuses a story
         whose declared scopes overlap an active claim, offering the next
         non-contended story instead — so the DIP-37/DIP-38 collision is caught
         before any code is written
       - backlog-plan sets scopes on every story it creates, and the story
         standard requires them, so contention is computable rather than guessed
-      - "Integration is serialized behind a lock: rebase onto latest main,
-        RE-RUN the full verify suite on the rebased result, then fast-forward.
-        Bounded retries; on repeated failure the story goes to review and the
-        agent stops. Never force-push"
-      - "The parallel workflow is documented: how to launch N Claudes with
-        claude --worktree, the claim/scope model, the integration lock, and the
-        max_agents ceiling in config.toml"
+      - "Delivery is PR-per-story: the agent pushes its worktree branch, opens a
+        PR, releases its claim and stops. It never merges to main, never
+        force-pushes, and never stages the mutable .backlog YAML"
+      - main's ruleset requires the CI status check and requires branches to be
+        up to date, so no untested combination of two parallel stories can land
+        — this replaces the hand-rolled rebase-and-re-verify lock
+      - "The parallel workflow is documented: the EnterWorktree model, the
+        claim/scope contention rules, PR-per-story, who owns the .backlog YAML,
+        the max_agents ceiling, and how this squares with CLAUDE.md's
+        review-before-commit rule"
     dependencies: []
     planning:
       split_status: pending
@@ -486,4 +498,4 @@ tasks:
       push_status: false
       push_comments: false
     created_at: 2026-07-13T09:06:43.637Z
-    updated_at: 2026-07-13T09:38:46.903Z
+    updated_at: 2026-07-13T11:02:49.148Z

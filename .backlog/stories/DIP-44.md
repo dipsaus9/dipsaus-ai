@@ -1,121 +1,114 @@
-# [DIP-44] serialized rebase-and-retry integration: lock, rebase, re-verify, fast-forward
+# [DIP-44] PR-per-story delivery: push the worktree branch, open a PR, never touch main
 
 Type: deliverable
-Status: ready
+Status: queued
 
 ## Outcome
-N agents finishing at once integrate to `main` one at a time, and nothing lands on `main` that was
-not verified **in the exact combination being merged**.
+A finished story leaves the agent as a **pull request** and nothing more. The agent never merges,
+never fast-forwards `main`, and never force-pushes. Protection against two parallel stories breaking
+each other is enforced by GitHub (DIP-48), not by a lock the skill has to get right.
 
 ## Done-when
-- Integration is serialized: an agent acquires an **exclusive lock** before touching `main`, so N agents finishing at once integrate one at a time rather than racing a fast-forward that only the first can win
-- The agent rebases its story branch onto the latest `origin/main` before merging
-- The **full verify suite re-runs on the REBASED result**, before the fast-forward
-- On a rebase conflict, or a verify failure after rebase, the agent releases the lock, moves the story to `review`, reports what failed, and **STOPS** — no indefinite retries, no automatic conflict resolution
-- Retries are bounded (e.g. 3 attempts at re-acquiring the lock / re-rebasing when `main` moved underneath), after which the story goes to `review` and the agent stops
-- The agent **NEVER** force-pushes and never rewrites `main`'s history; the lock is released on every exit path, including failure, so a crashed agent cannot deadlock the others
-- The agent **never stages** `.backlog/{tasks,subtasks}.yaml` or `.backlog/id-counters.json` from its worktree — that state is owned by the main checkout (DIP-40). Story docs (`.backlog/stories/*.md`) ARE still committed on the story branch
-- Backlog **writes** (`subtask move`, `claim start/finish`) are serialized behind the same lock, so two agents cannot lost-update the shared `.backlog/*.yaml`
+- On success the agent commits on its worktree branch, pushes it, opens a PR titled `[PREFIX-n] <scope>`, and **STOPS**. It never merges to `main`, never fast-forwards `main`, and **NEVER** force-pushes
+- The agent **NEVER stages** `.backlog/{tasks,subtasks}.yaml` or `.backlog/id-counters.json` — that state is owned by the main checkout and the worktree's copy is stale by construction, so a `git add -A` would hand `main` a regression that silently reverts another agent's status moves. It **DOES** commit `.backlog/stories/<PREFIX>-<n>.md` (one file per story, so they cannot collide)
+- Protection against two stories that rebase cleanly but break each other **semantically** comes from `main`'s required check + up-to-date rule (DIP-48), **NOT** from a lock in the skill. The skill contains no `flock`, no rebase-retry loop, and no post-rebase re-verify
+- The claim is released and the worktree exited on **EVERY** exit path, including failure. The agent never removes a worktree that holds unpushed commits — Claude's own cleanup **discards** commits, so the push must happen first
+- If `gh` is absent the push still succeeds and the skill prints the compare URL; a missing CLI is never a story failure
+- The **operator** — not the agent — commits the shared `.backlog` YAML from the main checkout as a `chore(backlog)` commit
 
 ## Depends-on
-- DIP-42 (parallel mode must be detected before integration behaves differently)
+- DIP-42 (the agent must be in a worktree with a branch before it can push one)
+- DIP-48 (the safety net must exist BEFORE agents start opening PRs — see below, this ordering is load-bearing)
 
 ## Affected area
 - `skills/backlog-deliver/SKILL.md`
 
 ## Verify
-- Two agents finish near-simultaneously: confirm both land on `main`, one after the other, with no
-  force-push and no lost commit
-- **The load-bearing test.** Construct two branches that rebase cleanly but break each other
-  semantically — e.g. one adds a field to a type, the other adds a different field to the same type
-  and a test asserting the object's exact shape. Confirm the second agent's post-rebase verify
-  **fails** and the story goes to `review` instead of merging
-- Kill an agent mid-integration and confirm the lock is released and another agent can proceed
-- Solo regression: a single agent on `main` integrates exactly as it does today
+- Two agents deliver two stories concurrently. Confirm: two branches pushed, two PRs open, `main`
+  untouched by either agent, no force-push in the reflog
+- **The load-bearing test.** Construct two stories that rebase cleanly but break each other
+  semantically — e.g. one adds a field to the `Config` type, the other adds a *different* field to
+  the same type plus a test asserting the object's exact shape via `toEqual`. Merge the first PR.
+  Confirm the second PR is then **blocked as out-of-date**, and that after updating it, CI **fails**
+  on the combination. Nothing untested reaches `main`
+- Abort a run mid-flight and confirm the claim is released and the worktree is not left locked
 - `bun run lint && bun run typecheck && bun run test`
 
 ## Technical notes
-**A clean rebase is not a passing rebase.** This is the whole reason the story exists, and the
-easiest thing to get wrong.
 
-Git resolves *textual* conflicts. It knows nothing about semantics. Two story branches can rebase
-with zero conflict markers and still produce a broken `main`:
+### What this story deleted, and why
 
-- `DIP-37` adds `noColor` to the `Config` type and updates `loadConfig`.
-- `DIP-38` adds `notifyEnabled` to the same `Config` type and updates `loadConfig`.
-- Both rebase cleanly (different lines). The combination fails `tsc`, and `dad-joke-trigger.test.ts`
-  — which asserts `loadConfig({})` with an exhaustive `toEqual` — fails on the missing field.
+The previous plan had the agent self-merge: `flock` → fetch → rebase → re-run the full verify suite
+on the rebased result → fast-forward → push → unlock. Every piece of that was a reimplementation of
+something the platform already does:
 
-That exact test already caught this once, in `DIP-34`. If the agent rebases and fast-forwards
-without re-running verify, it pushes a combination **nobody ever tested** and `main` goes red.
+| Hand-rolled | Replaced by |
+|---|---|
+| `flock` on the shared `.git` to serialise integration | GitHub serialises merges into `main` |
+| rebase onto latest `main` before merging | "Require branches to be up to date before merging" |
+| re-run verify **on the rebased result** | required status check — the existing `pull_request` CI job |
+| bounded retries when `main` moved underneath | the PR simply shows as out-of-date |
 
-So the order is non-negotiable: **lock → fetch → rebase → re-verify → fast-forward → push → unlock.**
+It also carried an unsolved hazard: **git refuses to update a branch checked out in another
+worktree**, so an agent could not fast-forward local `main` at all. Under PR-per-story that question
+disappears — the agent never touches `main`, locally or remotely.
 
-Lock mechanism: a simple filesystem lock in the shared `.git` common dir (all worktrees share it) is
-enough — e.g. `flock` on `$(git rev-parse --git-common-dir)/backlog-integration.lock`. It must be
-released on **every** exit path, including a failed verify, a rebase conflict, and a crash. A lock
-that leaks blocks every other agent until a human notices.
+**A clean rebase is not a passing rebase.** That insight was correct and still drives the design; it
+is simply enforced server-side now. Two branches can rebase with zero conflict markers and still
+produce a broken `main` (`DIP-37` adds `noColor` to `Config`, `DIP-38` adds `notifyEnabled` to the
+same type; both rebase cleanly, and the combination fails `tsc` and an exhaustive `toEqual`
+assertion). That exact failure already happened once, in `DIP-34`. **DIP-48 is what stops it — if
+DIP-48 has not landed, this story's safety net does not exist.** Do not build this story first.
 
-`config.toml` already sets `merge_strategy = "fast_forward"` and `delete_branch_after_merge = true`.
-Fast-forward is correct *behind the lock* — after a successful rebase, `main` is by definition an
-ancestor, so the merge is trivial. It is only a race without the lock.
+### Never stage the mutable backlog YAML
 
-**Never force-push.** If the rebase went wrong, the answer is `review` and a human, not `--force`.
-An agent that force-pushes `main` can destroy another agent's merged work irrecoverably.
+`.backlog` operational state is owned by the main checkout and written via `BACKLOG_ROOT` (DIP-42),
+so the worktree's own copy is **stale by construction** and must never be committed. If an agent
+does `git add -A`, it stages a stale `subtasks.yaml` / `tasks.yaml` and its PR silently reverts every
+status move another agent made in the meantime.
 
-### Two additions from DIP-40's decision
+Stage the story's source changes and `.backlog/stories/<PREFIX>-<n>.md` **explicitly**. Never the
+YAML, never `id-counters.json`.
 
-**1. Never stage the mutable backlog YAML from a worktree.** DIP-40 established that `.backlog`
-operational state is owned by the main checkout and written via `BACKLOG_ROOT` (DIP-42) — so the
-worktree's own copy is stale by construction and must never be committed. If an agent does
-`git add -A`, it will stage a stale `subtasks.yaml`/`tasks.yaml` and hand `main` a regression that
-silently reverts another agent's status moves. Stage story files and `.backlog/stories/*.md`
-explicitly; never the YAML, never `id-counters.json`.
+This is also what keeps the merge clean: the spike demonstrated that two branches making the *same
+logical status change* still conflict, purely on a differing `updated_at` timestamp —
 
-This also *removes* the merge conflict DIP-40 demonstrated — the worktree's YAML never diverges
-because it is never touched.
-
-**2. Serialize backlog writes behind the same lock.** With one shared `.backlog/`, two agents calling
-`backlog subtask move` at the same instant race on the same file and can lose an update. The window
-is small (`max_agents = 2`, two status moves per story) but real. Reuse the integration flock rather
-than inventing a second lock — take it around backlog *writes* too, not just the merge:
-
-```bash
-LOCK="$(git rev-parse --git-common-dir)/backlog-integration.lock"
-flock "$LOCK" -c 'cd "$BACKLOG_ROOT" && backlog subtask move '"$ID"' completed'
+```
+spike-a:  -    status: ready              spike-b:  -    status: ready
+          +    status: in_progress                  +    status: in_progress
+          -    updated_at: …T08:56:37.056Z          -    updated_at: …T08:56:37.056Z
+          +    updated_at: …T09:20:42.513Z          +    updated_at: …T09:24:58.309Z
 ```
 
-Keep the critical section short — a write, not a whole verify run — so a status move never blocks
-another agent's integration for long.
+A four-minute difference on derived operational state. Because the worktree's YAML is never touched,
+it never diverges, so it cannot conflict.
 
-### KNOWN HAZARD — how does a worktree agent actually move `main`? (unsolved; solve it here)
+### Who commits the YAML, then?
 
-DIP-40's decision has a consequence this story must confront head-on, and it is not obvious:
+**The operator, from the main checkout.** While agents run, the main checkout sits with an
+uncommitted `.backlog/*.yaml` diff — that is the *expected* steady state, not a broken one. The
+operator commits it as a `chore(backlog): …` straight to `main` when convenient (e.g. after merging
+a PR). This honours `CLAUDE.md`'s review-before-commit rule and keeps the status history versioned,
+with no race and no lock.
 
-1. `main` is **checked out in the main checkout**. Git refuses to update a branch that is checked out
-   in another worktree, so an agent sitting in worktree A **cannot** `git branch -f main` or
-   `git push . HEAD:main`. The local fast-forward is not available to it.
-2. The main checkout's working tree is now **permanently dirty** during parallel runs (the shared
-   `.backlog/*.yaml` churn), so a naive `git -C "$BACKLOG_ROOT" pull --ff-only` in the main checkout
-   is not clean either.
+### Worktree cleanup — push before you leave
 
-The likely shape — confirm it before building:
+Claude's cleanup **discards uncommitted changes _and_ commits** when a worktree is removed. So the
+order is non-negotiable: **commit → push → open PR → release claim → exit**. An agent that exits
+before pushing can have its work swept. Claude holds a `git worktree lock` while the agent is
+running, and sweeps agent-created worktrees only once they are older than `cleanupPeriodDays` **and**
+have no uncommitted changes and no unpushed commits — so a pushed branch is safe.
 
-- The agent pushes to the **remote**: `git push origin HEAD:main`. This never touches the local
-  `main` ref, so the checked-out-branch restriction does not apply. This is the fast-forward that
-  matters, and it is what the lock serializes.
-- The **local** `main` catches up separately (`git -C "$BACKLOG_ROOT" fetch` + a ff-only merge that
-  tolerates the `.backlog` churn, or simply leaves local `main` behind until the operator pulls).
+Note `config.toml` sets `merge_strategy = "fast_forward"` and `delete_branch_after_merge = true`.
+Those describe a self-merge flow the skill no longer performs; leave them, but do not build against
+them — GitHub's merge settings are what actually govern.
 
-Also unresolved and in scope: **who commits the `.backlog` operational state?** Under DIP-40 the
-agent must not stage it from its worktree, so if nobody commits it from the main checkout the status
-history stops being versioned — and this project has been deliberately committing it. The most
-plausible answer is that the integrating agent, **under the same lock**, commits `.backlog/*.yaml`
-from `BACKLOG_ROOT` onto `main` as part of integration. Decide it explicitly; do not let it fall
-between the stories.
+### gh is not installed
 
-If this turns out to need its own investigation, **stop and spin a spike** rather than guessing —
-that is precisely the mistake DIP-40 was created to prevent.
+`gh` is currently absent from this machine. DIP-48 installs it. Until then — and if it is ever
+missing again — the skill pushes the branch and prints
+`https://github.com/<owner>/<repo>/compare/main...<branch>?expand=1`. **A missing CLI is never a
+story failure**; the work is safely pushed either way.
 
 ## Open questions
 none
