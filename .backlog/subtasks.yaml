@@ -1292,3 +1292,238 @@ subtasks:
       locked: false
     created_at: 2026-07-13T08:56:37.048Z
     updated_at: 2026-07-13T08:57:10.572Z
+  - id: subtask_040
+    task_id: task_009
+    title: "[DIP-40] SPIKE: where does the backlog CLI write from inside a worktree,
+      and do claims collide?"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: high
+    scopes: []
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - "Recorded finding: when 'backlog subtask move <id> running' runs with
+          cwd inside a LINKED worktree, which file is mutated — the worktree's
+          .backlog/subtasks.yaml, or the main checkout's (config.toml pins
+          repos[].path to an absolute path)? Observed evidence pasted into the
+          story doc"
+        - "Recorded finding: do two concurrent 'backlog claim start' calls from
+          two different worktrees collide, queue, or silently both succeed? What
+          does 'backlog claim list' show across worktrees?"
+        - "Recorded finding: does 'backlog claim check' actually reject staged
+          paths outside the current claim's scope? Demonstrated by staging an
+          out-of-scope file and observing the result"
+        - "Recorded finding: if .backlog/*.yaml is mutated in the worktree, does
+          merging two story branches to main produce a YAML conflict?
+          Demonstrated with two throwaway branches, or explicitly ruled out
+          because writes land in the main checkout"
+        - "Decision recorded with rationale: whether .backlog mutable state
+          stays tracked, gets gitignored, or is left to the main checkout — and
+          what DIP-42/DIP-43/DIP-44 must therefore do"
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-13T09:06:49.623Z
+    updated_at: 2026-07-13T09:07:22.214Z
+  - id: subtask_041
+    task_id: task_009
+    title: "[DIP-41] backlog-plan sets scopes on every story; story standard
+      requires them"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: low
+    scopes: []
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - "reference/story-standard.md adds 'declared scopes' as a required
+          field: the file/directory paths a story will touch, concrete enough to
+          compute overlap between two stories"
+        - reference/story-template.md's Affected area section is defined as the
+          source of the scopes, so the doc and the subtask's scopes field cannot
+          drift
+        - backlog-plan's materialize step sets --scope on every subtask it
+          creates, derived from the story's Affected area
+        - The skill refuses to materialize a story with no scopes, the same way
+          it refuses one with an empty done-when — an unscoped story cannot be
+          safely picked up in parallel
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-13T09:06:49.752Z
+    updated_at: 2026-07-13T09:07:22.335Z
+  - id: subtask_042
+    task_id: task_009
+    title: "[DIP-42] backlog-deliver auto-detects a linked worktree and adapts its
+      readiness gate"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_040
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - "backlog-deliver detects parallel mode by comparing 'git rev-parse
+          --git-common-dir' with 'git rev-parse --git-dir': different paths mean
+          a linked worktree"
+        - In a worktree, the readiness gate ACCEPTS being on a story branch
+          rather than aborting, and does NOT require being on the base branch —
+          the current gate's 'clean git + on the base branch' and 'no existing
+          story branch' checks are exactly what break claude --worktree today
+        - In a worktree, Step 2 skips 'git switch -c <branch>' because the
+          worktree already is the story branch; it claims the story and proceeds
+          straight to the contract restatement
+        - "A solo run on main is byte-for-byte unchanged in behaviour: same
+          gate, same branch creation, same commit flow. No new invocation flags
+          are introduced"
+        - A dirty working tree still aborts in BOTH modes — worktree mode
+          relaxes the branch check, never the uncommitted-changes check
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-13T09:07:00.630Z
+    updated_at: 2026-07-13T09:07:35.693Z
+  - id: subtask_043
+    task_id: task_009
+    title: "[DIP-43] claim + scope-contention pickup: reserve the story, refuse
+      file-colliding stories"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_040
+      - subtask_041
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - Pickup reserves the story with 'backlog claim start' before any code
+          is written, so two agents cannot take the same story
+        - Before claiming, the skill compares the candidate story's scopes
+          against the scopes of all ACTIVE claims ('backlog claim list') and
+          refuses the story when they overlap, offering the next non-contended
+          ready story instead
+        - "The DIP-37 / DIP-38 case is the acceptance example: they have no
+          dependency edge but both declare config.ts and on-post-tool-use.ts, so
+          with one of them claimed the other MUST be refused rather than handed
+          to a second agent"
+        - When no non-contended ready story exists, the skill says so and stops,
+          rather than picking a contended one or inventing work
+        - The claim is released on completion and on abort ('backlog claim
+          finish'), so a failed run does not leave a story reserved until the
+          30-minute TTL expires
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-13T09:07:00.762Z
+    updated_at: 2026-07-13T09:07:35.818Z
+  - id: subtask_044
+    task_id: task_009
+    title: "[DIP-44] serialized rebase-and-retry integration: lock, rebase,
+      re-verify, fast-forward"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: high
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_042
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - "Integration is serialized: an agent acquires an exclusive lock before
+          touching main, so N agents finishing at once integrate one at a time
+          rather than racing a fast-forward that only the first can win"
+        - The agent rebases its story branch onto the latest origin/main before
+          merging
+        - "The FULL verify suite re-runs on the REBASED result, before the
+          fast-forward. A clean rebase is not a passing rebase: two branches can
+          rebase with zero textual conflict and still break each other
+          semantically (e.g. both adding a field to the same Config type), and
+          merging without re-verifying pushes a combination nobody ever tested"
+        - On a rebase conflict, or a verify failure after rebase, the agent
+          releases the lock, moves the story to 'review', reports what failed,
+          and STOPS — it does not retry indefinitely and does not attempt
+          automatic conflict resolution
+        - Retries are bounded (e.g. 3 attempts at re-acquiring the lock /
+          re-rebasing when main moved underneath), after which the story goes to
+          'review' and the agent stops
+        - The agent NEVER force-pushes and never rewrites main's history; the
+          lock is released on every exit path, including failure, so a crashed
+          agent cannot deadlock the others
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-13T09:07:00.896Z
+    updated_at: 2026-07-13T09:07:50.218Z
+  - id: subtask_045
+    task_id: task_009
+    title: "[DIP-45] document the parallel workflow: claude --worktree, claims,
+      scopes, integration lock, max_agents"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: low
+    scopes: []
+    claim_mode: exclusive
+    depends_on:
+      - subtask_042
+      - subtask_043
+      - subtask_044
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - "The backlog-deliver SKILL.md documents parallel mode: how it is
+          auto-detected, how the gate differs in a worktree, and that the skill
+          still owns exactly one story from claim to delivery"
+        - "Documentation shows the actual operator workflow: launching N Claudes
+          with 'claude --worktree', each running /backlog-deliver, and what each
+          agent does on completion"
+        - The claim + scope contention model is documented, including what
+          happens when every ready story is contended
+        - The max_agents ceiling in .backlog/config.toml (currently 2) is
+          documented as the cap on concurrent agents, so an operator who
+          launches 5 Claudes understands what governs them
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-13T09:07:01.039Z
+    updated_at: 2026-07-13T09:07:50.351Z

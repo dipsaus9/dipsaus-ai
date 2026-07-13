@@ -388,3 +388,102 @@ tasks:
       push_comments: false
     created_at: 2026-07-13T08:56:20.664Z
     updated_at: 2026-07-13T08:56:37.056Z
+  - id: task_009
+    title: "Epic: parallel story delivery — multiple Claudes, one backlog"
+    description: >-
+      Run several Claude instances at once, each delivering a different story in
+      its own git worktree (claude --worktree), against one shared backlog.
+
+
+      This is NOT a build-from-scratch epic. Both halves of the machinery
+      already exist:
+
+      - The backlog CLI describes itself as an 'orchestrator for AI coding
+      agents. Claims, isolated worktrees, parallel runs', and config.toml
+      already sets branch_strategy = isolated_worktree, max_agents = 2, and a
+      claims block (ttl 30m, enforce_on_commit, auto_claim_on_commit). backlog
+      claim start/check/finish exists.
+
+      - Claude Code already ships claude --worktree [name] (and --tmux).
+
+
+      The work is wiring backlog-deliver to that machinery, and fixing what
+      breaks.
+
+
+      What is known to break today:
+
+      - backlog-deliver's readiness gate demands 'clean git + on the base
+      branch' and 'no existing story branch'. A Claude launched with --worktree
+      starts ON a story branch in a fresh worktree, so the gate aborts on
+      exactly the setup it is meant to support. It must auto-detect the worktree
+      and adapt, not create one.
+
+      - .backlog/subtasks.yaml is git-tracked and rewritten by every status
+      move. N agents moving stories through running -> completed all rewrite the
+      same tracked file. Meanwhile config.toml pins repos[].path to an ABSOLUTE
+      path (the main checkout), so a backlog command run inside a worktree may
+      write to the main checkout rather than the worktree copy. Which of those
+      actually happens is unknown, and everything else depends on it — hence the
+      spike.
+
+      - Two agents on DIFFERENT stories can still collide on files. Real example
+      already in this backlog: DIP-37 and DIP-38 have no dependency on each
+      other but both modify config.ts and on-post-tool-use.ts. A naive parallel
+      picker hands them out simultaneously and guarantees a conflict.
+      Scope-based contention prevents that, but only if stories declare scopes —
+      most today do not.
+
+      - Integration races. merge_strategy = fast_forward means the first agent
+      to finish wins and the rest find main has moved. Agents self-merge with
+      rebase-and-retry, serialized behind a lock. Critically: a clean rebase is
+      not a passing rebase. Two branches can rebase without textual conflict and
+      still break each other semantically (both adding a field to the same
+      Config type). Verify MUST re-run on the rebased result before the
+      fast-forward, or the agent pushes a combination nobody ever tested.
+    source_links: []
+    status: ready
+    priority: P2
+    labels: []
+    repo_targets: []
+    acceptance_criteria:
+      - A spike records, with observed evidence, where a backlog CLI write lands
+        when run inside a linked worktree, whether concurrent claims collide,
+        whether claim check blocks an out-of-scope commit, and whether tracked
+        .backlog/*.yaml conflicts on merge
+      - "backlog-deliver auto-detects a linked worktree (git rev-parse
+        --git-common-dir != --git-dir) and adapts: accepts a story branch, skips
+        branch creation, claims the story. A solo run on main behaves exactly as
+        it does today, with no new flags"
+      - Pickup reserves the story via backlog claim start AND refuses a story
+        whose declared scopes overlap an active claim, offering the next
+        non-contended story instead — so the DIP-37/DIP-38 collision is caught
+        before any code is written
+      - backlog-plan sets scopes on every story it creates, and the story
+        standard requires them, so contention is computable rather than guessed
+      - "Integration is serialized behind a lock: rebase onto latest main,
+        RE-RUN the full verify suite on the rebased result, then fast-forward.
+        Bounded retries; on repeated failure the story goes to review and the
+        agent stops. Never force-push"
+      - "The parallel workflow is documented: how to launch N Claudes with
+        claude --worktree, the claim/scope model, the integration lock, and the
+        max_agents ceiling in config.toml"
+    dependencies: []
+    planning:
+      split_status: pending
+      risk: medium
+    execution_defaults:
+      manual_approval_required: false
+      auto_commit: true
+      push_when_done: true
+      create_pr: false
+      merge_pr: false
+      worktree_mode: direct
+      preferred_agents: []
+      max_subagents: 5
+    sync:
+      source_of_truth: backlog
+      push_status: false
+      push_comments: false
+    created_at: 2026-07-13T09:06:43.637Z
+    updated_at: 2026-07-13T09:07:01.050Z
