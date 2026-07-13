@@ -8,3 +8,6 @@ tests/eval/results.jsonl
 
 # Per-user Claude Code state (never commit)
 .claude/settings.local.json
+
+# Claude Code worktrees live inside the repo root; they are checkouts, not sources
+.claude/worktrees/
