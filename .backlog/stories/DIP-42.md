@@ -13,6 +13,8 @@ gate aborts on exactly the setup the epic depends on.
 - In a worktree, Step 2 skips `git switch -c <branch>` because the worktree already *is* the story branch; it claims the story and proceeds straight to the contract restatement
 - A solo run on `main` is unchanged in behaviour: same gate, same branch creation, same commit flow. **No new invocation flags are introduced**
 - A dirty working tree still aborts in **both** modes — worktree mode relaxes the branch check, never the uncommitted-changes check
+- The skill establishes `BACKLOG_ROOT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")` and **every** `backlog` CLI call runs with that cwd, in both modes
+- The dirty-tree gate **ignores** `.backlog/{tasks,subtasks}.yaml` and `.backlog/id-counters.json` churn in the main checkout — that state is shared, expected to be dirty, and never staged by a worktree agent
 
 ## Depends-on
 - DIP-40 (the spike decides what the gate must do about `.backlog` state)
@@ -58,6 +60,30 @@ implementation.
 Note the skill already gestures at this: Step 2 says "If the backlog uses `isolated_worktree`
 scheduling, respect the worktree it owns." `config.toml` *does* set
 `branch_strategy = "isolated_worktree"`. This story turns that hint into actual behaviour.
+
+### BACKLOG_ROOT — added by DIP-40's decision
+
+DIP-40 proved the backlog CLI resolves `.backlog` by walking up from **`cwd`**, *not* from
+`repos[].path` (which is pinned to an absolute path to the main checkout and is simply not used for
+this). Run from a worktree, the CLI therefore reads and writes the **worktree's own** `.backlog/` —
+giving each agent a private, branch-local, divergent copy of the shared backlog, invisible claims,
+and a guaranteed `tasks.yaml` merge conflict.
+
+The fix, and the reason it is *this* story's job: nothing else can happen until the skill knows
+where the real backlog lives.
+
+```bash
+BACKLOG_ROOT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+```
+
+Verified in both modes — in the main checkout it resolves to the checkout itself, so **solo mode
+needs no special case**. Every `backlog` invocation in the skill runs from `BACKLOG_ROOT`; none runs
+from the worktree.
+
+Consequence for the dirty gate: the main checkout will now *always* carry uncommitted
+`.backlog/{tasks,subtasks}.yaml` + `id-counters.json` churn while agents are running. That is normal
+and is **not** the agent's uncommitted work — the gate must ignore exactly those paths, and only
+those. A dirty *worktree* still aborts, unchanged.
 
 ## Open questions
 none

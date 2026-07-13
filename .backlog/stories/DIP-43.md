@@ -17,6 +17,7 @@ files.
 ## Depends-on
 - DIP-40 (does `claim start` actually behave across worktrees?)
 - DIP-41 (without declared scopes there is nothing to compare)
+- DIP-42 (claims are only cross-agent visible once every CLI call runs from `BACKLOG_ROOT`)
 
 ## Affected area
 - `skills/backlog-deliver/SKILL.md`
@@ -31,7 +32,32 @@ files.
 - `bun run lint && bun run typecheck && bun run test`
 
 ## Technical notes
-Two distinct guards; do not collapse them into one:
+
+### Read DIP-40 first — this story only works because of BACKLOG_ROOT
+
+As originally written, this story was **unbuildable**. DIP-40 proved that `backlog claim` stores
+claims in whichever `.backlog/` the CLI finds by walking up from `cwd`, so two agents in two
+worktrees get two private claims dirs and are invisible to each other:
+
+```
+wt-a $ backlog claim start --path hooks/dad-joke/config.ts   →  Started claim claim_002
+wt-b $ backlog claim list                                    →  No active claims.
+wt-b $ backlog claim start --path hooks/dad-joke/config.ts   →  Started claim claim_001  (!!)
+```
+
+Two "exclusive" claims on the same file, no warning. The overlap check is real but only operates
+*within one* `.backlog/` dir.
+
+DIP-42's `BACKLOG_ROOT` rule fixes this: every `backlog` call runs from the main checkout, so there
+is exactly **one** claims dir and `claim list` genuinely sees every agent. **Do not implement this
+story until DIP-42 has landed** — without it the contention check silently passes everything, which
+is worse than no check at all.
+
+(Also from DIP-40: `.backlog/claims/` is gitignored and therefore absent in a fresh worktree, so
+`claim start` there dies with `ENOENT … /.backlog/claims/active/claim_001.json`. Running from
+`BACKLOG_ROOT` sidesteps that too — the main checkout already has the dirs.)
+
+### Two distinct guards; do not collapse them into one:
 
 1. **Story-level** — `backlog claim start` reserves *this story*. Prevents two agents on the same id.
 2. **Scope-level** — compare the candidate's `scopes` against every active claim's scopes. Prevents
@@ -50,10 +76,20 @@ collides with itself and with `hooks/dad-joke/`; it does not collide with `skill
 way out. **Release on every exit path, including abort and gate failure.** A `finally`-shaped
 discipline, not a happy-path one.
 
-`enforce_on_commit = true` and `auto_claim_on_commit = true` are already set, and `backlog claim
-check` validates staged paths against the claim — DIP-40 confirms whether that actually fires. If it
-does, it is a useful **second** line of defence at commit time, but it is not a substitute for
-refusing the pickup: catching a collision after the work is done wastes the work.
+`enforce_on_commit = true` and `auto_claim_on_commit = true` are already set. **DIP-40 confirmed
+`backlog claim check --staged` is a real gate**, not a warning — it exits `1` on an out-of-scope
+staged path and `0` when in scope:
+
+```
+$ git add README.md && backlog claim check --staged      # claim scope = config.ts
+Claim claim_001 does not cover all checked paths:
+  - README.md
+exit 1
+```
+
+So keep it as the **second** line of defence at commit time. It is not a substitute for refusing the
+pickup — it validates against the agent's *own* claim ("did I stay in my lane"), and catching a
+collision after the work is done wastes the work.
 
 ## Open questions
 none

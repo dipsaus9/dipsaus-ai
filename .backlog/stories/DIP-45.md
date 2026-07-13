@@ -12,6 +12,7 @@ find out how it behaves.
 - Documentation shows the actual operator workflow: launching N Claudes with `claude --worktree`, each running `/backlog-deliver`, and what each agent does on completion
 - The claim + scope contention model is documented, including what happens when **every** ready story is contended
 - The `max_agents` ceiling in `.backlog/config.toml` (currently `2`) is documented as the cap on concurrent agents, so an operator who launches 5 Claudes understands what governs them
+- Documentation explains that `.backlog` operational state is owned by the **main checkout** (`BACKLOG_ROOT`), that the main checkout therefore sits with an uncommitted `.backlog/*.yaml` diff while agents run, and that this is expected rather than a broken state
 
 ## Depends-on
 - DIP-42
