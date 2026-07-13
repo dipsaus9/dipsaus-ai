@@ -1,7 +1,7 @@
 # [DIP-40] configure the worktree environment: gitignore .claude/worktrees, pin worktree.baseRef, record the min Claude Code version
 
 Type: deliverable
-Status: queued
+Status: completed
 
 ## Outcome
 The repo is configured for Claude Code's **native** worktree system, so that when DIP-42 makes
