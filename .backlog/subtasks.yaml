@@ -896,7 +896,7 @@ subtasks:
     task_id: task_007
     title: "[DIP-30] pure shouldTellJoke(now, state, cfg) + env config parsing"
     repo: dipsaus-ai
-    status: running
+    status: completed
     priority_score: 50
     risk: low
     scopes:
@@ -930,13 +930,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-10T14:28:38.661Z
-    updated_at: 2026-07-13T07:30:12.685Z
+    updated_at: 2026-07-13T07:50:44.723Z
   - id: subtask_031
     task_id: task_007
     title: "[DIP-31] per-session state store: atomic write, tolerant of
       missing/corrupt file"
     repo: dipsaus-ai
-    status: queued
+    status: running
     priority_score: 50
     risk: medium
     scopes:
@@ -968,7 +968,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-10T14:28:38.781Z
-    updated_at: 2026-07-10T14:29:57.447Z
+    updated_at: 2026-07-13T07:51:11.289Z
   - id: subtask_032
     task_id: task_007
     title: "[DIP-32] two hook entrypoints wiring picker + trigger + state, always
