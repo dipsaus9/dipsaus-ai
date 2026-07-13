@@ -1,7 +1,7 @@
 # [DIP-28] SPIKE: prove PostToolUse systemMessage renders to the user mid-turn
 
 Type: spike
-Status: ready
+Status: done
 
 ## Outcome
 A recorded, evidence-backed answer to: **can a `PostToolUse` hook print text that the human
@@ -53,4 +53,63 @@ which one you took:
 3. Statusline (single global slot; conflicts with the user's existing caveman statusline).
 
 ## Findings
-<!-- filled in during delivery: observed output, whether Claude saw the text, the decision -->
+
+**Decision: PROCEED with the PostToolUse plan as designed.** The mechanism works. One field-name
+correction lands on DIP-32; no story needs replanning.
+
+Method: a throwaway `PostToolUse` hook (matcher `"*"`) registered in `.claude/settings.local.json`,
+printing `{"systemMessage": "SPIKE: dad joke would appear here (tool call #N)"}` on stdout with
+exit 0, and appending its raw stdin to a log. Three `Read` calls were then issued in one turn.
+The hook and its registration were removed afterwards.
+
+### 1. Does `systemMessage` render to the human? — **YES**
+
+Confirmed by the user, who observed the text **three times** in their terminal — once per tool
+call, numbered `#1`, `#2`, `#3`. Exact string rendered:
+
+```
+SPIKE: dad joke would appear here (tool call #1)
+```
+
+### 2. Once per tool call, and does it stay out of Claude's context? — **YES to both**
+
+The hook logged one entry per `Read`, all in the same turn — so it fires per tool call, not per
+turn, and a long tool loop gives many chances to fire:
+
+```json
+{"call":1,"session_id":"b0dc5479-…","hook_event_name":"PostToolUse","tool_name":"Read","has_tool_output":false,"has_tool_response":true}
+{"call":2,"session_id":"b0dc5479-…","hook_event_name":"PostToolUse","tool_name":"Read","has_tool_output":false,"has_tool_response":true}
+{"call":3,"session_id":"b0dc5479-…","hook_event_name":"PostToolUse","tool_name":"Read","has_tool_output":false,"has_tool_response":true}
+```
+
+**Context isolation holds.** All three tool results came back to Claude with no injected text, and
+Claude could not quote the systemMessage. `systemMessage` → human only; `additionalContext` (nested
+under `hookSpecificOutput`) is the field that would have fed the model. We are on the right channel.
+
+### 3. Incidental findings (cheap to capture, and one of them is load-bearing)
+
+- **⚠️ The tool-result field is `tool_response`, NOT `tool_output`.** The official docs
+  (`code.claude.com/docs/en/hooks.md`) document it as `tool_output`; the real payload has
+  `has_tool_output: false, has_tool_response: true`. **The docs are wrong.** DIP-32 does not
+  currently need the tool result, so nothing is blocked — but any story that reaches for it must
+  use `tool_response`.
+- **`session_id` IS on stdin** (`b0dc5479-…`), so DIP-31 can key its state file on it as designed.
+- Full stdin key set: `cwd`, `duration_ms`, `effort`, `hook_event_name`, `permission_mode`,
+  `prompt_id`, `session_id`, `tool_input`, `tool_name`, `tool_response`, `tool_use_id`,
+  `transcript_path`.
+- **Hooks hot-reload, in both directions.** Adding the hook to `settings.local.json` took effect
+  immediately, with no session restart; removing the block stopped it just as immediately (the log
+  froze at 8 entries — exactly the 8 tool calls made while it was registered — and every later tool
+  call produced nothing). Good for iterating on DIP-32/33.
+- **Matcher `"*"` really does match every tool**, as DIP-33 requires: the hook fired on `Read`,
+  `Bash`, `Edit`, and even `AskUserQuestion`. (`""` and omitting `matcher` also work.)
+- **The fallback ladder was never needed — and rung 1 was weaker than we thought.**
+  `terminalSequence` exists but accepts only *allowlisted* escape sequences (OSC 777 notify, OSC
+  0/1/2 window title, OSC 9, bell). It **cannot** write arbitrary text above the prompt line, so it
+  could not have carried a joke. Had `systemMessage` failed, the real fallback would have been rung
+  2 (exit 2 + stderr), which blocks the tool call and violates an epic acceptance criterion. In
+  short: `systemMessage` was not merely the nicest option, it was the only viable one.
+
+### Follow-ups
+
+None. DIP-29 / DIP-30 / DIP-31 / DIP-32 / DIP-33 / DIP-34 stand as written; DIP-32 is unblocked.
