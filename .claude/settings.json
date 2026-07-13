@@ -6,7 +6,6 @@
       "Bash(bun run lint)",
       "Bash(bun run typecheck)",
       "Bash(bun run test)",
-      "Bash(bun run test:eval)",
       "Bash(backlog status*)",
       "Bash(backlog task *)",
       "Bash(backlog subtask *)",

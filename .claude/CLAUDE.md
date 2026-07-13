@@ -1,8 +1,7 @@
 # dipsaus-ai
 
-Open-source toolkit of Claude / AI-CLI **skills + one MCP**, packaged as a **single
-Claude Code plugin** via a marketplace. Core goal: an **eval harness that tests each
-skill against the author's own standards**. GitHub-hosted, not published to npm.
+Open-source toolkit of Claude / AI-CLI **skills + one MCP**, packaged as a **single Claude
+Code plugin** via a marketplace. GitHub-hosted, not published to npm.
 
 ## Architecture
 - **Repo root IS the single plugin.** `.claude-plugin/{plugin,marketplace}.json` at root;
@@ -10,46 +9,42 @@ skill against the author's own standards**. GitHub-hosted, not published to npm.
 - Install everything: `/plugin marketplace add dipsaus9/dipsaus-ai`.
 - Install one skill standalone: copy `skills/<name>/` into `~/.claude/skills/`.
 - Stack: **bun** (pkg manager/runtime), **oxlint** (lint), **Vitest** (test),
-  **TypeScript** (`tsc --noEmit`). Dev dirs (`fixtures/`, `tests/`, `.claude/`) are
-  ignored by the plugin loader.
-- Skill eval: headless runner (`AI_CLI ?? 'claude' -p`) runs a skill on a fixture, an
-  LLM judge (also via `claude -p`) scores output against a rubric, assert score ≥ 80.
-  **Local-only, on demand (`bun run test:eval`).** Uses the logged-in `claude` CLI session
-  (subscription) — **no `ANTHROPIC_API_KEY` needed**. CI runs only oxlint + typecheck +
-  Vitest unit.
+  **TypeScript** (`tsc --noEmit`). Dev dirs (`tests/`, `.claude/`) are ignored by the
+  plugin loader.
+- Skills are self-contained: `SKILL.md` carries the standards inline, so a skill folder
+  works when copied out of the repo. Optional `reference/` for long-form contracts.
+- Every manifest description (`package.json`, `.claude-plugin/plugin.json`,
+  `.claude-plugin/marketplace.json`) is user-facing. When the repo's surface changes,
+  update all three — they drift silently otherwise.
 
-## Backlog conventions (MANDATORY — applies to every item, now and in the future)
-Work is tracked with the `backlog` CLI (`.backlog/`). Model: **task = epic**,
-**subtask = executable story**. Every backlog item MUST have, before it is considered
-ready:
+## Planned work — read the backlog, not this file
+This file describes what **exists**. Anything not yet built lives in `.backlog/`, which is
+the single source of truth for it and changes as stories are planned and delivered — never
+mirror it here.
 
-1. **Clear statement of what needs to happen** — concrete, unambiguous scope.
-   - Epics (tasks): in the `--description`.
-   - Stories (subtasks): in a precise `--title` (subtasks have no description field).
-2. **Acceptance criteria** — objective, checkable pass/fail conditions.
-   - Epics: `--acceptance` (one flag per criterion).
-   - Stories: `--done-when` (one flag per criterion).
-3. **Dependencies** — `--depends-on` (stories) reflecting real ordering.
+Before starting work, read the current state: `backlog status`, then the epic and the story
+doc at `.backlog/stories/<PREFIX>-<n>.md`. New component types (e.g. a `hooks/` directory)
+arrive that way — the epic's acceptance criteria and the stories' `done-when` carry the
+design constraints. Treat them as binding, and add the resulting conventions to Architecture
+above only once the code is on disk.
 
-No item is "ready" with an empty acceptance/done-when list. When adding future skills,
-plugins, or MCPs, follow this same structure.
+The **story standard** (what makes an item ready, `[PREFIX-n]` ids, done-when, deps, companion
+docs) is owned by this repo's own `backlog-plan` / `backlog-deliver` skills — see
+`skills/backlog-plan/reference/`. Use the skills rather than driving the CLI by hand.
 
 ## Commands
 ```bash
 bun install          # install deps (bun is the sole package manager)
-bun run lint         # oxlint (correctness=error; fixtures/ ignored)
+bun run lint         # oxlint (correctness=error)
 bun run typecheck    # tsc --noEmit
-bun run test         # Vitest unit project only — deterministic, CI-safe
-bun run test:eval    # Vitest eval project — LLM-judge skill evals, local + billed
+bun run test         # Vitest unit — deterministic, CI-safe
 ```
-Backlog: `backlog status`, `backlog task plan <id>`, `backlog subtask move <id> <status>`
-(statuses: queued · planned · running · waiting · review · completed · blocked · canceled).
+CI runs exactly these three. Note `test` currently passes with **no test files**
+(`--passWithNoTests`) — the suite was removed in `968212f`, so `bun run test` green
+currently proves nothing. Any story that adds runtime code must add unit tests with it.
 
 ## Working agreement
 - **Review before commit.** Finish the work, run lint/typecheck/test, summarise the diff,
   and wait for approval before `git commit`. Never auto-commit at end of a story.
 - **Git identity.** Use the user's own git config — never pass `-c user.name`/`-c user.email`.
 - **Per-user state.** `.claude/settings.local.json` is git-ignored; `settings.json` is shared.
-- **Eval auth.** `test:eval` drives the local `claude` CLI (logged-in session), so it needs
-  no API key — but it does consume your subscription and is non-deterministic. Judge model
-  via `JUDGE_MODEL` (default `sonnet`), skill runner via `AI_CLI`. Never run it in CI.

@@ -113,8 +113,9 @@ If nothing violates the standards, say so explicitly — do not invent findings.
 
 ## Apply mode
 
-Refactor the target to satisfy the standards. Work on the files in place (the eval harness
-runs this on a sandbox copy, so never worry about the original).
+Refactor the target to satisfy the standards, editing the files in place. These are the
+user's real source files — make sure the work is committed or otherwise recoverable before
+you start, and stop and ask if it is not.
 
 - Apply all **high** and **med** findings that are mechanically safe: derived state → render,
   extract hooks, split god components, manual fetch → query/loader, prop-drilling → composition.

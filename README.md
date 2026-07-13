@@ -1,31 +1,16 @@
 # dipsaus-ai
 
-A personal, open-source toolkit of **skills + an MCP** for frontend / full-stack work
-with Claude (or any AI CLI), packaged as a **single Claude Code plugin**. Every skill is
-tested against the author's own standards by an **eval harness**, so a skill ships only
-when it behaves the way it's expected to.
+An open-source toolkit of **skills, hooks, and an MCP** for working with Claude (or any AI
+CLI), packaged as a **single Claude Code plugin**. Install the whole thing from GitHub, or
+copy one skill into your own `~/.claude/skills/`.
 
-## Why this exists
-
-AI CLIs are only as good as the skills, plugins, and MCPs you give them. This repo is a
-clean, reproducible home for mine — with one rule: **a skill isn't "done" until it passes
-an eval against my standards**. The first skill, `react-architecture`, takes deliberately
-bad React as input and is scored on how well it improves the architecture. New skills,
-plugins, and MCPs get added over time, each with the same test-first bar.
-
-- **One plugin, à-la-carte parts.** The whole repo installs as one Claude Code plugin, or
-  you can install a single skill on its own.
-- **Tested, not vibes.** A headless run + LLM-judge rubric gives each skill a 0–100 score
-  (pass ≥ 80). Local-only, on demand.
-- **Clean + bun-first.** bun · oxlint · Vitest · TypeScript. No npm publishing — GitHub only.
+Not published to npm. `bun` · `oxlint` · `Vitest` · `TypeScript`.
 
 ## Install
 
-There is no npm package — everything installs straight from GitHub.
-
 ### Everything (the plugin)
 
-In Claude Code, add the marketplace and install the plugin:
+In Claude Code:
 
 ```
 /plugin marketplace add dipsaus9/dipsaus-ai
@@ -33,27 +18,25 @@ In Claude Code, add the marketplace and install the plugin:
 ```
 
 `dipsaus-ai@dipsaus-ai` is `<plugin>@<marketplace>` — both are named `dipsaus-ai`.
-This registers every skill (`skills/`) and the example MCP (`.mcp.json`) at once;
-the MCP entry uses `${CLAUDE_PLUGIN_ROOT}`, so its path resolves wherever the plugin
-is installed. Requires [bun](https://bun.sh) on your PATH (the MCP server runs as
-TypeScript, no build step).
+This registers every skill (`skills/`) and the example MCP (`.mcp.json`) at once. The MCP
+entry uses `${CLAUDE_PLUGIN_ROOT}`, so its path resolves wherever the plugin is installed.
+Requires [bun](https://bun.sh) on your PATH — the MCP server runs as TypeScript, no build
+step.
 
 ### A single skill, standalone
 
-Each skill is self-contained (`SKILL.md` with the standards inline), so you can copy
-just the folder into your user skills directory — no plugin, no build:
+Each skill is self-contained (`SKILL.md`, standards inline), so copy just the folder into
+your user skills directory — no plugin, no build:
 
 ```bash
 git clone https://github.com/dipsaus9/dipsaus-ai.git
 cp -r dipsaus-ai/skills/react-architecture ~/.claude/skills/
 ```
 
-The eval harness stays behind in this repo; the skill itself works on its own.
-
 ### The MCP, standalone
 
-The example server ships as TypeScript run by bun. Clone, install its deps, then point
-your MCP config at it with an absolute path:
+Clone, install deps, then point your MCP config at an absolute path (outside the plugin
+there is no `${CLAUDE_PLUGIN_ROOT}`):
 
 ```bash
 git clone https://github.com/dipsaus9/dipsaus-ai.git
@@ -72,31 +55,36 @@ cd dipsaus-ai && bun install   # pulls @modelcontextprotocol/sdk + zod
 }
 ```
 
-Outside the plugin there is no `${CLAUDE_PLUGIN_ROOT}`, so use an absolute path. The
-server exposes one `hello` tool.
+The server exposes one `hello` tool.
 
 ## Contents
 
+The repo root **is** the plugin: plugin components must live inside the plugin directory,
+so `skills/`, `mcp/`, and `.mcp.json` sit at the root alongside `.claude-plugin/`.
+
 | Type | Path | Notes |
 |------|------|-------|
-| Skills | `skills/` | one folder per skill (`SKILL.md` + reference/); incl. `backlog-plan` + `backlog-deliver` (see [Backlog workflow skills](#backlog-workflow-skills)) |
-| MCP | `mcp/` | TypeScript MCP server(s), run by bun; `example/` = `hello` tool |
-| Plugin manifest | `.claude-plugin/` | `plugin.json` + `marketplace.json` (repo root = the plugin) |
-| Fixtures | `fixtures/` | inputs for skill evals (e.g. bad React) |
-| Tests | `tests/` | `unit/` (CI-safe) + `eval/` (LLM-judge, local) |
+| Skills | `skills/` | one folder per skill: `SKILL.md` (+ optional `reference/`) |
+| MCP | `mcp/` | TypeScript MCP server(s), run by bun; `example/` exposes a `hello` tool |
+| Plugin manifest | `.claude-plugin/` | `plugin.json` + `marketplace.json` |
+| Backlog | `.backlog/` | work tracked with the [`backlog` CLI](https://github.com/osmove/backlog) |
 
-## Backlog workflow skills
+Dev-only directories (`tests/`, `.claude/`) are ignored by the plugin loader.
 
-Two portable skills turn the [`backlog` CLI](https://github.com/osmove/backlog) into a
-standards-driven, AI-runnable workflow in **any** repo — install the plugin and they work
-everywhere. They form a loop: **plan** a backlog, then **deliver** its stories one at a time.
+### Skills
 
 | Skill | Command | Does |
 |-------|---------|------|
-| `backlog-plan` | `/backlog-plan` | Grills you (one question at a time, recommends answers, reads the repo) into a well-formed backlog: an epic + AI-first stories that meet a story standard, then **materializes on approval** — subtasks, companion docs, config. |
+| `react-architecture` | — | Reviews (default) or refactors React/TypeScript components against strict architecture standards: single-responsibility hard caps, compound-component composition, state/data boundaries. |
+| `backlog-plan` | `/backlog-plan` | Grills you into a well-formed backlog: an epic + AI-first stories meeting a story standard, then **materializes on approval** — subtasks, companion docs, config. |
 | `backlog-deliver` | `/backlog-deliver DIP-12` | Drives **one** story `[PREFIX-n]` from queued to done: readiness gate → guarded implement/self-check/verify loop → commit (id-referenced) → branch + push. Handles `Type: spike` stories via a research + interview loop. |
 
-**The loop**
+## Backlog workflow skills
+
+`backlog-plan` and `backlog-deliver` turn the [`backlog` CLI](https://github.com/osmove/backlog)
+into a standards-driven, AI-runnable workflow in **any** repo — install the plugin and they
+work everywhere. They form a loop: **plan** a backlog, then **deliver** its stories one at a
+time.
 
 ```
 /backlog-plan            → interview → draft epic + [DIP-n] stories → approve → materialize
@@ -123,18 +111,26 @@ subtask number) and a companion doc `.backlog/stories/<PREFIX>-<n>.md`. Full con
 Verify falls back to `package.json` scripts (`lint`/`typecheck`/`test`/`build`), then to
 per-story checks + self-review — so a repo with no pipeline still works.
 
+## Roadmap
+
+Everything above is what ships today. Planned work lives in the backlog under `.backlog/`
+— epics and their stories, each with acceptance criteria — and is kept current there
+rather than mirrored into this README. Browse `.backlog/stories/`, or run `backlog status`
+with the [`backlog` CLI](https://github.com/osmove/backlog).
+
 ## Development
 
 ```bash
 bun install
-bun run lint        # oxlint
+bun run lint        # oxlint (correctness = error)
 bun run typecheck   # tsc --noEmit
-bun run test        # Vitest unit (deterministic, CI-safe)
-bun run test:eval   # Vitest eval (LLM-judge; uses your logged-in claude CLI, no API key)
+bun run test        # Vitest unit — deterministic, CI-safe
 ```
 
+CI (`.github/workflows/ci.yml`) runs exactly those three on push to `main` and on every PR.
+
 Work is tracked with the `backlog` CLI under `.backlog/`. See `.claude/CLAUDE.md` for
-architecture and conventions.
+architecture and working conventions.
 
 ## License
 

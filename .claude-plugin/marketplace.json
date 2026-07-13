@@ -8,7 +8,7 @@
     {
       "name": "dipsaus-ai",
       "source": "./",
-      "description": "Skills + an MCP for frontend / full-stack work, each tested against the author's standards.",
+      "description": "Skills + an MCP for frontend / full-stack work with Claude Code.",
       "version": "0.1.0"
     }
   ]
