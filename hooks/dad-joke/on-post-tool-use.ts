@@ -11,30 +11,19 @@
  * Only `systemMessage` is emitted. `additionalContext` / `hookSpecificOutput` would feed the
  * text to Claude instead of the human, which is the wrong channel (proven in DIP-28).
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { loadConfig, type Config } from './config'
+import { loadConfig } from './config'
 import { stateDir } from './paths'
-import { pickJoke, type Joke } from './pick'
+import { type Joke } from './pick'
+import { formatJoke, getJoke } from './source'
 import { readState, writeState } from './state'
 import { shouldTellJoke } from './trigger'
 
-type Deps = { rand: () => number }
-
-/**
- * Today: read the bundled pool and pick from it. DIP-34 swaps in the opt-in live API behind
- * this same signature, so the call site below does not change.
- */
-function getJoke(_cfg: Config, deps: Deps, recentIds: string[]): { joke: Joke; recentIds: string[] } {
+function loadPool(): Joke[] {
   const path = fileURLToPath(new URL('./jokes.json', import.meta.url))
-  const jokes = JSON.parse(readFileSync(path, 'utf8')) as Joke[]
-
-  // Pool exhausted: allow repeats again. This reset lives here, not in pickJoke, because only
-  // the caller knows the pool size.
-  const history = recentIds.length >= jokes.length ? [] : recentIds
-
-  return { joke: pickJoke(jokes, history, deps.rand), recentIds: history }
+  return JSON.parse(readFileSync(path, 'utf8')) as Joke[]
 }
 
 try {
@@ -53,12 +42,21 @@ try {
       // fire a joke on the very first tool call of the session.
       writeState(dir, sessionId, { ...state, turnStart: now })
     } else if (shouldTellJoke(now, state, cfg)) {
-      const { joke, recentIds } = getJoke(cfg, { rand: Math.random }, state.recentIds)
+      const jokes = loadPool()
+
+      // Pool exhausted: allow repeats again. This reset lives here, not in pickJoke, because
+      // only the caller knows the pool size.
+      const recentIds = state.recentIds.length >= jokes.length ? [] : state.recentIds
+
+      const joke = await getJoke(cfg, { fetch, jokes, rand: Math.random, recentIds })
 
       // Print BEFORE persisting. If writeState fails the user still got their joke, and the
       // worst case is a duplicate next call. The inverse order risks starting a cooldown for
       // a joke nobody ever saw.
-      process.stdout.write(JSON.stringify({ systemMessage: `${joke.setup}\n${joke.punchline}` }))
+      //
+      // writeSync, not process.stdout.write: stdout is a pipe here, and piped writes in Node
+      // are async — process.exit(0) below can truncate a buffered write before it flushes.
+      writeSync(1, JSON.stringify({ systemMessage: formatJoke(joke) }))
 
       writeState(dir, sessionId, {
         turnStart: state.turnStart,

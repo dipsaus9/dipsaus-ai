@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  DEFAULT_API_TIMEOUT_MS,
   DEFAULT_COOLDOWN_MS,
   DEFAULT_THRESHOLD_MS,
   loadConfig,
@@ -12,6 +13,8 @@ const cfg = (over: Partial<Config> = {}): Config => ({
   thresholdMs: 30_000,
   cooldownMs: 60_000,
   disabled: false,
+  apiEnabled: false,
+  apiTimeoutMs: 800,
   ...over,
 })
 
@@ -73,6 +76,8 @@ describe('loadConfig', () => {
       thresholdMs: DEFAULT_THRESHOLD_MS,
       cooldownMs: DEFAULT_COOLDOWN_MS,
       disabled: false,
+      apiEnabled: false,
+      apiTimeoutMs: DEFAULT_API_TIMEOUT_MS,
     })
   })
 
