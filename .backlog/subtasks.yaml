@@ -1298,7 +1298,7 @@ subtasks:
       .claude/worktrees, pin worktree.baseRef, record the min Claude Code
       version"
     repo: dipsaus-ai
-    status: queued
+    status: completed
     priority_score: 50
     risk: low
     scopes:
@@ -1337,7 +1337,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:06:49.623Z
-    updated_at: 2026-07-13T11:03:16.152Z
+    updated_at: 2026-07-13T12:38:09.708Z
   - id: subtask_041
     task_id: task_009
     title: "[DIP-41] backlog-plan sets scopes on every story; story standard
@@ -1602,3 +1602,38 @@ subtasks:
       locked: false
     created_at: 2026-07-13T11:02:49.138Z
     updated_at: 2026-07-13T11:03:16.017Z
+  - id: subtask_049
+    task_id: task_009
+    title: "[DIP-49] correct the stale 'no test files' claim in CLAUDE.md and DIP-48"
+    repo: dipsaus-ai
+    status: queued
+    priority_score: 50
+    risk: medium
+    scopes:
+      - .claude/CLAUDE.md
+      - .backlog/stories/DIP-48.md
+    claim_mode: exclusive
+    depends_on: []
+    blockers: []
+    execution:
+      preferred_agents: []
+      required_capabilities: []
+      manual_approval_required: false
+    completion:
+      done_when:
+        - CLAUDE.md's Commands section no longer claims the suite was removed in
+          968212f or that 'bun run test' green proves nothing — it states the
+          actual suite (tests/unit/dad-joke-*.test.ts, 4 files / 76 tests)
+        - The rule that any story adding runtime code must add unit tests
+          SURVIVES the rewrite — it is still correct and is the reason the note
+          existed
+        - DIP-48's technical notes drop the 'a green light over an empty room'
+          caveat, since the required CI check now guards a real suite —
+          strengthening, not weakening, its argument
+        - Verified by running the suite and quoting its actual output in the
+          docs' place, rather than restating a remembered number
+    planner:
+      origin: manual
+      locked: false
+    created_at: 2026-07-13T12:38:09.848Z
+    updated_at: 2026-07-13T12:38:17.421Z
