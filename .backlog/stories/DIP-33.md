@@ -53,3 +53,51 @@ user who reads the code should not discover it as a surprise.
 
 ## Open questions
 none
+
+## Findings
+
+### Observed end-to-end output (done-when #3)
+
+Hook registered via the same command shape as `hooks/hooks.json`, with `DAD_JOKE_THRESHOLD_MS=5000`
+and `DAD_JOKE_COOLDOWN_MS=8000`, then a turn run with several tool calls. Rendered in the user's
+terminal, confirmed by the user:
+
+```
+Why did the developer go broke?
+He used up all his cache.
+```
+
+State after the turn — the joke id is recorded, keyed on the real session id:
+
+```json
+{"turnStart":1783932255938,"lastJokeAt":1783932272242,"recentIds":["dev-broke-cache"]}
+```
+
+Claude never saw the joke text: the ids above were read from the state file, never from a tool
+result. `systemMessage` isolation holds on the real plugin path, not just in the DIP-28 spike.
+
+### ⚠️ Hook stdout must be newline-terminated
+
+**The first end-to-end attempt rendered nothing at all**, despite the hook running, deciding to
+joke, and writing to stdout (`lastJokeAt` is only persisted *after* the write, and it was set).
+`tee` on the hook's stdout proved Claude Code was receiving syntactically valid JSON with a clean
+stderr and exit 0:
+
+```
+{"systemMessage":"I was going to tell a joke about a broken pencil,\nbut it's pointless."}
+```
+
+...and silently ignoring it. The cause: the entrypoint used `writeSync(1, json)` with **no trailing
+newline**. Adding `\n` made it render immediately, with nothing else changed.
+
+This is a vicious failure mode — no error, no warning, valid JSON, exit 0, and the feature simply
+does not exist. Note the DIP-28 spike used `process.stdout.write` without a newline and *did*
+render, so the requirement is not obvious from that spike alone; it surfaced only once the
+entrypoint switched to a raw `writeSync` (done in DIP-34 to avoid piped-stdout truncation).
+
+**Rule for any future hook in this repo: terminate hook stdout with `\n`.**
+
+There is no automated guard against a regression here — the entrypoints are hand-verified glue with
+no unit tests, and a dropped newline would silently disable the feature again. Proposed follow-up
+story: a smoke test that spawns each entrypoint and asserts exit 0 plus newline-terminated JSON on
+stdout.

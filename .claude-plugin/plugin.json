@@ -1,7 +1,7 @@
 {
   "name": "dipsaus-ai",
   "displayName": "Dipsaus AI",
-  "description": "Skills + an MCP for frontend / full-stack work with Claude or any AI CLI.",
+  "description": "Skills, hooks + an MCP for frontend / full-stack work with Claude or any AI CLI. Includes a dad-joke hook that keeps you company during long turns.",
   "version": "0.1.0",
   "author": {
     "name": "dipsaus9",
@@ -10,5 +10,5 @@
   "homepage": "https://github.com/dipsaus9/dipsaus-ai",
   "repository": "https://github.com/dipsaus9/dipsaus-ai",
   "license": "MIT",
-  "keywords": ["claude-code", "skills", "mcp", "react", "backlog", "frontend"]
+  "keywords": ["claude-code", "skills", "hooks", "mcp", "react", "backlog", "frontend"]
 }

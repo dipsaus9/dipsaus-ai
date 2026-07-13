@@ -6,6 +6,9 @@ copy one skill into your own `~/.claude/skills/`.
 
 Not published to npm. `bun` · `oxlint` · `Vitest` · `TypeScript`.
 
+Requires [bun](https://bun.sh) on your PATH — both the MCP server and the hooks run as
+TypeScript, with no build step.
+
 ## Install
 
 ### Everything (the plugin)
@@ -65,6 +68,7 @@ so `skills/`, `mcp/`, and `.mcp.json` sit at the root alongside `.claude-plugin/
 | Type | Path | Notes |
 |------|------|-------|
 | Skills | `skills/` | one folder per skill: `SKILL.md` (+ optional `reference/`) |
+| Hooks | `hooks/` | event handlers registered in `hooks/hooks.json`; `dad-joke/` tells you a joke on long turns |
 | MCP | `mcp/` | TypeScript MCP server(s), run by bun; `example/` exposes a `hello` tool |
 | Plugin manifest | `.claude-plugin/` | `plugin.json` + `marketplace.json` |
 | Backlog | `.backlog/` | work tracked with the [`backlog` CLI](https://github.com/osmove/backlog) |
@@ -78,6 +82,66 @@ Dev-only directories (`tests/`, `.claude/`) are ignored by the plugin loader.
 | `react-architecture` | — | Reviews (default) or refactors React/TypeScript components against strict architecture standards: single-responsibility hard caps, compound-component composition, state/data boundaries. |
 | `backlog-plan` | `/backlog-plan` | Grills you into a well-formed backlog: an epic + AI-first stories meeting a story standard, then **materializes on approval** — subtasks, companion docs, config. |
 | `backlog-deliver` | `/backlog-deliver DIP-12` | Drives **one** story `[PREFIX-n]` from queued to done: readiness gate → guarded implement/self-check/verify loop → commit (id-referenced) → branch + push. Handles `Type: spike` stories via a research + interview loop. |
+
+## The dad-joke hook
+
+When a turn runs long, Claude tells you a dad joke while you wait. It renders to *you* — the
+joke never enters Claude's context, so it can't derail the work.
+
+```
+Why did the developer go broke?
+He used up all his cache.
+```
+
+**Install.** It ships with the plugin — `/plugin install dipsaus-ai@dipsaus-ai` and it's on.
+No configuration needed.
+
+To run it standalone without the plugin, copy the folder and register the two entrypoints
+yourself in `.claude/settings.json` (adjust the paths):
+
+```bash
+git clone https://github.com/dipsaus9/dipsaus-ai.git
+cp -r dipsaus-ai/hooks/dad-joke ~/.claude/hooks/dad-joke
+```
+
+```jsonc
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "bun \"$HOME/.claude/hooks/dad-joke/on-user-prompt-submit.ts\"" }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "bun \"$HOME/.claude/hooks/dad-joke/on-post-tool-use.ts\"" }] }
+    ]
+  }
+}
+```
+
+**Configuration.** All four knobs are env vars, all optional:
+
+| Variable | Default | Does |
+|----------|---------|------|
+| `DAD_JOKE_THRESHOLD_MS` | `30000` | How long a turn must run before the first joke. |
+| `DAD_JOKE_COOLDOWN_MS` | `60000` | Minimum gap between jokes within a turn. |
+| `DAD_JOKE_DISABLE` | *(unset)* | Set to `1` to switch the hook off entirely. |
+| `DAD_JOKE_API` | *(unset)* | Set to `1` to fetch live jokes from [icanhazdadjoke.com](https://icanhazdadjoke.com) instead of the bundled pool. Off by default, so there is **no network call in the default path**. Bounded by an 800 ms timeout (`DAD_JOKE_API_TIMEOUT_MS`) and falls back silently to the bundled pool on any failure. |
+
+So a 5-minute turn yields roughly 5 jokes, not 50. Set any of these in your shell or in
+`.claude/settings.json` under `env`.
+
+> **Set `DAD_JOKE_DISABLE=1`, not `=false`.** Any non-empty value other than `0` counts as
+> "on", so `DAD_JOKE_DISABLE=false` would *disable* the jokes — the opposite of what it reads
+> like. `0` is the one honoured "no, don't disable" value.
+
+**Known limitation, by design.** No Claude Code hook is timer-driven, so "the turn is taking a
+while" is approximated by the tool loop: a joke fires on the first tool call *after* the
+threshold has passed. **A long turn with zero tool calls — pure extended thinking — stays
+silent.** In practice long turns are tool loops, so this is rarely felt, but you should not
+have to discover it by reading the source.
+
+A broken hook can never break your session: both entrypoints wrap their entire body and always
+exit 0. A malformed payload, a corrupt state file, a missing `jokes.json`, or an API timeout
+costs you a joke and nothing else.
 
 ## Backlog workflow skills
 

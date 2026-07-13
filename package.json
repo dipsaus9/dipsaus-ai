@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Open-source toolkit of Claude / AI-CLI skills + an MCP, packaged as a single Claude Code plugin.",
+  "description": "Open-source toolkit of Claude / AI-CLI skills, hooks + an MCP, packaged as a single Claude Code plugin.",
   "license": "MIT",
   "author": "dipsaus9",
   "repository": {

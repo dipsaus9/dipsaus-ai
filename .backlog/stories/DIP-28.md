@@ -62,6 +62,12 @@ printing `{"systemMessage": "SPIKE: dad joke would appear here (tool call #N)"}`
 exit 0, and appending its raw stdin to a log. Three `Read` calls were then issued in one turn.
 The hook and its registration were removed afterwards.
 
+> **⚠️ Amended after DIP-33.** This spike used `process.stdout.write(JSON.stringify(...))` with **no
+> trailing newline** and it rendered — so the finding below is true but *incomplete*. When DIP-32's
+> entrypoint later wrote the same JSON via `writeSync(1, ...)` without a newline, Claude Code
+> silently ignored it: no error, exit 0, valid JSON, feature simply absent. Appending `\n` fixed it.
+> **Terminate hook stdout with `\n`.** See DIP-33's Findings for the evidence.
+
 ### 1. Does `systemMessage` render to the human? — **YES**
 
 Confirmed by the user, who observed the text **three times** in their terminal — once per tool

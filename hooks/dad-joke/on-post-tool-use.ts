@@ -54,9 +54,10 @@ try {
       // worst case is a duplicate next call. The inverse order risks starting a cooldown for
       // a joke nobody ever saw.
       //
-      // writeSync, not process.stdout.write: stdout is a pipe here, and piped writes in Node
-      // are async — process.exit(0) below can truncate a buffered write before it flushes.
-      writeSync(1, JSON.stringify({ systemMessage: formatJoke(joke) }))
+      // The trailing \n is load-bearing: without it Claude Code silently ignores the payload —
+      // no error, exit 0, valid JSON, joke never appears. writeSync (not process.stdout.write)
+      // because piped stdout is async in Node and process.exit below can truncate a buffered write.
+      writeSync(1, `${JSON.stringify({ systemMessage: formatJoke(joke) })}\n`)
 
       writeState(dir, sessionId, {
         turnStart: state.turnStart,
