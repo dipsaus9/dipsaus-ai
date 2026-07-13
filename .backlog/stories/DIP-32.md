@@ -8,7 +8,14 @@ The two executable hook scripts. Thin glue over DIP-29/30/31 that reads stdin, d
 prints a joke — and that can never, under any failure, break a tool call.
 
 ## Done-when
-- `on-user-prompt-submit.ts` reads the hook JSON from stdin, takes `session_id`, and writes state `{turnStart: now, lastJokeAt: null, recentIds: []}` via DIP-31's `writeState`, printing nothing
+- `on-user-prompt-submit.ts` reads the hook JSON from stdin, takes `session_id`, and writes state `{turnStart: now, lastJokeAt: null, recentIds: <carried forward from the previous state>}` via DIP-31's `writeState`, printing nothing
+
+  > **Amended during delivery.** As originally written this said `recentIds: []`, which would clear
+  > the joke history on every prompt — no-repeat would hold only *within* one turn (~5 jokes), the
+  > same jokes would recur every turn, and DIP-31's `MAX_RECENT_IDS` cap plus the pool-exhaustion
+  > reset would be dead code. `turnStart` and `lastJokeAt` are still reset per turn (the cooldown
+  > must not leak across turns); only `recentIds` is carried forward, making no-repeat a
+  > session-level promise. Approved by the user before implementation.
 - `on-post-tool-use.ts` reads stdin `session_id`, loads state + config, and when `shouldTellJoke()` is true prints exactly `{"systemMessage": "<setup>\n<punchline>"}` to stdout, then persists `lastJokeAt = now` and the joke id appended to `recentIds`
 - When `shouldTellJoke()` is false the hook prints nothing at all to stdout
 - Both entrypoints wrap their whole body so that ANY thrown error, malformed stdin, missing state dir, or unreadable `jokes.json` results in exit code 0 and no stdout: a broken hook must never block or fail a tool call
@@ -60,7 +67,12 @@ a joke nobody saw.
 
 `on-user-prompt-submit.ts` unconditionally resets `turnStart` and clears `lastJokeAt`. A new user
 prompt is a new turn; the cooldown must not leak across turns, or the first long turn after a
-short one starts already-cooled-down.
+short one starts already-cooled-down. It does **not** clear `recentIds` — see the amendment above.
+
+`readState` returns `turnStart: 0` as its "no turn recorded" sentinel (DIP-31). The PostToolUse
+entrypoint must treat that as *seed the turn and stay silent*, not as a turn that started at the
+epoch — otherwise `now - 0` dwarfs any threshold and a joke fires on the very first tool call of a
+session whose UserPromptSubmit hook never ran.
 
 Until DIP-34 lands, `getJoke` is just "read `jokes.json`, call `pickJoke`". DIP-34 replaces the
 body without changing this call site — which is why the entrypoint should call `getJoke(cfg, deps)`

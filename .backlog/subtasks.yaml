@@ -936,7 +936,7 @@ subtasks:
     title: "[DIP-31] per-session state store: atomic write, tolerant of
       missing/corrupt file"
     repo: dipsaus-ai
-    status: running
+    status: completed
     priority_score: 50
     risk: medium
     scopes:
@@ -968,13 +968,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-10T14:28:38.781Z
-    updated_at: 2026-07-13T07:51:11.289Z
+    updated_at: 2026-07-13T07:57:27.103Z
   - id: subtask_032
     task_id: task_007
     title: "[DIP-32] two hook entrypoints wiring picker + trigger + state, always
       exit 0"
     repo: dipsaus-ai
-    status: queued
+    status: running
     priority_score: 50
     risk: medium
     scopes:
@@ -995,7 +995,10 @@ subtasks:
       done_when:
         - "on-user-prompt-submit.ts reads the hook JSON from stdin, takes
           session_id, and writes state {turnStart: now, lastJokeAt: null,
-          recentIds: []} via DIP-31's writeState, printing nothing"
+          recentIds: carried forward from previous state} via DIP-31's
+          writeState, printing nothing (AMENDED: was recentIds: [], which would
+          clear joke history every turn and make no-repeat only hold within a
+          single turn)"
         - 'on-post-tool-use.ts reads stdin session_id, loads state + config, and
           when shouldTellJoke() is true prints exactly {"systemMessage":
           "<setup>\n<punchline>"} to stdout, then persists lastJokeAt = now and
@@ -1007,11 +1010,14 @@ subtasks:
           tool call"
         - Neither entrypoint emits additionalContext or hookSpecificOutput, so
           the joke text never enters Claude's context
+        - readState's turnStart === 0 sentinel (no turn recorded) seeds the turn
+          and stays silent, rather than being read as a turn starting at the
+          epoch which would fire a joke on the first tool call
     planner:
       origin: manual
       locked: false
     created_at: 2026-07-10T14:28:55.888Z
-    updated_at: 2026-07-10T14:30:18.323Z
+    updated_at: 2026-07-13T08:00:53.538Z
   - id: subtask_033
     task_id: task_007
     title: "[DIP-33] hooks.json plugin wiring with ${CLAUDE_PLUGIN_ROOT} + README
