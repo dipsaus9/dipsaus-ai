@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { loadConfig, type Config } from '../../hooks/dad-joke/config'
 import { type Joke } from '../../hooks/dad-joke/pick'
-import { formatJoke, getJoke, type Deps } from '../../hooks/dad-joke/source'
+import { getJoke, type Deps } from '../../hooks/dad-joke/source'
 
 const POOL: Joke[] = [
   { id: 'pool-1', setup: 'Why did the pool joke fire?', punchline: 'Because the API did not.' },
@@ -15,6 +15,7 @@ const cfg = (over: Partial<Config> = {}): Config => ({
   disabled: false,
   apiEnabled: true,
   apiTimeoutMs: 800,
+  colorEnabled: true,
   ...over,
 })
 
@@ -132,15 +133,5 @@ describe('config: the API knobs', () => {
   it('falls back to the default timeout on a malformed override', () => {
     expect(loadConfig({ DAD_JOKE_API_TIMEOUT_MS: 'soon' }).apiTimeoutMs).toBe(800)
     expect(loadConfig({ DAD_JOKE_API_TIMEOUT_MS: '250' }).apiTimeoutMs).toBe(250)
-  })
-})
-
-describe('formatJoke', () => {
-  it('joins a setup and punchline with a newline', () => {
-    expect(formatJoke({ id: 'x', setup: 'Setup?', punchline: 'Punchline.' })).toBe('Setup?\nPunchline.')
-  })
-
-  it('leaves a one-liner (empty punchline) on a single line', () => {
-    expect(formatJoke({ id: 'x', setup: 'A one-liner.', punchline: '' })).toBe('A one-liner.')
   })
 })

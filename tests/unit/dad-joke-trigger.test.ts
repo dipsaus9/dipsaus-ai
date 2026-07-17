@@ -15,6 +15,7 @@ const cfg = (over: Partial<Config> = {}): Config => ({
   disabled: false,
   apiEnabled: false,
   apiTimeoutMs: 800,
+  colorEnabled: true,
   ...over,
 })
 
@@ -78,6 +79,7 @@ describe('loadConfig', () => {
       disabled: false,
       apiEnabled: false,
       apiTimeoutMs: DEFAULT_API_TIMEOUT_MS,
+      colorEnabled: true,
     })
   })
 

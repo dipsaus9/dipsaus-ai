@@ -1,10 +1,10 @@
 ---
 id: DIP-1.1
 title: 'styled inline joke: render check, stdout guard, two-tier formatter, docs'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-17 13:17'
-updated_date: '2026-07-17 13:33'
+updated_date: '2026-07-17 13:50'
 labels:
   - story
 dependencies: []
@@ -34,13 +34,13 @@ Branch: DIP-1.1/two-tier-joke-formatter
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Render findings recorded in implementation notes: does ANSI colour (CSI SGR, e.g. \x1b[33m) inside a systemMessage string render as colour, get stripped, or print literally? Do an emoji prefix and a multi-line body render correctly? Observed via a temporary manual hook; the user reports what they see. Decides whether Tier 2 exists
-- [ ] #2 tests/unit/dad-joke-entrypoints.test.ts lands as the FIRST commit, before the formatter rewrite, and guards the raw stdout bytes: exit 0 and newline-terminated valid JSON with a systemMessage key — the trailing newline asserted specifically, since dropping it makes Claude Code silently ignore the payload
-- [ ] #3 The same test asserts on-user-prompt-submit.ts exits 0 and writes nothing to stdout, both entrypoints exit 0 on malformed stdin, and no additionalContext / hookSpecificOutput key is ever emitted; runs under bun run test with no network, state dir injected via CLAUDE_PLUGIN_DATA pointed at a tmpdir
-- [ ] #4 format.ts exports pure formatJoke(joke, cfg) returning the rendered systemMessage string — no env reads, no capability probing inside. Tier 1 always: emoji marker + setup/punchline structure, identical in a terminal with zero ANSI support. Tier 2 conditional: ANSI colour only when the render check proved it AND colour is enabled; colour-off output byte-identical to Tier 1
-- [ ] #5 NO_COLOR (any non-empty value, per no-color.org) disables Tier 2, as does DAD_JOKE_NO_COLOR=1; both parsed in loadConfig. If the render check kills colour: Tier 1 only, colour behaviour dropped and recorded in implementation notes rather than shipped as dead code
-- [ ] #6 A one-liner joke from the API (empty punchline) still renders on a single line; tests/unit/dad-joke-format.test.ts covers both tiers, NO_COLOR, and the one-liner case
-- [ ] #7 README dad-joke env knob table documents the colour behaviour and knobs (NO_COLOR, DAD_JOKE_NO_COLOR), matches loadConfig exactly, and describes only what actually renders
+- [x] #1 Render findings recorded in implementation notes: does ANSI colour (CSI SGR, e.g. \x1b[33m) inside a systemMessage string render as colour, get stripped, or print literally? Do an emoji prefix and a multi-line body render correctly? Observed via a temporary manual hook; the user reports what they see. Decides whether Tier 2 exists
+- [x] #2 tests/unit/dad-joke-entrypoints.test.ts lands as the FIRST commit, before the formatter rewrite, and guards the raw stdout bytes: exit 0 and newline-terminated valid JSON with a systemMessage key — the trailing newline asserted specifically, since dropping it makes Claude Code silently ignore the payload
+- [x] #3 The same test asserts on-user-prompt-submit.ts exits 0 and writes nothing to stdout, both entrypoints exit 0 on malformed stdin, and no additionalContext / hookSpecificOutput key is ever emitted; runs under bun run test with no network, state dir injected via CLAUDE_PLUGIN_DATA pointed at a tmpdir
+- [x] #4 format.ts exports pure formatJoke(joke, cfg) returning the rendered systemMessage string — no env reads, no capability probing inside. Tier 1 always: emoji marker + setup/punchline structure, identical in a terminal with zero ANSI support. Tier 2 conditional: ANSI colour only when the render check proved it AND colour is enabled; colour-off output byte-identical to Tier 1
+- [x] #5 NO_COLOR (any non-empty value, per no-color.org) disables Tier 2, as does DAD_JOKE_NO_COLOR=1; both parsed in loadConfig. If the render check kills colour: Tier 1 only, colour behaviour dropped and recorded in implementation notes rather than shipped as dead code
+- [x] #6 A one-liner joke from the API (empty punchline) still renders on a single line; tests/unit/dad-joke-format.test.ts covers both tiers, NO_COLOR, and the one-liner case
+- [x] #7 README dad-joke env knob table documents the colour behaviour and knobs (NO_COLOR, DAD_JOKE_NO_COLOR), matches loadConfig exactly, and describes only what actually renders
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -65,4 +65,12 @@ NO_COLOR is a cross-tool convention (no-color.org): ANY non-empty value means no
 Byte-identical output when colour is off is a real requirement: a stray \x1b[0m reset in a terminal that does not interpret it is visible garbage on every joke.
 
 Verify (beyond bun run lint/typecheck/test): deliberately break the guard — drop the \n from on-post-tool-use.ts writeSync and confirm the entrypoint test FAILS, then restore (a guard that cannot fail is not a guard). By hand: low threshold, joke renders styled; NO_COLOR=1 renders plain with no stray escapes. Read the README dad-joke section against loadConfig: every knob documented exists, every knob that exists is documented.
+
+Render check (AC #1, observed 2026-07-17 via temporary manual PostToolUse hook in settings.local.json, since removed): ANSI CSI SGR inside systemMessage RENDERS as real colour — \x1b[33m showed yellow, \x1b[1m showed bold. Emoji prefix renders correctly. Multi-line body renders with real line breaks. Conclusion: Tier 2 (colour) EXISTS — ship emoji+structure always, ANSI colour gated behind NO_COLOR / DAD_JOKE_NO_COLOR.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Shipped the two-tier joke formatter. A manual render check proved Claude Code renders ANSI SGR, emoji and multi-line inside systemMessage, so Tier 2 exists: 🥁 marker + setup/punchline structure always (Tier 1), bold-yellow punchline on top when colour is enabled. New pure format.ts (formatJoke(joke, cfg)); colour decision resolved in loadConfig via NO_COLOR (any non-empty value, no-color.org semantics) and DAD_JOKE_NO_COLOR (repo flag semantics). Entrypoint guard test landed first, asserting raw stdout bytes: trailing newline, systemMessage-only payload, silence + exit 0 on malformed stdin — and was proven falsifiable by breaking the newline. Colour-off output byte-identical to Tier 1; one-liners stay on one line. README knob table synced to loadConfig exactly.
+<!-- SECTION:FINAL_SUMMARY:END -->

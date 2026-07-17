@@ -26,7 +26,7 @@ export type Deps = {
 
 /**
  * icanhazdadjoke returns `{ id, joke }` — a single string, not a setup/punchline pair. It is
- * normalised into `Joke` with an empty `punchline`; the printer skips the newline when the
+ * normalised into `Joke` with an empty `punchline`; the formatter skips the newline when the
  * punchline is empty, so one-liners render as one line.
  */
 function parseApiJoke(raw: unknown): Joke | null {
@@ -76,9 +76,4 @@ export async function getJoke(cfg: Config, deps: Deps): Promise<Joke> {
   }
 
   return pickJoke(deps.jokes, deps.recentIds ?? [], deps.rand)
-}
-
-/** Render a joke for the terminal. One-liners (empty punchline) stay on one line. */
-export function formatJoke(joke: Joke): string {
-  return joke.punchline.length > 0 ? `${joke.setup}\n${joke.punchline}` : joke.setup
 }
