@@ -1,7 +1,7 @@
 # [DIP-42] backlog-deliver self-isolates via EnterWorktree, bootstraps with bun install, and runs every backlog call from BACKLOG_ROOT
 
 Type: deliverable
-Status: completed
+Status: queued
 
 ## Outcome
 `/backlog-deliver DIP-n` isolates itself. It runs from the main checkout, gates, claims, and then
