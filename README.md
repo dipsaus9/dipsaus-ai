@@ -89,9 +89,13 @@ When a turn runs long, Claude tells you a dad joke while you wait. It renders to
 joke never enters Claude's context, so it can't derail the work.
 
 ```
-Why did the developer go broke?
+🥁 Why did the developer go broke?
 He used up all his cache.
 ```
+
+The joke is styled so it reads as a joke, not another log line: always the 🥁 marker and the
+setup/punchline structure, plus a **bold yellow punchline** in colour-capable terminals. With
+colour off the output is plain text — no stray escape codes.
 
 **Install.** It ships with the plugin — `/plugin install dipsaus-ai@dipsaus-ai` and it's on.
 No configuration needed.
@@ -117,21 +121,25 @@ cp -r dipsaus-ai/hooks/dad-joke ~/.claude/hooks/dad-joke
 }
 ```
 
-**Configuration.** All four knobs are env vars, all optional:
+**Configuration.** All knobs are env vars, all optional:
 
 | Variable | Default | Does |
 |----------|---------|------|
 | `DAD_JOKE_THRESHOLD_MS` | `30000` | How long a turn must run before the first joke. |
 | `DAD_JOKE_COOLDOWN_MS` | `60000` | Minimum gap between jokes within a turn. |
 | `DAD_JOKE_DISABLE` | *(unset)* | Set to `1` to switch the hook off entirely. |
+| `DAD_JOKE_NO_COLOR` | *(unset)* | Set to `1` to drop the ANSI colour and render the joke as plain text (marker and structure stay). |
+| `NO_COLOR` | *(unset)* | The [no-color.org](https://no-color.org) convention, also honoured: **any non-empty value** disables colour — including `NO_COLOR=0`, unlike this hook's own flags. |
 | `DAD_JOKE_API` | *(unset)* | Set to `1` to fetch live jokes from [icanhazdadjoke.com](https://icanhazdadjoke.com) instead of the bundled pool. Off by default, so there is **no network call in the default path**. Bounded by an 800 ms timeout (`DAD_JOKE_API_TIMEOUT_MS`) and falls back silently to the bundled pool on any failure. |
 
 So a 5-minute turn yields roughly 5 jokes, not 50. Set any of these in your shell or in
 `.claude/settings.json` under `env`.
 
-> **Set `DAD_JOKE_DISABLE=1`, not `=false`.** Any non-empty value other than `0` counts as
-> "on", so `DAD_JOKE_DISABLE=false` would *disable* the jokes — the opposite of what it reads
-> like. `0` is the one honoured "no, don't disable" value.
+> **Set the `DAD_JOKE_*` flags to `1`, not `false`.** For `DAD_JOKE_DISABLE`,
+> `DAD_JOKE_NO_COLOR` and `DAD_JOKE_API`, any non-empty value other than `0` counts as "on" —
+> so `DAD_JOKE_DISABLE=false` would *disable* the jokes, the opposite of what it reads like.
+> `0` is the one honoured "no" value. `NO_COLOR` is the deliberate exception: it follows the
+> cross-tool convention, where any non-empty value — even `0` — kills the colour.
 
 **Known limitation, by design.** No Claude Code hook is timer-driven, so "the turn is taking a
 while" is approximated by the tool loop: a joke fires on the first tool call *after* the
