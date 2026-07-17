@@ -71,7 +71,7 @@ so `skills/`, `mcp/`, and `.mcp.json` sit at the root alongside `.claude-plugin/
 | Hooks | `hooks/` | event handlers registered in `hooks/hooks.json`; `dad-joke/` tells you a joke on long turns |
 | MCP | `mcp/` | TypeScript MCP server(s), run by bun; `example/` exposes a `hello` tool |
 | Plugin manifest | `.claude-plugin/` | `plugin.json` + `marketplace.json` |
-| Backlog | `.backlog/` | work tracked with the [`backlog` CLI](https://github.com/osmove/backlog) |
+| Backlog | `backlog/` | work tracked with [Backlog.md](https://github.com/MrLesk/Backlog.md) — markdown tasks, `backlog` CLI |
 
 Dev-only directories (`tests/`, `.claude/`) are ignored by the plugin loader.
 
@@ -80,8 +80,8 @@ Dev-only directories (`tests/`, `.claude/`) are ignored by the plugin loader.
 | Skill | Command | Does |
 |-------|---------|------|
 | `react-architecture` | — | Reviews (default) or refactors React/TypeScript components against strict architecture standards: single-responsibility hard caps, compound-component composition, state/data boundaries. |
-| `backlog-plan` | `/backlog-plan` | Grills you into a well-formed backlog: an epic + AI-first stories meeting a story standard, then **materializes on approval** — subtasks, companion docs, config. |
-| `backlog-deliver` | `/backlog-deliver DIP-12` | Drives **one** story `[PREFIX-n]` from queued to done on its own `DIP-12/<slug>` branch: readiness gate → implement/verify/**commit** loop (autonomous, every commit green) → one push → a file-by-file summary + a compare link **you** open the PR from. git CLI only, never `gh`. Handles `Type: spike` stories via a research + interview loop. |
+| `backlog-plan` | `/backlog-plan` | Grills you into a well-formed backlog: an epic + AI-first stories meeting a story standard, then **materializes on approval** — parent task + subtasks with all content in the task files, via the Backlog.md CLI. |
+| `backlog-deliver` | `/backlog-deliver DIP-1.1` | Drives **one** story from To Do to Done on its own `DIP-1.1/<slug>` branch: readiness gate → implement/verify/**commit** loop (autonomous, every commit green, acceptance criteria checked off as met) → one push → a file-by-file summary + a compare link **you** open the PR from. git CLI only, never `gh`. Handles `Type: spike` stories via a research + interview loop. |
 
 ## The dad-joke hook
 
@@ -145,51 +145,43 @@ costs you a joke and nothing else.
 
 ## Backlog workflow skills
 
-`backlog-plan` and `backlog-deliver` turn the [`backlog` CLI](https://github.com/osmove/backlog)
-into a standards-driven, AI-runnable workflow in **any** repo — install the plugin and they
-work everywhere. They form a loop: **plan** a backlog, then **deliver** its stories one at a
-time.
+`backlog-plan` and `backlog-deliver` turn [Backlog.md](https://github.com/MrLesk/Backlog.md)
+(markdown-native tasks, `backlog` CLI) into a standards-driven, AI-runnable workflow in **any**
+repo — install the plugin and they work everywhere. They form a loop: **plan** a backlog, then
+**deliver** its stories one at a time.
 
 ```
-/backlog-plan            → interview → draft epic + [DIP-n] stories → approve → materialize
-/backlog-deliver DIP-12  → gate → branch DIP-12/<slug> → implement → verify → commit (loop)
-                           → push once → summary + PR link (you open it)
-                           (a spike spawns new [DIP-n] stories, feeding back into the plan)
+/backlog-plan             → interview → draft epic + stories → approve → materialize (To Do)
+/backlog-deliver DIP-1.1  → gate → branch DIP-1.1/<slug> → implement → verify → commit (loop)
+                            → push once → summary + PR link (you open it)
+                            (a spike spawns new stories, feeding back into the plan)
 ```
 
-**Story standard** — every story: one outcome · concrete title · objective `done-when` ·
-real `depends-on` · pickup-sized · verifiable · declared scopes · a named branch. Optional:
-technical notes, `needs-refinement`, `needs-info`, `Type: spike`. Each carries a JIRA-style id
-`[PREFIX-n]` (derived from the subtask number) and a companion doc
-`.backlog/stories/<PREFIX>-<n>.md`. Full contract: `skills/backlog-plan/reference/`.
+**Story standard** — every story: one outcome · concrete title · objective acceptance criteria ·
+real dependencies · pickup-sized · verifiable · declared scope (References) · a named branch.
+Optional: plan/notes, `needs-refinement`, `needs-info`, `Type: spike`. Ids are Backlog.md's own
+(epic `DIP-4` → stories `DIP-4.1`, `DIP-4.2`), and all content lives in the task file itself —
+written only via the CLI, never by hand. Full contract: `skills/backlog-plan/reference/`.
 
 **Git contract** — fixed, not configurable, enforced by `backlog-deliver`:
 
-- one branch per story, `<PREFIX>-<n>/<slug>` (`DIP-12/parallel-agent-cap`), cut from the base;
+- one branch per story, `<id>/<slug>` (`DIP-1.1/two-tier-joke-formatter`), cut from the base;
 - commits on that branch are **autonomous** — no approval — split small when it helps, and
   **verify runs green immediately before every commit**. No WIP commits;
 - **one push** at the end, then a summary of what changed and why, and a compare link;
 - **you open the PR.** The skill uses the **git CLI only** — never `gh`, `glab`, or a host API.
 
-**Config** — auto-inferred; write only what can't be. `.backlog/standards.json`:
-
-```jsonc
-{
-  "prefix": "DIP",                                  // JIRA-style story key (asked once)
-  "verify": ["bun run lint", "bun run typecheck"],  // optional; else auto-detected from package.json
-  "gates": { "tdd": false, "plan_gate": false }     // optional; safe defaults shown
-}
-```
-
-Verify falls back to `package.json` scripts (`lint`/`typecheck`/`test`/`build`), then to
+**Config** — Backlog.md's own `backlog/config.yml` carries everything (`task_prefix` picked once
+at init; `auto_commit` must stay `false` — the delivery skill owns every commit). Verify is
+auto-detected from `package.json` scripts (`lint`/`typecheck`/`test`/`build`), falling back to
 per-story checks + self-review — so a repo with no pipeline still works.
 
 ## Roadmap
 
-Everything above is what ships today. Planned work lives in the backlog under `.backlog/`
+Everything above is what ships today. Planned work lives in the backlog under `backlog/`
 — epics and their stories, each with acceptance criteria — and is kept current there
-rather than mirrored into this README. Browse `.backlog/stories/`, or run `backlog status`
-with the [`backlog` CLI](https://github.com/osmove/backlog).
+rather than mirrored into this README. Browse `backlog/tasks/`, or run `backlog task list
+--plain` with [Backlog.md](https://github.com/MrLesk/Backlog.md).
 
 ## Development
 
@@ -202,8 +194,8 @@ bun run test        # Vitest unit — deterministic, CI-safe
 
 CI (`.github/workflows/ci.yml`) runs exactly those three on push to `main` and on every PR.
 
-Work is tracked with the `backlog` CLI under `.backlog/`. See `.claude/CLAUDE.md` for
-architecture and working conventions.
+Work is tracked with [Backlog.md](https://github.com/MrLesk/Backlog.md) under `backlog/`. See
+`.claude/CLAUDE.md` for architecture and working conventions.
 
 ## License
 
