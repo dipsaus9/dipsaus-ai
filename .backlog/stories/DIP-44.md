@@ -1,7 +1,7 @@
 # [DIP-44] PR-per-story delivery: push the worktree branch, open a PR, never touch main
 
 Type: deliverable
-Status: queued
+Status: canceled
 
 ## Outcome
 A finished story leaves the agent as a **pull request** and nothing more. The agent never merges,

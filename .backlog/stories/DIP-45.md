@@ -1,7 +1,7 @@
 # [DIP-45] document the parallel workflow: EnterWorktree, claims, scopes, PR-per-story, backlog ownership
 
 Type: deliverable
-Status: queued
+Status: canceled
 
 ## Outcome
 An operator can run several Claudes against this backlog without reading the skill's source to find

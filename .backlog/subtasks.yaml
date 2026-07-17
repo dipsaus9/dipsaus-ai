@@ -1391,7 +1391,7 @@ subtasks:
     title: "[DIP-42] backlog-deliver self-isolates via EnterWorktree, bootstraps
       with bun install, and runs every backlog call from BACKLOG_ROOT"
     repo: dipsaus-ai
-    status: queued
+    status: canceled
     priority_score: 50
     risk: high
     scopes:
@@ -1433,13 +1433,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:07:00.630Z
-    updated_at: 2026-07-13T11:03:16.424Z
+    updated_at: 2026-07-17T11:00:58.746Z
   - id: subtask_043
     task_id: task_009
     title: "[DIP-43] claim + scope-contention pickup: reserve the story, refuse
       file-colliding stories"
     repo: dipsaus-ai
-    status: queued
+    status: canceled
     priority_score: 50
     risk: medium
     scopes:
@@ -1479,13 +1479,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:07:00.762Z
-    updated_at: 2026-07-13T11:03:38.571Z
+    updated_at: 2026-07-17T11:00:58.878Z
   - id: subtask_044
     task_id: task_009
     title: "[DIP-44] PR-per-story delivery: push the worktree branch, open a PR,
       never touch main"
     repo: dipsaus-ai
-    status: queued
+    status: canceled
     priority_score: 50
     risk: medium
     scopes:
@@ -1526,13 +1526,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:07:00.896Z
-    updated_at: 2026-07-13T11:03:38.700Z
+    updated_at: 2026-07-17T11:00:59.008Z
   - id: subtask_045
     task_id: task_009
     title: "[DIP-45] document the parallel workflow: EnterWorktree, claims, scopes,
       PR-per-story, backlog ownership"
     repo: dipsaus-ai
-    status: queued
+    status: canceled
     priority_score: 50
     risk: low
     scopes:
@@ -1575,7 +1575,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:07:01.039Z
-    updated_at: 2026-07-13T11:03:38.824Z
+    updated_at: 2026-07-17T11:00:59.141Z
   - id: subtask_048
     task_id: task_009
     title: "[DIP-48] harden main's ruleset: require the CI check and require

@@ -1,7 +1,7 @@
 # [DIP-43] claim + scope-contention pickup: reserve the story, refuse file-colliding stories
 
 Type: deliverable
-Status: queued
+Status: canceled
 
 ## Outcome
 Two agents can never take the same story, and never take two stories that will fight over the same
