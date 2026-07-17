@@ -1102,7 +1102,7 @@ subtasks:
     title: "[DIP-35] SPIKE: what does systemMessage actually render, and does
       terminalSequence OSC 777 notify?"
     repo: dipsaus-ai
-    status: queued
+    status: canceled
     priority_score: 50
     risk: high
     scopes:
@@ -1137,13 +1137,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T08:56:26.569Z
-    updated_at: 2026-07-13T14:32:17.599Z
+    updated_at: 2026-07-17T13:02:53.166Z
   - id: subtask_036
     task_id: task_008
     title: "[DIP-36] entrypoint smoke test: exit 0 + newline-terminated valid JSON
       on stdout"
     repo: dipsaus-ai
-    status: queued
+    status: canceled
     priority_score: 50
     risk: low
     scopes:
@@ -1176,11 +1176,11 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T08:56:26.698Z
-    updated_at: 2026-07-13T14:32:17.719Z
+    updated_at: 2026-07-17T13:02:53.293Z
   - id: subtask_037
     task_id: task_008
-    title: "[DIP-37] two-tier joke formatter: emoji + structure always, ANSI colour
-      when supported, NO_COLOR honoured"
+    title: "[DIP-37] styled inline joke: render check, stdout guard, two-tier
+      formatter, docs"
     repo: dipsaus-ai
     status: queued
     priority_score: 50
@@ -1190,11 +1190,11 @@ subtasks:
       - hooks/dad-joke/source.ts
       - hooks/dad-joke/config.ts
       - hooks/dad-joke/on-post-tool-use.ts
+      - tests/unit/dad-joke-entrypoints.test.ts
       - tests/unit/dad-joke-format.test.ts
+      - README.md
     claim_mode: exclusive
-    depends_on:
-      - subtask_035
-      - subtask_036
+    depends_on: []
     blockers: []
     execution:
       preferred_agents: []
@@ -1202,32 +1202,40 @@ subtasks:
       manual_approval_required: false
     completion:
       done_when:
-        - "format.ts exports formatJoke(joke, cfg) returning the rendered
-          systemMessage string, and is pure: no env reads, no terminal
-          capability probing inside — the capability comes in via cfg"
-        - "Tier 1 (always): the joke is visually distinct from a log line via an
-          emoji marker and setup/punchline structure, and renders identically in
-          a terminal with zero ANSI support"
-        - "Tier 2 (conditional): ANSI colour is applied only when DIP-35 proved
-          it renders AND colour is enabled; when disabled the output is
-          byte-identical to Tier 1 (no stray escape codes)"
-        - NO_COLOR (any non-empty value, per no-color.org) disables Tier 2, as
-          does DAD_JOKE_NO_COLOR=1; loadConfig parses both
-        - A one-liner joke from the API (empty punchline) still renders on a
-          single line, preserving DIP-34's behaviour, and
+        - "Render findings recorded in the story doc: ANSI colour inside
+          systemMessage renders / is stripped / prints literally; emoji and
+          multi-line render yes/no — observed via a temporary manual hook, user
+          reports what they see; decides whether Tier 2 exists"
+        - "tests/unit/dad-joke-entrypoints.test.ts lands as the FIRST commit and
+          guards raw stdout bytes: exit 0, newline-terminated valid JSON with a
+          systemMessage key, on-user-prompt-submit writes nothing, no
+          additionalContext or hookSpecificOutput ever emitted, malformed stdin
+          still exits 0"
+        - "format.ts exports pure formatJoke(joke, cfg): emoji marker +
+          setup/punchline structure always; ANSI colour only when the render
+          check proved it AND colour is enabled; colour-off output
+          byte-identical to Tier 1"
+        - NO_COLOR (any non-empty value, per no-color.org) and
+          DAD_JOKE_NO_COLOR=1 disable colour, parsed in loadConfig; if the
+          render check kills colour, ship Tier 1 only and record that in the
+          story doc instead of dead code
+        - A one-liner joke (empty punchline) still renders on a single line;
           tests/unit/dad-joke-format.test.ts covers both tiers, NO_COLOR, and
           the one-liner case
+        - README's dad-joke env knob table documents the colour behaviour and
+          knobs, matches loadConfig exactly, and describes only what actually
+          renders
     planner:
       origin: manual
       locked: false
     created_at: 2026-07-13T08:56:32.530Z
-    updated_at: 2026-07-13T14:32:17.839Z
+    updated_at: 2026-07-17T13:05:32.548Z
   - id: subtask_038
     task_id: task_008
     title: "[DIP-38] opt-in DAD_JOKE_NOTIFY=1 desktop notification via
       terminalSequence OSC 777"
     repo: dipsaus-ai
-    status: queued
+    status: canceled
     priority_score: 50
     risk: medium
     scopes:
@@ -1267,13 +1275,13 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T08:56:32.668Z
-    updated_at: 2026-07-13T14:32:17.963Z
+    updated_at: 2026-07-17T13:02:53.421Z
   - id: subtask_039
     task_id: task_008
     title: "[DIP-39] README: document DAD_JOKE_NOTIFY, colour behaviour + NO_COLOR,
       OSC 777 terminal support caveat"
     repo: dipsaus-ai
-    status: queued
+    status: canceled
     priority_score: 50
     risk: low
     scopes:
@@ -1303,4 +1311,4 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T08:56:37.048Z
-    updated_at: 2026-07-13T14:32:18.083Z
+    updated_at: 2026-07-17T13:02:53.549Z
