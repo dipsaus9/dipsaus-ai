@@ -17,18 +17,6 @@ Code plugin** via a marketplace. GitHub-hosted, not published to npm.
   `.claude-plugin/marketplace.json`) is user-facing. When the repo's surface changes,
   update all three — they drift silently otherwise.
 
-## Worktrees
-This repo is configured for Claude Code's [native worktrees](https://code.claude.com/docs/en/worktrees).
-**Minimum Claude Code version: `2.1.200`** — below it, project-scope plugins do not load inside a
-worktree, so this repo's own skills would be missing exactly where they're needed.
-
-- Worktrees land at `.claude/worktrees/<name>/` on branch `worktree-<name>`. Claude owns both names.
-  The directory is git-ignored — it is a checkout, not a source.
-- `worktree.baseRef` is pinned to `"fresh"` in the shared `.claude/settings.json`: every worktree
-  branches from `origin/HEAD`, never from your local `HEAD`.
-- `.worktreeinclude` copies `.claude/settings.local.json` into each new worktree. It deliberately
-  does **not** copy `node_modules` — run `bun install` in a fresh worktree before anything else.
-
 ## Planned work — read the backlog, not this file
 This file describes what **exists**. Anything not yet built lives in `.backlog/`, which is
 the single source of truth for it and changes as stories are planned and delivered — never
