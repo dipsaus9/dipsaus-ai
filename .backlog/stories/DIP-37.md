@@ -25,6 +25,9 @@ always; colour on top only where it actually renders.
 - `hooks/dad-joke/on-post-tool-use.ts` (call the new formatter)
 - `tests/unit/dad-joke-format.test.ts`
 
+## Branch
+DIP-37/two-tier-joke-formatter
+
 ## Verify
 - `bun run test` (new format tests + DIP-36's smoke test still green)
 - `bun run lint && bun run typecheck`

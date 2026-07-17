@@ -21,6 +21,9 @@ shipping.
 ## Affected area
 - `tests/unit/dad-joke-entrypoints.test.ts`
 
+## Branch
+DIP-36/entrypoint-smoke-test
+
 ## Verify
 - `bun run test` — the new file is green
 - `bun run lint && bun run typecheck`

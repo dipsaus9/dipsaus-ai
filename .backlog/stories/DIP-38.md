@@ -24,6 +24,9 @@ from — without putting a notification in anybody's face by default.
 - `hooks/dad-joke/on-post-tool-use.ts` (emit `terminalSequence`)
 - `tests/unit/dad-joke-notify.test.ts`
 
+## Branch
+DIP-38/desktop-notify
+
 ## Verify
 - `bun run test` — enabled / disabled / sanitisation paths green
 - `bun run lint && bun run typecheck`

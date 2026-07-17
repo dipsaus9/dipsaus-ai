@@ -19,6 +19,9 @@ told plainly what will not work on their terminal.
 ## Affected area
 - `README.md`
 
+## Branch
+DIP-39/readme-notify-colour
+
 ## Verify
 - `bun run lint && bun run typecheck && bun run test`
 - Read the README's dad-joke section against the actual `loadConfig` implementation: every knob it
