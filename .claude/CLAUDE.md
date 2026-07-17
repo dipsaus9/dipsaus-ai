@@ -44,7 +44,12 @@ CI runs exactly these three. Note `test` currently passes with **no test files**
 currently proves nothing. Any story that adds runtime code must add unit tests with it.
 
 ## Working agreement
-- **Review before commit.** Finish the work, run lint/typecheck/test, summarise the diff,
-  and wait for approval before `git commit`. Never auto-commit at end of a story.
+- **Commit freely on a story branch; ask everywhere else.** On a `<PREFIX>-<n>/<slug>` branch
+  (`DIP-12/parallel-agent-cap`) commit without approval — split into small commits when it
+  helps, and run lint/typecheck/test green immediately **before each** commit. On `main` or
+  any non-story branch, the old rule stands: summarise the diff and wait for approval.
+- **You never open the PR.** Push once at the end, then print the compare link and let the
+  human open it. **Never `gh`/`glab`/host APIs — git CLI only.** Full rules:
+  `skills/backlog-deliver/SKILL.md` § Git contract.
 - **Git identity.** Use the user's own git config — never pass `-c user.name`/`-c user.email`.
 - **Per-user state.** `.claude/settings.local.json` is git-ignored; `settings.json` is shared.

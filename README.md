@@ -81,7 +81,7 @@ Dev-only directories (`tests/`, `.claude/`) are ignored by the plugin loader.
 |-------|---------|------|
 | `react-architecture` | — | Reviews (default) or refactors React/TypeScript components against strict architecture standards: single-responsibility hard caps, compound-component composition, state/data boundaries. |
 | `backlog-plan` | `/backlog-plan` | Grills you into a well-formed backlog: an epic + AI-first stories meeting a story standard, then **materializes on approval** — subtasks, companion docs, config. |
-| `backlog-deliver` | `/backlog-deliver DIP-12` | Drives **one** story `[PREFIX-n]` from queued to done: readiness gate → guarded implement/self-check/verify loop → commit (id-referenced) → branch + push. Handles `Type: spike` stories via a research + interview loop. |
+| `backlog-deliver` | `/backlog-deliver DIP-12` | Drives **one** story `[PREFIX-n]` from queued to done on its own `DIP-12/<slug>` branch: readiness gate → implement/verify/**commit** loop (autonomous, every commit green) → one push → a file-by-file summary + a compare link **you** open the PR from. git CLI only, never `gh`. Handles `Type: spike` stories via a research + interview loop. |
 
 ## The dad-joke hook
 
@@ -152,15 +152,24 @@ time.
 
 ```
 /backlog-plan            → interview → draft epic + [DIP-n] stories → approve → materialize
-/backlog-deliver DIP-12  → gate → implement → verify → commit + push
+/backlog-deliver DIP-12  → gate → branch DIP-12/<slug> → implement → verify → commit (loop)
+                           → push once → summary + PR link (you open it)
                            (a spike spawns new [DIP-n] stories, feeding back into the plan)
 ```
 
 **Story standard** — every story: one outcome · concrete title · objective `done-when` ·
-real `depends-on` · pickup-sized · verifiable. Optional: technical notes, `needs-refinement`,
-`needs-info`, `Type: spike`. Each carries a JIRA-style id `[PREFIX-n]` (derived from the
-subtask number) and a companion doc `.backlog/stories/<PREFIX>-<n>.md`. Full contract:
-`skills/backlog-plan/reference/`.
+real `depends-on` · pickup-sized · verifiable · declared scopes · a named branch. Optional:
+technical notes, `needs-refinement`, `needs-info`, `Type: spike`. Each carries a JIRA-style id
+`[PREFIX-n]` (derived from the subtask number) and a companion doc
+`.backlog/stories/<PREFIX>-<n>.md`. Full contract: `skills/backlog-plan/reference/`.
+
+**Git contract** — fixed, not configurable, enforced by `backlog-deliver`:
+
+- one branch per story, `<PREFIX>-<n>/<slug>` (`DIP-12/parallel-agent-cap`), cut from the base;
+- commits on that branch are **autonomous** — no approval — split small when it helps, and
+  **verify runs green immediately before every commit**. No WIP commits;
+- **one push** at the end, then a summary of what changed and why, and a compare link;
+- **you open the PR.** The skill uses the **git CLI only** — never `gh`, `glab`, or a host API.
 
 **Config** — auto-inferred; write only what can't be. `.backlog/standards.json`:
 
@@ -168,7 +177,7 @@ subtask number) and a companion doc `.backlog/stories/<PREFIX>-<n>.md`. Full con
 {
   "prefix": "DIP",                                  // JIRA-style story key (asked once)
   "verify": ["bun run lint", "bun run typecheck"],  // optional; else auto-detected from package.json
-  "gates": { "commit": "require-approval", "deliver": "push" }  // optional; safe defaults shown
+  "gates": { "tdd": false, "plan_gate": false }     // optional; safe defaults shown
 }
 ```
 
