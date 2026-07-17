@@ -1,6 +1,6 @@
 ---
 name: backlog-deliver
-description: Drive a single backlog story (native id like DIP-1.1) from To Do to Done for any repo using Backlog.md (MrLesk/Backlog.md) + Claude. Reads the task file in full, gates on readiness, restates the contract, then runs a guarded implement->verify->commit loop on the story's frozen `<id>/<slug>` branch. Commits autonomously (every commit green, id-referenced), checks off acceptance criteria as they're met, pushes once, and reports which files changed and why plus a compare link the human opens the PR from. Uses the git CLI only — never gh/glab or a host API. Handles Type:spike stories via a research/interview loop. Use when asked to "deliver", "pick up", "implement", "do", or "complete" a story, or given a story id to take to done. Examples: "/backlog-deliver DIP-1.1", "pick up the next ready story", "deliver DIP-4.2".
+description: Drive a single backlog story (native id like DIP-1.1) from To Do to Done for any repo using Backlog.md (MrLesk/Backlog.md) + Claude. Reads the task file in full, gates on readiness, restates the contract, then runs a guarded implement->verify->commit loop on the story's frozen `<id>/<slug>` branch. Commits autonomously (every commit green, id-referenced), checks off acceptance criteria as they're met, closes the parent epic when its last story lands, pushes once, and reports which files changed and why plus a compare link the human opens the PR from. Uses the git CLI only — never gh/glab or a host API. Handles Type:spike stories via a research/interview loop. Use when asked to "deliver", "pick up", "implement", "do", or "complete" a story, or given a story id to take to done. Examples: "/backlog-deliver DIP-1.1", "pick up the next ready story", "deliver DIP-4.2".
 ---
 
 # backlog-deliver — take one story from To Do to Done
@@ -189,9 +189,17 @@ working tree is clean (everything is committed).
 ## Step 5 — Close out the story (on the branch)
 
 1. `backlog task edit <id> -s Done --final-summary "<what shipped, in one paragraph>"`.
-2. Verify once more, then commit the task-file change as the branch's final commit:
-   `chore(backlog): mark DIP-1.1 delivered (DIP-1.1)`. The task file under `backlog/tasks/` is
-   tracked, so it belongs on the branch with the work it describes.
+2. **Close the epic if this was its last story.** Read the parent epic
+   (`backlog task <epicId> --plain`); if every subtask is now Done, close it here, on this
+   branch — never later on the base branch. Check off each epic acceptance criterion the
+   delivered stories objectively satisfy, then
+   `backlog task edit <epicId> -s Done --final-summary "<what the epic shipped, referencing
+   its stories>"`. If any epic criterion is **not** met by the delivered stories, leave the
+   epic open and flag the gap in the report instead — an epic never closes on a technicality.
+3. Verify once more, then commit the task-file changes as the branch's final commit:
+   `chore(backlog): mark DIP-1.1 delivered (DIP-1.1)` — or, when the epic closes too,
+   `chore(backlog): mark DIP-1.1 delivered, close epic DIP-1 (DIP-1.1)`. The task files under
+   `backlog/tasks/` are tracked, so they belong on the branch with the work they describe.
 
 ## Step 6 — Push
 
