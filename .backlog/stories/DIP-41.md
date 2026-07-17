@@ -1,7 +1,7 @@
 # [DIP-41] backlog-plan sets scopes on every story; story standard requires them
 
 Type: deliverable
-Status: queued
+Status: completed
 
 ## Outcome
 Every story declares the files it will touch, so two agents can be told — before either writes a

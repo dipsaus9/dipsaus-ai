@@ -18,6 +18,24 @@ picked up directly).
 5. **Pickup-sized.** Completable in one sitting. Epic-sized ⇒ it is a *task*, not a story.
 6. **Verifiable.** How you would *prove* it: a command, a test, or an observable behaviour.
    (This is what lets the delivery skill self-check honestly.)
+7. **Declared scopes.** ≥1 file or directory path the story will touch, concrete enough that two
+   stories' scopes can be compared for overlap **before** either is picked up. Lives in the doc's
+   **Affected area** and mirrors to the subtask's `--scope`. An unscoped story cannot be safely
+   handed to a parallel agent — see below.
+
+## Scopes — the parallel-safety contract
+
+Scopes exist so two agents can be told, before either writes a line, that their stories collide.
+
+- **Path-shaped and comparable.** `hooks/dad-joke/config.ts`, or a directory like
+  `skills/backlog-plan/`. Prose like "the config" or "the notification logic" is useless to an
+  overlap check — reject it.
+- **Overlap rule.** Two scopes collide if either path is a **prefix** of the other.
+  `hooks/dad-joke/config.ts` collides with itself and with `hooks/dad-joke/`; it does not collide
+  with `skills/backlog-plan/`.
+- **Dependency edges do not imply file independence.** Two stories can be perfectly parallel on
+  paper and still both rewrite the same file. A picker that only checks `depends-on` hands them out
+  together and produces a guaranteed conflict. Scopes are what catch it.
 
 ## Optional — add when useful
 
@@ -49,6 +67,6 @@ A subtask has no free-form description field, so rich content lives in a **compa
 
 ## Readiness
 
-A story is **ready** when: all six required items hold, and it is neither `needs-refinement`
+A story is **ready** when: all seven required items hold, and it is neither `needs-refinement`
 nor carrying unresolved `needs-info` / open questions. `backlog-deliver`'s readiness gate
 checks exactly this before touching code.

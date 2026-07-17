@@ -5,6 +5,8 @@ and update it. `backlog-plan` writes it; `backlog-deliver` reads it. Keep it ter
 — it is read by a model, not skimmed by a human.
 
 Omit optional sections that do not apply, but never rename or reorder the ones present.
+**`Affected area` is not optional** — it is the source of the subtask's `--scope`, and a story
+without it cannot be checked for collision against another story.
 
 ```markdown
 # [<PREFIX>-<n>] <concrete title: what + where>
@@ -23,7 +25,9 @@ Status: ready | needs-refinement | needs-info
 - <PREFIX-n> (or "none")
 
 ## Affected area
-- <files / directories the work touches — mirrors the subtask --scope>
+- <file or directory path this story touches — REQUIRED, ≥1 entry>
+- <one path per line, path-shaped and comparable: `hooks/dad-joke/config.ts`, `skills/backlog-plan/`>
+- <this section IS the subtask's --scope; the two are set from it together so they cannot drift>
 
 ## Verify
 - <command / test / observable that proves done-when, e.g. `bun run check`>
@@ -53,6 +57,11 @@ Status: ready
 ## Done-when
 - <the question is answered with a documented rationale>
 - <options compared / a recommendation chosen>
+
+## Affected area
+- <still REQUIRED. A spike that only produces a decision scopes to its own companion doc:
+   `.backlog/stories/<PREFIX>-<n>.md`. A spike that will prototype code scopes to that code too —
+   otherwise it can silently collide with a deliverable story touching the same files.>
 
 ## Findings
 <filled in during delivery: what was learned, sources, the decision>

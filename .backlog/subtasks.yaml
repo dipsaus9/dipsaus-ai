@@ -1105,7 +1105,8 @@ subtasks:
     status: queued
     priority_score: 50
     risk: high
-    scopes: []
+    scopes:
+      - hooks/dad-joke/spike-render.ts
     claim_mode: exclusive
     depends_on: []
     blockers: []
@@ -1136,7 +1137,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T08:56:26.569Z
-    updated_at: 2026-07-13T08:56:52.015Z
+    updated_at: 2026-07-13T14:32:17.599Z
   - id: subtask_036
     task_id: task_008
     title: "[DIP-36] entrypoint smoke test: exit 0 + newline-terminated valid JSON
@@ -1145,7 +1146,8 @@ subtasks:
     status: queued
     priority_score: 50
     risk: low
-    scopes: []
+    scopes:
+      - tests/unit/dad-joke-entrypoints.test.ts
     claim_mode: exclusive
     depends_on: []
     blockers: []
@@ -1174,7 +1176,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T08:56:26.698Z
-    updated_at: 2026-07-13T08:56:52.137Z
+    updated_at: 2026-07-13T14:32:17.719Z
   - id: subtask_037
     task_id: task_008
     title: "[DIP-37] two-tier joke formatter: emoji + structure always, ANSI colour
@@ -1183,7 +1185,12 @@ subtasks:
     status: queued
     priority_score: 50
     risk: medium
-    scopes: []
+    scopes:
+      - hooks/dad-joke/format.ts
+      - hooks/dad-joke/source.ts
+      - hooks/dad-joke/config.ts
+      - hooks/dad-joke/on-post-tool-use.ts
+      - tests/unit/dad-joke-format.test.ts
     claim_mode: exclusive
     depends_on:
       - subtask_035
@@ -1214,7 +1221,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T08:56:32.530Z
-    updated_at: 2026-07-13T08:57:10.310Z
+    updated_at: 2026-07-13T14:32:17.839Z
   - id: subtask_038
     task_id: task_008
     title: "[DIP-38] opt-in DAD_JOKE_NOTIFY=1 desktop notification via
@@ -1223,7 +1230,11 @@ subtasks:
     status: queued
     priority_score: 50
     risk: medium
-    scopes: []
+    scopes:
+      - hooks/dad-joke/notify.ts
+      - hooks/dad-joke/config.ts
+      - hooks/dad-joke/on-post-tool-use.ts
+      - tests/unit/dad-joke-notify.test.ts
     claim_mode: exclusive
     depends_on:
       - subtask_035
@@ -1256,7 +1267,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T08:56:32.668Z
-    updated_at: 2026-07-13T08:57:10.441Z
+    updated_at: 2026-07-13T14:32:17.963Z
   - id: subtask_039
     task_id: task_008
     title: "[DIP-39] README: document DAD_JOKE_NOTIFY, colour behaviour + NO_COLOR,
@@ -1265,7 +1276,8 @@ subtasks:
     status: queued
     priority_score: 50
     risk: low
-    scopes: []
+    scopes:
+      - README.md
     claim_mode: exclusive
     depends_on:
       - subtask_037
@@ -1291,7 +1303,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T08:56:37.048Z
-    updated_at: 2026-07-13T08:57:10.572Z
+    updated_at: 2026-07-13T14:32:18.083Z
   - id: subtask_040
     task_id: task_009
     title: "[DIP-40] configure the worktree environment: gitignore
@@ -1343,7 +1355,7 @@ subtasks:
     title: "[DIP-41] backlog-plan sets scopes on every story; story standard
       requires them"
     repo: dipsaus-ai
-    status: queued
+    status: completed
     priority_score: 50
     risk: low
     scopes:
@@ -1373,7 +1385,7 @@ subtasks:
       origin: manual
       locked: false
     created_at: 2026-07-13T09:06:49.752Z
-    updated_at: 2026-07-13T11:03:16.289Z
+    updated_at: 2026-07-14T07:37:24.025Z
   - id: subtask_042
     task_id: task_009
     title: "[DIP-42] backlog-deliver self-isolates via EnterWorktree, bootstraps
