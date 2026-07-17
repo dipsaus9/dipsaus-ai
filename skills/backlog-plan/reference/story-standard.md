@@ -22,6 +22,8 @@ picked up directly).
    stories' scopes can be compared for overlap **before** either is picked up. Lives in the doc's
    **Affected area** and mirrors to the subtask's `--scope`. An unscoped story cannot be safely
    handed to a parallel agent — see below.
+8. **Named branch.** The exact branch delivery will cut: `<PREFIX>-<n>/<slug>`, in the doc's
+   **Branch** section. Planned, not improvised at delivery time — see below.
 
 ## Scopes — the parallel-safety contract
 
@@ -36,6 +38,24 @@ Scopes exist so two agents can be told, before either writes a line, that their 
 - **Dependency edges do not imply file independence.** Two stories can be perfectly parallel on
   paper and still both rewrite the same file. A picker that only checks `depends-on` hands them out
   together and produces a guaranteed conflict. Scopes are what catch it.
+
+## Branch — one story, one branch
+
+The story's id owns a branch, and the branch is planned with the story:
+
+```
+<PREFIX>-<n>/<slug>            e.g.  DIP-12/parallel-agent-cap
+```
+
+- `<PREFIX>-<n>` is the id verbatim, uppercase, first. No type prefix in front of it
+  (`feat/DIP-12/…` is wrong). The id-first shape is what makes a branch traceable back to a story
+  by name alone, and what lets `backlog-deliver` detect "this story is already in progress" with a
+  plain `git branch --list '<PREFIX>-<n>/*'`.
+- `<slug>` — 2–4 words from the title, lowercase-hyphenated, no id repeated.
+- **Planned, not improvised.** If delivery derives the slug itself, two runs of the same story can
+  produce two different branches and the in-progress check silently misses. Planning it freezes it.
+- One branch per story, never shared and never reused. `git` forbids a branch `DIP-12` alongside
+  `DIP-12/slug` (a ref cannot be both file and directory) — the `<n>/` shape reserves the namespace.
 
 ## Optional — add when useful
 
@@ -67,6 +87,6 @@ A subtask has no free-form description field, so rich content lives in a **compa
 
 ## Readiness
 
-A story is **ready** when: all seven required items hold, and it is neither `needs-refinement`
+A story is **ready** when: all eight required items hold, and it is neither `needs-refinement`
 nor carrying unresolved `needs-info` / open questions. `backlog-deliver`'s readiness gate
 checks exactly this before touching code.

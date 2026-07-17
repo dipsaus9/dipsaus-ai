@@ -1,6 +1,6 @@
 ---
 name: backlog-plan
-description: Interview the user into a well-formed backlog for any repo using the backlog CLI (osmove/backlog) + Claude. Runs a grill-style, one-question-at-a-time session, decomposes the work into an epic + AI-first stories that meet the story standard ([PREFIX-n] ids, done-when, deps, companion docs), then materializes it on approval — subtasks, story docs, and .backlog/standards.json. Use when asked to "plan a backlog", "create stories", "grill me into a backlog", "break this down into stories", "set up the backlog", or invoked as /backlog-plan.
+description: Interview the user into a well-formed backlog for any repo using the backlog CLI (osmove/backlog) + Claude. Runs a grill-style, one-question-at-a-time session, decomposes the work into an epic + AI-first stories that meet the story standard ([PREFIX-n] ids, done-when, deps, declared scopes, a named `PREFIX-n/<slug>` branch, companion docs), then materializes it on approval — subtasks, story docs, and .backlog/standards.json. Plans only: never cuts a branch or commits. Use when asked to "plan a backlog", "create stories", "grill me into a backlog", "break this down into stories", "set up the backlog", or invoked as /backlog-plan.
 ---
 
 # backlog-plan — grill a well-formed backlog into existence
@@ -28,11 +28,16 @@ CLI, never by hand-editing `.backlog/*.yaml`.
   tree. A half-finished interview must never leave partial subtasks behind.
 - **One question at a time.** Never batch. Each question carries **your recommended answer** and the
   trade-off. Prefer answering from the repo over asking (explore the codebase first).
-- **Every story meets the standard.** Seven required items; flag anything unresolved as
+- **Every story meets the standard.** Eight required items; flag anything unresolved as
   `needs-refinement` / `needs-info` rather than inventing scope.
 - **No story ships unscoped.** Every story declares the paths it will touch. Scopes are what let
   two agents discover a collision *before* either writes a line — an unscoped story is unsafe to
   pick up in parallel, so materializing one is refused.
+- **No story ships unbranched.** Every story names the branch delivery will cut,
+  `<PREFIX>-<n>/<slug>` (`DIP-12/parallel-agent-cap`). You freeze it here so delivery can't
+  improvise a different slug on a re-run — see `reference/story-standard.md` § Branch.
+- **You plan; you never deliver.** This skill writes no code, cuts no branch, makes no commit. It
+  leaves stories `queued` on the base branch. `backlog-deliver` owns the git contract end to end.
 - **Stories are written for an AI to read and write** — explicit, structured, no human-only prose.
 
 ---
@@ -80,8 +85,8 @@ Turn the resolved design into an **epic + stories**:
 
 - **Epic (task):** the coarse grouping. Give it a description + acceptance criteria.
 - **Stories (subtasks):** each meets `reference/story-standard.md` — one outcome, concrete title,
-  objective done-when, real depends-on, pickup-sized, verifiable, **scoped**. Split anything that
-  needs "and".
+  objective done-when, real depends-on, pickup-sized, verifiable, **scoped**, **branched**. Split
+  anything that needs "and".
 - Mark research/decision work as `Type: spike`. Mark not-yet-ready work `needs-refinement` /
   `needs-info` instead of padding it with guesses.
 - Order stories by real dependencies.
@@ -100,11 +105,16 @@ The doc's **Affected area** is where the scopes are authored — Step 6 mirrors 
 subtask's `--scope`, so the two cannot drift. Write it path-shaped (`hooks/dad-joke/config.ts`,
 `skills/backlog-plan/`), never as prose.
 
+The doc's **Branch** is where the branch name is frozen: `<PREFIX>-<n>/<slug>`, slug 2–4 words from
+the title, lowercase-hyphenated, no type prefix. It stays a placeholder id until Step 6, same as the
+rest. `backlog-deliver` cuts this string verbatim — it is the only branch the story is ever allowed
+to land on.
+
 ## Step 5 — Present the tree
 
 Show the whole thing before writing anything: epic → stories with proposed `[PREFIX-n]` ids,
-one-line outcomes, done-when counts, dependency edges, **declared scopes**, and any
-`needs-refinement` / `needs-info` flags. Call out any pair of stories whose scopes overlap, and say
+one-line outcomes, done-when counts, dependency edges, **declared scopes**, **branch names**, and
+any `needs-refinement` / `needs-info` flags. Call out any pair of stories whose scopes overlap, and say
 whether you resolved it with a dependency edge or a resplit — that pair is the one that would have
 broken a parallel run. Iterate with the user until they approve. **Do not materialize without
 explicit approval.**
@@ -115,10 +125,10 @@ Write everything atomically-ish, in order. `[PREFIX-n]` requires the native numb
 exists after creation — so create, read the number, then backfill the id.
 
 **Preconditions — check every story before writing anything.** A story with an empty `done-when`,
-or with an empty / prose-only **Affected area**, is **refused**: do not create it, say which story
-failed and why, and resolve it with the user first. Both fields are what make a story pickup-able —
-`done-when` decides when it is finished, scopes decide whether it is safe to start. A story missing
-either is not a story yet.
+an empty / prose-only **Affected area**, or a missing / malformed **Branch** is **refused**: do not
+create it, say which story failed and why, and resolve it with the user first. The three are what
+make a story pickup-able — `done-when` decides when it is finished, scopes decide whether it is safe
+to start, the branch decides where it lands. A story missing any of them is not a story yet.
 
 1. **Config:** if `prefix` was not already set, write `.backlog/standards.json`
    (`{ "prefix": "<chosen>" }` — plus `verify`/`gates` only if the user chose non-defaults).
@@ -135,9 +145,12 @@ either is not a story yet.
      Never leave it empty — an unscoped subtask is invisible to the delivery skill's contention
      check, which then silently passes every story instead of catching the collision.
    - Set `--risk` via update when useful (optional).
-   - Write `.backlog/stories/<PREFIX>-<N>.md` from the drafted content (real id in the heading).
-4. **Report:** list the created epic + `[PREFIX-n]` stories and where each doc lives. Leave stories
-   `queued`; the delivery skill picks them up.
+   - Write `.backlog/stories/<PREFIX>-<N>.md` from the drafted content, with the real id backfilled
+     in **both** the heading **and** the `## Branch` line (`DIP-12/parallel-agent-cap`). A doc whose
+     Branch still carries the placeholder `<n>` sends delivery to a nonsense branch.
+4. **Report:** list the created epic + `[PREFIX-n]` stories, each one's branch, and where each doc
+   lives. Leave stories `queued` — and leave the working tree on the base branch. The delivery skill
+   cuts the branches and makes the commits; you don't.
 
 ---
 

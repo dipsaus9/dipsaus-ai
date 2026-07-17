@@ -6,7 +6,9 @@ and update it. `backlog-plan` writes it; `backlog-deliver` reads it. Keep it ter
 
 Omit optional sections that do not apply, but never rename or reorder the ones present.
 **`Affected area` is not optional** — it is the source of the subtask's `--scope`, and a story
-without it cannot be checked for collision against another story.
+without it cannot be checked for collision against another story. **`Branch` is not optional
+either** — `backlog-deliver` cuts exactly that branch, so naming it here is what stops the slug
+being reinvented at delivery time.
 
 ```markdown
 # [<PREFIX>-<n>] <concrete title: what + where>
@@ -28,6 +30,11 @@ Status: ready | needs-refinement | needs-info
 - <file or directory path this story touches — REQUIRED, ≥1 entry>
 - <one path per line, path-shaped and comparable: `hooks/dad-joke/config.ts`, `skills/backlog-plan/`>
 - <this section IS the subtask's --scope; the two are set from it together so they cannot drift>
+
+## Branch
+<PREFIX>-<n>/<slug>
+<REQUIRED. The exact branch backlog-deliver cuts. `<slug>` = 2–4 words from the title,
+ lowercase-hyphenated, no id repeated, no type prefix. e.g. `DIP-12/parallel-agent-cap`.>
 
 ## Verify
 - <command / test / observable that proves done-when, e.g. `bun run check`>
@@ -62,6 +69,10 @@ Status: ready
 - <still REQUIRED. A spike that only produces a decision scopes to its own companion doc:
    `.backlog/stories/<PREFIX>-<n>.md`. A spike that will prototype code scopes to that code too —
    otherwise it can silently collide with a deliverable story touching the same files.>
+
+## Branch
+<PREFIX>-<n>/<slug>
+<still REQUIRED — a spike commits its Findings, so it gets a branch like any other story.>
 
 ## Findings
 <filled in during delivery: what was learned, sources, the decision>

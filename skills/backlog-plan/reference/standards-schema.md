@@ -18,14 +18,30 @@ frontend repo needs at most `{ "prefix": "DIP" }`; everything else is derived.
 
   // OPTIONAL. Delivery gates. Absent → the safe defaults shown.
   "gates": {
-    "commit": "require-approval",     // "require-approval" (default) | "autonomous"
-    "deliver": "push",                // "commit-only" | "push" (default) | "pr"
     "tdd": false,                     // require a failing test before code
     "plan_gate": false,               // require plan approval before implementing
     "external_review": null           // e.g. "/codex:review --wait"; null = self-review only
   }
 }
 ```
+
+## What is NOT configurable — the git contract
+
+`gates.commit` and `gates.deliver` no longer exist. Branching, committing and delivery are a
+**fixed contract** owned by `backlog-deliver` (see its `## Git contract`), identical in every repo:
+
+- one branch per story, named `<PREFIX>-<n>/<slug>`, cut from the base;
+- commits on that branch are **autonomous** — no approval — and **every commit is green**
+  (verify runs immediately before each one);
+- **one push** at the end, and the human opens the PR from a printed compare link;
+- **git CLI only** — never `gh` / `glab` / a host API.
+
+A repo that wants a different git workflow does not get one by config; it changes the skill.
+
+## Base branch resolution
+
+The branch a story is cut from and compared against: `.backlog/config.toml` `default_branch`,
+else the remote's default branch. Not a `standards.json` field.
 
 ## Prefix derivation
 
