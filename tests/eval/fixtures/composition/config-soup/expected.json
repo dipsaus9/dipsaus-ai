@@ -1,0 +1,9 @@
+{
+  "files": {
+    "Bad.tsx": {
+      "expected": [{ "rule": "comp.config-soup", "line": 5 }],
+      "alsoAcceptable": ["comp.regions-as-slots", "comp.slots-over-config"]
+    },
+    "Good.tsx": { "expected": [], "alsoAcceptable": [] }
+  }
+}
