@@ -11,6 +11,7 @@ import {
   toBaseline,
   type Baseline,
 } from "./baseline";
+import { runApply } from "./apply";
 import { invokeClaude } from "./claude";
 import { defaultConfig, type EvalConfig } from "./config";
 import { discoverCases, readSkillMd } from "./fixtures";
@@ -22,6 +23,7 @@ import type { EvalReport, FixtureLabels, RunRecord } from "./types";
 
 const RUNNER_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const BASELINE_PATH = path.resolve(RUNNER_DIR, "../baseline/review.json");
+export const APPLY_BASELINE_PATH = path.resolve(RUNNER_DIR, "../baseline/apply.json");
 
 export interface ReviewRunOptions {
   config: EvalConfig;
@@ -102,8 +104,13 @@ async function main(): Promise<void> {
       "claude-bin": { type: "string" },
       out: { type: "string" },
       "update-baseline": { type: "boolean" },
+      mode: { type: "string" },
     },
   });
+  const mode = values.mode ?? "review";
+  if (mode !== "review" && mode !== "apply") {
+    throw new Error(`--mode must be review or apply, got ${mode}`);
+  }
 
   const config: EvalConfig = {
     ...defaultConfig,
@@ -115,28 +122,41 @@ async function main(): Promise<void> {
     throw new Error(`--runs must be a positive integer, got ${values.runs}`);
   }
 
-  const report = await runReview({
-    config,
-    filter: values.filter,
-    log: (message) => console.log(message),
-  });
+  let report: EvalReport;
+  let applyRuns: object[] | undefined;
+  if (mode === "apply") {
+    const applyResult = await runApply({
+      config,
+      filter: values.filter,
+      log: (message) => console.log(message),
+    });
+    report = applyResult.report;
+    applyRuns = applyResult.runs;
+  } else {
+    report = await runReview({
+      config,
+      filter: values.filter,
+      log: (message) => console.log(message),
+    });
+  }
 
+  const baselinePath = mode === "apply" ? APPLY_BASELINE_PATH : BASELINE_PATH;
   const current = toBaseline(report.scores);
-  const existing: Baseline | null = existsSync(BASELINE_PATH)
-    ? (JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as Baseline)
+  const existing: Baseline | null = existsSync(baselinePath)
+    ? (JSON.parse(readFileSync(baselinePath, "utf8")) as Baseline)
     : null;
 
-  let output: object = report;
+  let output: object = applyRuns ? { ...report, applyRuns } : report;
   let baselineOk = true;
   if (values["update-baseline"]) {
     const merged = mergeBaseline(existing, current);
-    mkdirSync(path.dirname(BASELINE_PATH), { recursive: true });
-    writeFileSync(BASELINE_PATH, `${JSON.stringify(merged, null, 2)}\n`);
-    console.log(`\nBaseline updated: ${BASELINE_PATH} — commit it via PR.`);
+    mkdirSync(path.dirname(baselinePath), { recursive: true });
+    writeFileSync(baselinePath, `${JSON.stringify(merged, null, 2)}\n`);
+    console.log(`\nBaseline updated: ${baselinePath} — commit it via PR.`);
   } else if (existing) {
     const diff = diffBaseline(existing, current);
     printDiff(diff);
-    output = attachDiff(report, diff);
+    output = applyRuns ? { ...attachDiff(report, diff), applyRuns } : attachDiff(report, diff);
     baselineOk = diffPasses(diff);
   } else {
     console.log("\nNo committed baseline yet — run with --update-baseline to create one.");
@@ -147,7 +167,7 @@ async function main(): Promise<void> {
     path.join(
       RUNNER_DIR,
       "results",
-      `review-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
+      `${mode}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
     );
   mkdirSync(path.dirname(outPath), { recursive: true });
   writeFileSync(outPath, `${JSON.stringify(output, null, 2)}\n`);

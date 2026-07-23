@@ -19,6 +19,7 @@ export default defineConfig({
         test: {
           name: "eval",
           include: ["tests/eval/**/*.test.{ts,tsx}"],
+          exclude: ["**/node_modules/**", "**/results/**"],
           environment: "jsdom",
           // testing-library auto-cleanup between tests hooks into a global
           // afterEach — without globals it silently leaks rendered DOM.
