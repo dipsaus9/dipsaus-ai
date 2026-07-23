@@ -1,10 +1,10 @@
 ---
 id: DIP-2.1
 title: Stable rule ids in react-architecture skill output
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-17 14:16'
-updated_date: '2026-07-23 08:52'
+updated_date: '2026-07-23 08:53'
 labels:
   - story
 dependencies: []
@@ -25,10 +25,10 @@ Branch: DIP-2.1/skill-rule-ids
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Every rule in SKILL.md Standards carries a unique stable id, visible in a rules table; ids are kebab, category-prefixed (srp., boundary., comp., state.)
-- [ ] #2 Review-mode output format requires the rule id in each finding entry, and the format example in SKILL.md shows it
-- [ ] #3 Apply-mode summary format references the same ids
-- [ ] #4 No rule's substance (caps, severities, wording of what is checked) changes in this story — ids only; diff shows additions, not semantic edits
+- [x] #1 Every rule in SKILL.md Standards carries a unique stable id, visible in a rules table; ids are kebab, category-prefixed (srp., boundary., comp., state.)
+- [x] #2 Review-mode output format requires the rule id in each finding entry, and the format example in SKILL.md shows it
+- [x] #3 Apply-mode summary format references the same ids
+- [x] #4 No rule's substance (caps, severities, wording of what is checked) changes in this story — ids only; diff shows additions, not semantic edits
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -42,3 +42,9 @@ Branch: DIP-2.1/skill-rule-ids
 <!-- SECTION:NOTES:BEGIN -->
 Verify: bun run lint/typecheck/test (doc-only change, suite must stay green). Manual: read the diff — the only allowed changes are added id tokens and format spec lines.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Every rule in skills/react-architecture/SKILL.md now carries a stable kebab, category-prefixed id (srp., boundary., comp., state.) — inline at each rule, in the hard-caps table's new Id column, and in a new Rule index table (20 ids with severity + one-line rule) that is the machine-readable contract for the eval harness. Review-mode finding format and example now require the id per finding, and the apply-mode summary references the same ids. No rule substance changed — diff is additions of id tokens, the index table, and format spec lines only.
+<!-- SECTION:FINAL_SUMMARY:END -->
