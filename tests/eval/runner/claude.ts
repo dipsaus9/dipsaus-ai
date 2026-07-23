@@ -6,6 +6,10 @@ export interface InvokeOptions {
   systemAppend: string;
   prompt: string;
   timeoutMs: number;
+  /** working directory for the CLI (apply mode runs inside the sandbox) */
+  cwd?: string;
+  /** extra CLI args, e.g. tool permissions for apply mode */
+  extraArgs?: string[];
 }
 
 export interface InvokeResult {
@@ -28,9 +32,10 @@ export function invokeClaude(options: InvokeOptions): Promise<InvokeResult> {
         options.model,
         "--append-system-prompt",
         options.systemAppend,
+        ...(options.extraArgs ?? []),
         options.prompt,
       ],
-      { stdio: ["ignore", "pipe", "pipe"] },
+      { stdio: ["ignore", "pipe", "pipe"], cwd: options.cwd },
     );
 
     let stdout = "";

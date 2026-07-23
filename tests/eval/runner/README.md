@@ -34,6 +34,30 @@ Rule index) and the pinned judge model placeholder for the judge layer.
 - Pass verdict: high-severity rules need K/K detection, med/low ≥ 80%, and good twins
   (files labeled with empty `expected`) must produce zero findings in every run.
 
+## Apply mode
+
+`--mode apply` copies each bad fixture (its `expected.json` excluded, so labels never
+reach the model) into a fresh `os.tmpdir()` sandbox — repo `node_modules` symlinked in,
+standalone tsconfig/vitest configs generated — runs the skill in apply mode there with
+edit tools (`--permission-mode acceptEdits`), then grades the refactored copy
+mechanically, each sub-check reported per run:
+
+1. **originals untouched** — the fixture directory is content-hashed before and after;
+2. **caps** — AST-computed LOC / hooks / props / effects / JSX depth per component
+   (counting rules documented in `ast.ts`, LOC = declaration-to-closing-brace span);
+3. **banned patterns** — derived-state-in-effect (direct setter call in an effect body)
+   and effect-fetch (setter + await/`.then`/`fetch` in an effect subtree) via real AST
+   walks — subscription and timer effects stay clean;
+4. **tsc** — strict typecheck of the sandbox;
+5. **behavior tests** — the fixture's `behavior.test.tsx`, restored from a pristine copy
+   first so a model that edits the test cannot grade itself green.
+
+A failing sub-check fails the run with the failing output captured in the report. Pass
+rates fold into the same results/baseline machinery as review mode under the pseudo-rule
+`apply.pass` (pass bar 80%; the judge layer refines verdicts later), against the separate
+`tests/eval/baseline/apply.json`. Every grading entry point refuses paths outside the OS
+tmpdir.
+
 ## Baseline regression diff
 
 When `tests/eval/baseline/review.json` exists, every plain run diffs its per-rule rates
