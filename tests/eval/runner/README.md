@@ -70,6 +70,24 @@ results JSON. Non-unanimous (2–1) verdicts surface as `judge-instability` warn
 Changing the pinned judge id or any rubric text requires a deliberate baseline reset —
 see `tests/eval/rubrics/README.md`.
 
+## A/B mode — does the skill help at all?
+
+`--mode ab` runs review **and** apply over the same fixtures, model list and K twice:
+once with the skill loaded, once with a neutral "experienced React reviewer" system
+prompt. The control arm keeps the same output-format scaffolding and the bare rule-id
+vocabulary (the parser must work on both arms) but none of the skill's standards content
+— what differs is the skill's substance, not its formatting. `--verbose` prints both
+arm system prompts verbatim.
+
+Judging stays arm-blind: both arms' mechanical-pass refactors are collected, shuffled
+deterministically, and judged in one anonymous batch — the judge prompt (rubric + code
+only) never carries arm information.
+
+The report shows per-category × per-model detection rates, false-positive counts and
+apply pass rates for both arms, plus plain-language summary lines naming where the skill
+adds value or hurts. Results land in `results/ab-*.json` — stored beside, but **never
+diffed against**, the regression baseline (different question, different lifecycle).
+
 ## Baseline regression diff
 
 When `tests/eval/baseline/review.json` exists, every plain run diffs its per-rule rates

@@ -11,6 +11,7 @@ import {
   toBaseline,
   type Baseline,
 } from "./baseline";
+import { printAbReport, runAb } from "./ab";
 import { runApply } from "./apply";
 import { invokeClaude } from "./claude";
 import { defaultConfig, type EvalConfig } from "./config";
@@ -28,6 +29,8 @@ export const APPLY_BASELINE_PATH = path.resolve(RUNNER_DIR, "../baseline/apply.j
 export interface ReviewRunOptions {
   config: EvalConfig;
   filter?: string;
+  /** override the system prompt (A/B control arm); default = skill loaded */
+  systemAppend?: string;
   log?: (message: string) => void;
 }
 
@@ -43,7 +46,7 @@ export async function runReview(options: ReviewRunOptions): Promise<EvalReport> 
   if (cases.length === 0) {
     throw new Error(`no fixtures match filter ${JSON.stringify(filter ?? "")}`);
   }
-  const systemAppend = buildSystemPrompt(readSkillMd());
+  const systemAppend = options.systemAppend ?? buildSystemPrompt(readSkillMd());
   const records: RunRecord[] = [];
   const labelsByFixture = new Map<string, FixtureLabels>(
     cases.map((c) => [c.name, c.labels]),
@@ -105,11 +108,12 @@ async function main(): Promise<void> {
       out: { type: "string" },
       "update-baseline": { type: "boolean" },
       mode: { type: "string" },
+      verbose: { type: "boolean" },
     },
   });
   const mode = values.mode ?? "review";
-  if (mode !== "review" && mode !== "apply") {
-    throw new Error(`--mode must be review or apply, got ${mode}`);
+  if (mode !== "review" && mode !== "apply" && mode !== "ab") {
+    throw new Error(`--mode must be review, apply or ab, got ${mode}`);
   }
 
   const config: EvalConfig = {
@@ -120,6 +124,29 @@ async function main(): Promise<void> {
   };
   if (!Number.isInteger(config.runs) || config.runs < 1) {
     throw new Error(`--runs must be a positive integer, got ${values.runs}`);
+  }
+
+  if (mode === "ab") {
+    // A/B answers a different question on a different lifecycle: results are
+    // stored beside the baseline outputs but never diffed against them.
+    const abReport = await runAb({
+      config,
+      filter: values.filter,
+      verbose: values.verbose,
+      log: (message) => console.log(message),
+    });
+    const abOut =
+      values.out ??
+      path.join(
+        RUNNER_DIR,
+        "results",
+        `ab-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
+      );
+    mkdirSync(path.dirname(abOut), { recursive: true });
+    writeFileSync(abOut, `${JSON.stringify(abReport, null, 2)}\n`);
+    printAbReport(abReport);
+    console.log(`\nResults written to ${abOut}`);
+    return;
   }
 
   let report: EvalReport;
