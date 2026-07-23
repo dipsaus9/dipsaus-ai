@@ -17,7 +17,9 @@ CI or `bun run test`.
 ```
 
 Flags: `--model` (repeatable), `--runs`, `--filter` (substring of `category/dir`),
-`--claude-bin` (default `~/.local/bin/claude`, or `CLAUDE_BIN`), `--out` (JSON path).
+`--claude-bin` (default `~/.local/bin/claude`, or `CLAUDE_BIN`), `--out` (JSON path),
+`--update-baseline` (rewrite `tests/eval/baseline/review.json` from this run — the only
+way the baseline changes; commit the result via PR).
 Defaults live in `config.ts` — including the rule → severity map (mirrors the skill's
 Rule index) and the pinned judge model placeholder for the judge layer.
 
@@ -31,6 +33,16 @@ Rule index) and the pinned judge model placeholder for the judge layer.
   **failed run** (hurts detection), never a crash.
 - Pass verdict: high-severity rules need K/K detection, med/low ≥ 80%, and good twins
   (files labeled with empty `expected`) must produce zero findings in every run.
+
+## Baseline regression diff
+
+When `tests/eval/baseline/review.json` exists, every plain run diffs its per-rule rates
+against it: a rate drop is a named regression
+(`state.derived-effect on state/derived-effect/Bad.tsx @ claude-sonnet-5: 5/5 -> 3/5`)
+and fails the run, as does an in-scope baseline entry the run no longer produces. New
+rules/fixtures are additions, not regressions. A `--filter` run compares only entries in
+its own scope; differing K is compared as a proportion but flagged. See
+`tests/eval/baseline/README.md`.
 
 ## Output
 
