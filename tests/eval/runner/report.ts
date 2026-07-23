@@ -40,6 +40,14 @@ export function printReport(report: EvalReport): void {
     }
   }
 
+  if (report.warnings && report.warnings.length > 0) {
+    console.log("");
+    console.log("Warnings:");
+    for (const warning of report.warnings) {
+      console.log(`  ${warning}`);
+    }
+  }
+
   console.log("");
   if (verdict.pass) {
     console.log("VERDICT: PASS");

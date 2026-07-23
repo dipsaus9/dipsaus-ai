@@ -54,9 +54,21 @@ mechanically, each sub-check reported per run:
 
 A failing sub-check fails the run with the failing output captured in the report. Pass
 rates fold into the same results/baseline machinery as review mode under the pseudo-rule
-`apply.pass` (pass bar 80%; the judge layer refines verdicts later), against the separate
-`tests/eval/baseline/apply.json`. Every grading entry point refuses paths outside the OS
-tmpdir.
+`apply.pass` (pass bar 80%), against the separate `tests/eval/baseline/apply.json`.
+Every grading entry point refuses paths outside the OS tmpdir.
+
+### Judge layer
+
+For fixtures whose expected findings include `comp.*` rules, a mechanical pass is
+followed by an LLM judge — the composition quality an AST cannot measure. Per rule:
+the rubric from `tests/eval/rubrics/<rule>.md` plus the refactored sources (and nothing
+else — no run metadata, no skill-arm information; DIP-2.10 reuses this blindness) go to
+the **pinned** judge model (`judgeModel` in `config.ts`), 3 votes, majority decides.
+The apply verdict is mechanical checks AND judge majority; judge failures name the
+rubric and majority reasoning, and every individual vote + reasoning lands in the
+results JSON. Non-unanimous (2–1) verdicts surface as `judge-instability` warnings.
+Changing the pinned judge id or any rubric text requires a deliberate baseline reset —
+see `tests/eval/rubrics/README.md`.
 
 ## Baseline regression diff
 

@@ -75,6 +75,8 @@ export interface VerdictFailure {
 }
 
 export interface EvalReport {
+  /** non-fatal signals, e.g. judge-instability (2–1 verdicts) */
+  warnings?: string[];
   config: {
     models: string[];
     runs: number;
