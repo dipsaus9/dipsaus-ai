@@ -1,0 +1,11 @@
+{
+  "files": {
+    "Bad.tsx": {
+      "expected": [{ "rule": "boundary.deep-import", "line": 3 }],
+      "alsoAcceptable": []
+    },
+    "Good.tsx": { "expected": [], "alsoAcceptable": [] },
+    "billing/index.ts": { "expected": [], "alsoAcceptable": [] },
+    "billing/lib/tax.ts": { "expected": [], "alsoAcceptable": [] }
+  }
+}

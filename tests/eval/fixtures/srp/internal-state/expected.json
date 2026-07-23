@@ -1,0 +1,10 @@
+{
+  "files": {
+    "Bad.tsx": {
+      "expected": [{ "rule": "boundary.internal-state", "line": 9 }],
+      "alsoAcceptable": []
+    },
+    "Good.tsx": { "expected": [], "alsoAcceptable": [] },
+    "billing/index.tsx": { "expected": [], "alsoAcceptable": [] }
+  }
+}

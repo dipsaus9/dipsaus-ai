@@ -1,0 +1,14 @@
+{
+  "files": {
+    "Bad.tsx": {
+      "expected": [
+        { "rule": "srp.props-cap", "line": 21 },
+        { "rule": "srp.hooks-cap", "line": 47 },
+        { "rule": "srp.effects-cap", "line": 51 },
+        { "rule": "srp.mixed-concerns", "line": 21 },
+        { "rule": "srp.jsx-depth-cap", "line": 101 }
+      ],
+      "alsoAcceptable": ["comp.config-soup", "srp.presentational"]
+    }
+  }
+}
