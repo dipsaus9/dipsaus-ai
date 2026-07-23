@@ -1,9 +1,10 @@
 ---
 id: DIP-2.1
 title: Stable rule ids in react-architecture skill output
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-17 14:16'
+updated_date: '2026-07-23 08:52'
 labels:
   - story
 dependencies: []
@@ -33,7 +34,7 @@ Branch: DIP-2.1/skill-rule-ids
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
-1. Assign ids per rule in place, in a table per category. 2. Extend review output spec + example with id field. 3. Extend apply summary spec. 4. Self-review diff for accidental semantic drift.
+1. Add Id column to hard-caps table (srp.loc-cap, srp.hooks-cap, srp.props-cap, srp.effects-cap, srp.jsx-depth-cap). 2. Append inline id token to every bullet rule: srp.mixed-concerns, srp.presentational; boundary.deep-import/foreign-logic/internal-state/hardwired-render; comp.regions-as-slots/config-soup/variant-compound/slots-over-config; state.server-fetch/derived-effect/colocate/prop-drilling/global-discipline. 3. Add Rule index table (id, severity, one-line rule) closing the Standards section — single machine-readable contract for the eval harness. 4. Review-mode finding format + example gain the id field; apply-mode summary line references the same ids. 5. Self-review diff: additions only, no semantic edits.
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
