@@ -6,6 +6,7 @@ import { bannedPatterns, capViolations, measureComponents } from "./ast";
 import { invokeClaude } from "./claude";
 import type { EvalConfig } from "./config";
 import { discoverCases, readSkillMd } from "./fixtures";
+import { judgeRefactor, type JudgeVerdict } from "./judge";
 import { buildSystemPrompt } from "./prompt";
 import {
   assertSandboxPath,
@@ -31,6 +32,9 @@ export interface ApplyChecks {
   banned: boolean;
   tsc: boolean;
   behaviorTests: boolean;
+  /** majority verdicts across the fixture's judged rules; undefined = not judged
+   * (no comp.* rules expected, or mechanical checks already failed) */
+  judge?: boolean;
 }
 
 export interface ApplyRunRecord {
@@ -41,6 +45,8 @@ export interface ApplyRunRecord {
   checks: ApplyChecks;
   /** failing command output / violation details, captured per AC5 */
   detail: string[];
+  /** individual votes + reasoning per judged rule */
+  judgeVerdicts?: JudgeVerdict[];
   error?: string;
 }
 
@@ -166,13 +172,35 @@ export async function runApply(options: ApplyRunOptions): Promise<{
           }
           const grade = gradeSandbox(sandbox);
           const checks: ApplyChecks = { originalsUntouched, ...grade.checks };
+          const detail = [...grade.detail];
+          const mechanicalPass =
+            originalsUntouched && grade.checks.caps && grade.checks.banned &&
+            grade.checks.tsc && grade.checks.behaviorTests;
+          const judgedRules = Object.values(fixture.labels.files)
+            .flatMap((label) => label.expected.map((expected) => expected.rule))
+            .filter((rule) => rule.startsWith("comp."));
+          let judgeVerdicts: JudgeVerdict[] | undefined;
+          if (mechanicalPass && judgedRules.length > 0) {
+            const files: Record<string, string> = {};
+            for (const file of sandboxSourceFiles(sandbox.dir)) {
+              files[path.relative(sandbox.dir, file)] = readFileSync(file, "utf8");
+            }
+            judgeVerdicts = await judgeRefactor({ config, files, rules: judgedRules, log });
+            checks.judge = judgeVerdicts.every((verdict) => verdict.pass);
+            for (const verdict of judgeVerdicts.filter((v) => !v.pass)) {
+              detail.push(
+                `judge: ${verdict.rule} failed — ${verdict.majorityReasoning.join(" | ")}`,
+              );
+            }
+          }
           runs.push({
             fixture: fixture.name,
             model,
             run,
-            pass: Object.values(checks).every(Boolean),
+            pass: mechanicalPass && (checks.judge ?? true),
             checks,
-            detail: grade.detail,
+            detail,
+            ...(judgeVerdicts ? { judgeVerdicts } : {}),
           });
         } finally {
           destroySandbox(sandbox);
@@ -188,6 +216,16 @@ export async function runApply(options: ApplyRunOptions): Promise<{
 export function applyReport(runs: ApplyRunRecord[], config: EvalConfig): EvalReport {
   const scoreMap = new Map<string, RuleScore>();
   const failures: VerdictFailure[] = [];
+  const warnings: string[] = [];
+  for (const record of runs) {
+    for (const verdict of record.judgeVerdicts ?? []) {
+      if (!verdict.unanimous) {
+        warnings.push(
+          `judge-instability: ${verdict.rule} on ${record.fixture} (${record.model}, run ${record.run}) decided 2–1`,
+        );
+      }
+    }
+  }
   for (const record of runs) {
     const key = `${record.fixture}|${record.model}`;
     const score = scoreMap.get(key) ?? {
@@ -226,6 +264,7 @@ export function applyReport(runs: ApplyRunRecord[], config: EvalConfig): EvalRep
     }
   }
   return {
+    ...(warnings.length > 0 ? { warnings } : {}),
     config: {
       models: config.models,
       runs: config.runs,

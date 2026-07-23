@@ -39,8 +39,14 @@ export interface EvalConfig {
   lineTolerance: number;
   /** minimum detection rate: high rules, and med/low rules */
   thresholds: { high: number; medLow: number };
-  /** pinned judge model — consumed by the judge layer (DIP-2.9), placeholder here */
+  /**
+   * Judge model, pinned by exact id. Changing it (or any rubric's text)
+   * invalidates comparability — requires a deliberate baseline reset via
+   * --update-baseline in the same PR. See tests/eval/rubrics/README.md.
+   */
   judgeModel: string;
+  /** votes per judge verdict; majority decides */
+  judgeVotes: number;
   claudeBin: string;
   timeoutMs: number;
 }
@@ -51,6 +57,7 @@ export const defaultConfig: EvalConfig = {
   lineTolerance: 2,
   thresholds: { high: 1, medLow: 0.8 },
   judgeModel: "claude-sonnet-5",
+  judgeVotes: 3,
   claudeBin:
     process.env.CLAUDE_BIN ?? `${os.homedir()}/.local/bin/claude`,
   timeoutMs: 240_000,
