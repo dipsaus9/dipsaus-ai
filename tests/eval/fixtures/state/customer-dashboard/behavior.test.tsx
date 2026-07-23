@@ -21,7 +21,7 @@ describe("state/customer-dashboard", () => {
     );
     expect(screen.getByText("Loading dashboard…")).toBeDefined();
     expect(await screen.findByText("SO-1 — €120.00")).toBeDefined();
-    expect(screen.getByText("Lifetime value €200.50")).toBeDefined();
+    expect(await screen.findByText("Lifetime value €200.50")).toBeDefined();
     fireEvent.click(screen.getByText("Contact support"));
     expect(onContactSupport).toHaveBeenCalledWith("cus_42");
   });
