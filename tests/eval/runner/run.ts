@@ -1,7 +1,16 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import {
+  attachDiff,
+  diffBaseline,
+  diffPasses,
+  mergeBaseline,
+  printDiff,
+  toBaseline,
+  type Baseline,
+} from "./baseline";
 import { invokeClaude } from "./claude";
 import { defaultConfig, type EvalConfig } from "./config";
 import { discoverCases, readSkillMd } from "./fixtures";
@@ -12,6 +21,7 @@ import { printReport } from "./report";
 import type { EvalReport, FixtureLabels, RunRecord } from "./types";
 
 const RUNNER_DIR = path.dirname(fileURLToPath(import.meta.url));
+export const BASELINE_PATH = path.resolve(RUNNER_DIR, "../baseline/review.json");
 
 export interface ReviewRunOptions {
   config: EvalConfig;
@@ -91,6 +101,7 @@ async function main(): Promise<void> {
       filter: { type: "string" },
       "claude-bin": { type: "string" },
       out: { type: "string" },
+      "update-baseline": { type: "boolean" },
     },
   });
 
@@ -110,6 +121,27 @@ async function main(): Promise<void> {
     log: (message) => console.log(message),
   });
 
+  const current = toBaseline(report.scores);
+  const existing: Baseline | null = existsSync(BASELINE_PATH)
+    ? (JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as Baseline)
+    : null;
+
+  let output: object = report;
+  let baselineOk = true;
+  if (values["update-baseline"]) {
+    const merged = mergeBaseline(existing, current);
+    mkdirSync(path.dirname(BASELINE_PATH), { recursive: true });
+    writeFileSync(BASELINE_PATH, `${JSON.stringify(merged, null, 2)}\n`);
+    console.log(`\nBaseline updated: ${BASELINE_PATH} — commit it via PR.`);
+  } else if (existing) {
+    const diff = diffBaseline(existing, current);
+    printDiff(diff);
+    output = attachDiff(report, diff);
+    baselineOk = diffPasses(diff);
+  } else {
+    console.log("\nNo committed baseline yet — run with --update-baseline to create one.");
+  }
+
   const outPath =
     values.out ??
     path.join(
@@ -118,11 +150,11 @@ async function main(): Promise<void> {
       `review-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
     );
   mkdirSync(path.dirname(outPath), { recursive: true });
-  writeFileSync(outPath, `${JSON.stringify(report, null, 2)}\n`);
+  writeFileSync(outPath, `${JSON.stringify(output, null, 2)}\n`);
 
   printReport(report);
   console.log(`\nResults written to ${outPath}`);
-  process.exitCode = report.verdict.pass ? 0 : 1;
+  process.exitCode = report.verdict.pass && baselineOk ? 0 : 1;
 }
 
 if (import.meta.main) {
