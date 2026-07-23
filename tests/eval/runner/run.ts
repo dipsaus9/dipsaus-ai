@@ -98,11 +98,12 @@ export async function runReview(options: ReviewRunOptions): Promise<{
     models: config.models,
     runs: config.runs,
   });
-  // Raw findings stay in the results JSON so semantics changes can be
-  // re-scored offline instead of paying for a rerun.
+  // Findings and a truncated transcript stay in the results JSON so parser
+  // blind spots and semantics changes can be diagnosed offline instead of
+  // paying for a rerun.
   return {
     report,
-    records: records.map(({ raw: _raw, ...rest }) => rest),
+    records: records.map((record) => ({ ...record, raw: record.raw.slice(0, 4000) })),
   };
 }
 
