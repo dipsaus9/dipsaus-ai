@@ -47,6 +47,10 @@ export interface ApplyRunRecord {
   detail: string[];
   /** individual votes + reasoning per judged rule */
   judgeVerdicts?: JudgeVerdict[];
+  /** refactored sources, captured when judging is deferred (A/B mode) */
+  refactoredFiles?: Record<string, string>;
+  /** rules a deferred judge still needs to grade */
+  pendingJudgeRules?: string[];
   error?: string;
 }
 
@@ -105,18 +109,23 @@ function buildApplyPrompt(fixture: FixtureCase): string {
     .filter((file) => file.endsWith(".tsx") || file.endsWith(".ts"))
     .join(", ");
   return [
-    "Run in APPLY mode on the current working directory.",
-    `Refactor these files in place so they satisfy the skill's standards: ${files}.`,
+    "Refactor the files in the current working directory in place so they",
+    `satisfy the architecture standards from your instructions: ${files}.`,
     "Use your file tools to edit them. Preserve behavior — behavior.test.tsx",
     "must keep passing and MUST NOT be modified. Keep TypeScript strict-clean.",
     "You may create new files (extracted hooks/components) in this directory.",
-    "Finish with the apply-mode summary in the skill's format.",
+    "Finish with a summary of what changed.",
   ].join("\n");
 }
 
 export interface ApplyRunOptions {
   config: EvalConfig;
   filter?: string;
+  /** override the system prompt (A/B control arm); default = skill loaded */
+  systemAppend?: string;
+  /** skip judging and instead snapshot refactored sources onto each record —
+   * A/B mode judges later, with both arms' jobs shuffled together */
+  deferJudge?: boolean;
   log?: (message: string) => void;
 }
 
@@ -132,7 +141,7 @@ export async function runApply(options: ApplyRunOptions): Promise<{
   if (cases.length === 0) {
     throw new Error(`no bad fixtures match filter ${JSON.stringify(filter ?? "")}`);
   }
-  const systemAppend = buildSystemPrompt(readSkillMd());
+  const systemAppend = options.systemAppend ?? buildSystemPrompt(readSkillMd());
   const runs: ApplyRunRecord[] = [];
 
   for (const model of config.models) {
@@ -180,17 +189,24 @@ export async function runApply(options: ApplyRunOptions): Promise<{
             .flatMap((label) => label.expected.map((expected) => expected.rule))
             .filter((rule) => rule.startsWith("comp."));
           let judgeVerdicts: JudgeVerdict[] | undefined;
+          let refactoredFiles: Record<string, string> | undefined;
+          let pendingJudgeRules: string[] | undefined;
           if (mechanicalPass && judgedRules.length > 0) {
             const files: Record<string, string> = {};
             for (const file of sandboxSourceFiles(sandbox.dir)) {
               files[path.relative(sandbox.dir, file)] = readFileSync(file, "utf8");
             }
-            judgeVerdicts = await judgeRefactor({ config, files, rules: judgedRules, log });
-            checks.judge = judgeVerdicts.every((verdict) => verdict.pass);
-            for (const verdict of judgeVerdicts.filter((v) => !v.pass)) {
-              detail.push(
-                `judge: ${verdict.rule} failed — ${verdict.majorityReasoning.join(" | ")}`,
-              );
+            if (options.deferJudge) {
+              refactoredFiles = files;
+              pendingJudgeRules = judgedRules;
+            } else {
+              judgeVerdicts = await judgeRefactor({ config, files, rules: judgedRules, log });
+              checks.judge = judgeVerdicts.every((verdict) => verdict.pass);
+              for (const verdict of judgeVerdicts.filter((v) => !v.pass)) {
+                detail.push(
+                  `judge: ${verdict.rule} failed — ${verdict.majorityReasoning.join(" | ")}`,
+                );
+              }
             }
           }
           runs.push({
@@ -201,6 +217,8 @@ export async function runApply(options: ApplyRunOptions): Promise<{
             checks,
             detail,
             ...(judgeVerdicts ? { judgeVerdicts } : {}),
+            ...(refactoredFiles ? { refactoredFiles } : {}),
+            ...(pendingJudgeRules ? { pendingJudgeRules } : {}),
           });
         } finally {
           destroySandbox(sandbox);

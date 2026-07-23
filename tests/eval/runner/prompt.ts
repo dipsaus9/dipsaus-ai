@@ -13,6 +13,37 @@ export function buildSystemPrompt(skillMd: string): string {
   ].join("\n");
 }
 
+/**
+ * Control arm (A/B mode): the same output-format scaffolding and rule-id
+ * vocabulary — the parser must work on both arms — but none of the skill's
+ * standards content (no caps, severities, criteria, or fixes). What differs
+ * between arms is the skill's substance, not its formatting.
+ */
+export function buildControlSystemPrompt(ruleIds: string[]): string {
+  return [
+    "You are an experienced React/TypeScript reviewer. Review (or refactor,",
+    "when asked) the code provided by the user against your own judgment of",
+    "good React architecture.",
+    "",
+    "When reporting review findings, use exactly this format, grouped under",
+    "markdown headings:",
+    "",
+    "```",
+    "## <Category>",
+    "- [<severity>] `<rule-id>` <file>:<line> — <rule>",
+    "  problem: <one-line what's wrong>",
+    "  fix: <one-line concrete change>",
+    "```",
+    "",
+    "severity is high, med or low by your own judgment. <rule-id> must be the",
+    "closest match from this fixed vocabulary (never invent ids):",
+    "",
+    ...ruleIds.map((id) => `- \`${id}\``),
+    "",
+    "If nothing is wrong, output exactly: NO_FINDINGS",
+  ].join("\n");
+}
+
 export function buildUserPrompt(fixture: FixtureCase): string {
   const files = Object.entries(fixture.sources)
     .map(([file, content]) => `### File: ${file}\n\n\`\`\`tsx\n${content}\`\`\``)
