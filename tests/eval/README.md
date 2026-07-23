@@ -56,7 +56,10 @@ Trigger-line conventions: caps label the first construct past the cap (6th hook,
 declaration / props signature; structural rules (`srp.mixed-concerns`,
 `srp.presentational`) label the component declaration; boundary rules label the offending
 import, store/context read, misplaced-logic start, or hardwired JSX element. Category-2
-(`comp.*`) rules are structural and always label the component declaration.
+(`comp.*`) rules are structural and always label the component declaration. Category-3
+(`state.*`) rules label the offending hook line (the fetching or deriving `useEffect`,
+the misplaced `useState`, the global-store read) — except `state.prop-drilling`, which
+labels the outermost silent intermediate's declaration, where the drilling starts.
 
 Labels are AI-drafted and human-approved via PR review.
 
@@ -67,7 +70,8 @@ Labels are AI-drafted and human-approved via PR review.
   independently. `fixtures/srp/<rule>/` holds the labeled category-1 pairs (one directory
   per rule, plus `god-component/`), each with `expected.json` labels and a
   `behavior.test.tsx`; `fixtures/composition/<rule>/` holds the category-2 pairs the same
-  way (plus `dashboard-panel/`, the multi-violation config-soup case); category-3 pairs
-  land in a later story.
+  way (plus `dashboard-panel/`, the multi-violation config-soup case);
+  `fixtures/state/<rule>/` holds the category-3 pairs (plus `customer-dashboard/`, the
+  multi-violation fetch + derived-state + drilling case).
 - `*.test.tsx` — tests for the island itself, run under jsdom with
   `@testing-library/react`.
