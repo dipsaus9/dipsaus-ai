@@ -11,10 +11,13 @@ CI or `bun run test`.
 ## Usage
 
 ```bash
-~/.bun/bin/bun tests/eval/runner/run.ts                     # full matrix, defaults
-~/.bun/bin/bun tests/eval/runner/run.ts --filter derived-effect --runs 1   # smoke
-~/.bun/bin/bun tests/eval/runner/run.ts --model claude-sonnet-5 --model claude-haiku-4-5-20251001
+bun run test:eval                                  # full matrix, defaults
+bun run test:eval --filter derived-effect --runs 1 # one-call smoke
+bun run test:eval --model claude-sonnet-5 --model claude-haiku-4-5-20251001
 ```
+
+(`bun run test:eval` is the package script for `bun tests/eval/runner/run.ts`; use the
+full bun binary path if a shell wrapper shadows `bun`.)
 
 Flags: `--model` (repeatable), `--runs`, `--filter` (substring of `category/dir`),
 `--claude-bin` (default `~/.local/bin/claude`, or `CLAUDE_BIN`), `--out` (JSON path),

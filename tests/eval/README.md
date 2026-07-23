@@ -1,8 +1,9 @@
-# tests/eval — fixture island
+# tests/eval — the react-architecture eval harness
 
-Self-contained eval project for the `react-architecture` skill harness. Fixtures here
-**deliberately violate** the repo's own standards, so the island is fenced off from every
-CI gate:
+Everything needed to answer two questions about the `react-architecture` skill: *does it
+still work after an edit* (regression baseline) and *does it help at all* (A/B). The
+fixture corpus here **deliberately violates** the repo's own standards, so the island is
+fenced off from every CI gate:
 
 - **Typecheck** — `tests/eval` is excluded in the root `tsconfig.json`; this directory has
   its own `tsconfig.json` (strict, `react-jsx`, DOM libs). A type error in a fixture never
@@ -10,18 +11,45 @@ CI gate:
 - **Lint** — `fixtures` is in `.oxlintrc.json` `ignorePatterns`, so rule-violating fixture
   code never fails `bun run lint`.
 - **Unit tests** — CI's `bun run test` runs the `unit` vitest project only and never picks
-  up files under `tests/eval`.
+  up files under `tests/eval`. (The runner's parser/matcher/judge/AB logic **is**
+  unit-tested — deterministically, in `tests/unit/eval-runner-*.test.ts`.)
 
-## Running the eval suite
+## Commands
 
-On-command only, never in CI:
+| Command | What | Cost |
+|---|---|---|
+| `bun run test:eval` | review-mode eval, full matrix, diffs vs baseline | **billed** |
+| `bun run test:eval --mode apply` | apply-mode eval (sandbox + graders + judge) | **billed**, agentic |
+| `bun run test:eval --mode ab` | skill-on vs skill-off delta report | **billed**, ~2× |
+| `bun run test:eval --update-baseline` | rewrite the committed baseline from this run | **billed** |
+| `bun run test:eval:fixtures` | the island's own vitest suite (fixture behavior tests) | free, deterministic |
 
-```bash
-bun run test:eval        # vitest run --project eval (jsdom)
-```
-
-If a shell wrapper shadows `bun` (exit 127), call the binary directly:
+Flags: `--model` (repeatable), `--runs` (K), `--filter <substring of category/dir>`,
+`--claude-bin`, `--out`, `--verbose` (A/B: print both arm prompts). Defaults live in
+`runner/config.ts`. If a shell wrapper shadows `bun` (exit 127), use the binary directly:
 `~/.bun/bin/bun run test:eval`.
+
+## Cost expectations (defaults: 23 cases, K=5, one model)
+
+- **review**: ~115 single-shot calls per model.
+- **apply**: ~115 *agentic* runs per model (the model edits files — several × a review
+  call) plus up to ~105 judge votes on composition fixtures.
+- **ab**: everything above, twice.
+
+Scale down first: `--filter derived-effect --runs 1` is a one-call smoke.
+
+## Policies
+
+- **Thresholds** (`runner/config.ts`): high-severity rules K/K, med/low ≥ 80%,
+  `apply.pass` ≥ 80%, good twins zero findings in every run.
+- **Baseline** — `baseline/review.json` + `baseline/apply.json` change **only** via
+  `--update-baseline`, reviewed in a PR; filtered updates merge over the file. Any rate
+  drop in a plain run is a named regression and fails the run. See `baseline/README.md`.
+- **Judge pin** — the judge model is pinned by exact id (`judgeModel`); changing it or any
+  rubric text under `rubrics/` requires a deliberate baseline reset in the same PR. See
+  `rubrics/README.md`.
+- **A/B results** are stored in `runner/results/` beside the baselines but never diffed
+  against them.
 
 ## Label schema
 
