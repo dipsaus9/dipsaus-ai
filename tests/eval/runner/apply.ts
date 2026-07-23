@@ -286,7 +286,6 @@ export function applyReport(runs: ApplyRunRecord[], config: EvalConfig): EvalRep
     config: {
       models: config.models,
       runs: config.runs,
-      lineTolerance: config.lineTolerance,
       thresholds: config.thresholds,
     },
     scores: [...scoreMap.values()],

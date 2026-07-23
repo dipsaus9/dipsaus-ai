@@ -2,8 +2,8 @@
 
 Drives headless `claude -p` to run the `react-architecture` skill in review mode over
 every labeled fixture, K times per fixture × model, and scores the id-bearing findings
-against each directory's `expected.json` (rule id + file + line, ±2 tolerance,
-`alsoAcceptable` neither required nor punished).
+against each directory's `expected.json` (matched on **rule id + file** — the labeled
+line is anchor documentation only; `alsoAcceptable` neither required nor punished).
 
 **On-command only — every invocation makes real, billed model calls.** Never wired into
 CI or `bun run test`.

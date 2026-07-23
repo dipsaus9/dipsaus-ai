@@ -80,7 +80,6 @@ export interface EvalReport {
   config: {
     models: string[];
     runs: number;
-    lineTolerance: number;
     thresholds: { high: number; medLow: number };
   };
   scores: RuleScore[];

@@ -26,31 +26,39 @@ describe("fileMatches", () => {
 });
 
 describe("matchRun", () => {
-  it("detects an expected finding within the line tolerance", () => {
-    const match = matchRun([finding("srp.props-cap", "Bad.tsx", 15)], LABELS, 2);
+  it("detects on rule + file regardless of the reported line", () => {
+    const match = matchRun([finding("srp.props-cap", "Bad.tsx", 3)], LABELS);
     expect(match.detected).toEqual([
       { file: "Bad.tsx", expected: { rule: "srp.props-cap", line: 13 }, hit: true },
     ]);
     expect(match.falsePositives).toEqual([]);
   });
 
-  it("misses outside the tolerance and reports the stray as a false positive", () => {
-    const match = matchRun([finding("srp.props-cap", "Bad.tsx", 16)], LABELS, 2);
-    expect(match.detected[0]?.hit).toBe(false);
-    expect(match.falsePositives).toHaveLength(1);
+  it("treats duplicates of a claimed rule as noise, not false positives", () => {
+    const match = matchRun(
+      [finding("srp.props-cap", "Bad.tsx", 13), finding("srp.props-cap", "Bad.tsx", 3)],
+      LABELS,
+    );
+    expect(match.detected[0]?.hit).toBe(true);
+    expect(match.falsePositives).toEqual([]);
   });
 
   it("ignores alsoAcceptable findings entirely", () => {
-    const match = matchRun([finding("comp.config-soup", "Bad.tsx", 40)], LABELS, 2);
+    const match = matchRun([finding("comp.config-soup", "Bad.tsx", 40)], LABELS);
     expect(match.detected[0]?.hit).toBe(false);
     expect(match.falsePositives).toEqual([]);
+  });
+
+  it("still flags a wrong rule on a bad file as a false positive", () => {
+    const match = matchRun([finding("state.colocate", "Bad.tsx", 13)], LABELS);
+    expect(match.detected[0]?.hit).toBe(false);
+    expect(match.falsePositives).toHaveLength(1);
   });
 
   it("flags findings on clean twins and unknown files as false positives", () => {
     const match = matchRun(
       [finding("srp.loc-cap", "Good.tsx", 8), finding("srp.loc-cap", "Elsewhere.tsx", 1)],
       LABELS,
-      2,
     );
     expect(match.falsePositives).toHaveLength(2);
   });
@@ -73,7 +81,6 @@ function record(
 }
 
 const AGG_CONFIG = {
-  lineTolerance: 2,
   thresholds: { high: 1, medLow: 0.8 },
   models: ["claude-sonnet-5"],
   runs: 5,

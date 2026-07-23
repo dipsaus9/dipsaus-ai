@@ -29,22 +29,21 @@ export interface RunMatch {
   falsePositives: Finding[];
 }
 
-/** Match one run's findings against a fixture's labels. */
-export function matchRun(
-  findings: Finding[],
-  labels: FixtureLabels,
-  lineTolerance: number,
-): RunMatch {
+/**
+ * Match one run's findings against a fixture's labels on **rule + file**.
+ * The labeled line is documentation of the trigger, not part of the pass/fail
+ * path: the first real eval run showed models find the right rule on the
+ * right file near-perfectly but anchor lines inconsistently (props interface
+ * vs signature, first hook vs the over-cap hook), so no line window is stable.
+ */
+export function matchRun(findings: Finding[], labels: FixtureLabels): RunMatch {
   const unclaimed = [...findings];
   const detected: RunMatch["detected"] = [];
 
   for (const [file, label] of Object.entries(labels.files)) {
     for (const expected of label.expected) {
       const index = unclaimed.findIndex(
-        (finding) =>
-          fileMatches(finding.file, file) &&
-          finding.rule === expected.rule &&
-          Math.abs(finding.line - expected.line) <= lineTolerance,
+        (finding) => fileMatches(finding.file, file) && finding.rule === expected.rule,
       );
       const hit = index >= 0;
       if (hit) {
@@ -61,14 +60,18 @@ export function matchRun(
     if (!entry) {
       return true;
     }
-    return !(entry[1].alsoAcceptable ?? []).includes(finding.rule);
+    const [, label] = entry;
+    // duplicates of an already-claimed expected rule are noise, not FPs
+    if (label.expected.some((expected) => expected.rule === finding.rule)) {
+      return false;
+    }
+    return !(label.alsoAcceptable ?? []).includes(finding.rule);
   });
 
   return { detected, falsePositives };
 }
 
 export interface AggregateConfig {
-  lineTolerance: number;
   thresholds: { high: number; medLow: number };
   models: string[];
   runs: number;
@@ -90,7 +93,7 @@ export function aggregate(
       continue;
     }
     const match = record.ok
-      ? matchRun(record.findings, labels, config.lineTolerance)
+      ? matchRun(record.findings, labels)
       : {
           detected: Object.entries(labels.files).flatMap(([file, label]) =>
             label.expected.map((expected) => ({ file, expected, hit: false })),
@@ -172,7 +175,6 @@ export function aggregate(
     config: {
       models: config.models,
       runs: config.runs,
-      lineTolerance: config.lineTolerance,
       thresholds: config.thresholds,
     },
     scores: [...scoreMap.values()],

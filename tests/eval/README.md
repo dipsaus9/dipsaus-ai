@@ -73,8 +73,11 @@ follow it, never redefine it.
   relative to the directory. Listing a file with an empty `expected` means "expected
   clean": reporting any finding there is a false positive.
 - `expected` — findings a correct review must produce: `rule` is a stable rule id from
-  the skill's Rule index; `line` is the 1-based rule-trigger line. The matcher must
-  accept a reported line within **±2** of the label.
+  the skill's Rule index; `line` is the 1-based rule-trigger line, kept as **anchor
+  documentation** for humans reviewing labels. The matcher scores on **rule + file
+  only** — the first real eval run showed models find the right rule on the right file
+  near-perfectly but anchor lines inconsistently (the props interface vs the signature,
+  the first hook vs the over-cap hook), so no line window is stable across models.
 - `alsoAcceptable` — rule ids (any line) that legitimately overlap the seeded violation
   (e.g. 7 props triggers both `srp.props-cap` and `comp.config-soup`). Reporting them is
   neither required nor punished.

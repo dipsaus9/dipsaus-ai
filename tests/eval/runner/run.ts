@@ -39,7 +39,10 @@ export interface ReviewRunOptions {
  * expected.json. Exported so later stories (baseline diff, A/B, apply mode)
  * can reuse the loop as a strategy.
  */
-export async function runReview(options: ReviewRunOptions): Promise<EvalReport> {
+export async function runReview(options: ReviewRunOptions): Promise<{
+  report: EvalReport;
+  records: Omit<RunRecord, "raw">[];
+}> {
   const { config, filter } = options;
   const log = options.log ?? (() => {});
   const cases = discoverCases(filter);
@@ -90,12 +93,17 @@ export async function runReview(options: ReviewRunOptions): Promise<EvalReport> 
     }
   }
 
-  return aggregate(records, labelsByFixture, {
-    lineTolerance: config.lineTolerance,
+  const report = aggregate(records, labelsByFixture, {
     thresholds: config.thresholds,
     models: config.models,
     runs: config.runs,
   });
+  // Raw findings stay in the results JSON so semantics changes can be
+  // re-scored offline instead of paying for a rerun.
+  return {
+    report,
+    records: records.map(({ raw: _raw, ...rest }) => rest),
+  };
 }
 
 async function main(): Promise<void> {
@@ -151,6 +159,7 @@ async function main(): Promise<void> {
 
   let report: EvalReport;
   let applyRuns: object[] | undefined;
+  let reviewRuns: object[] | undefined;
   if (mode === "apply") {
     const applyResult = await runApply({
       config,
@@ -160,11 +169,13 @@ async function main(): Promise<void> {
     report = applyResult.report;
     applyRuns = applyResult.runs;
   } else {
-    report = await runReview({
+    const reviewResult = await runReview({
       config,
       filter: values.filter,
       log: (message) => console.log(message),
     });
+    report = reviewResult.report;
+    reviewRuns = reviewResult.records;
   }
 
   const baselinePath = mode === "apply" ? APPLY_BASELINE_PATH : BASELINE_PATH;
@@ -173,7 +184,11 @@ async function main(): Promise<void> {
     ? (JSON.parse(readFileSync(baselinePath, "utf8")) as Baseline)
     : null;
 
-  let output: object = applyRuns ? { ...report, applyRuns } : report;
+  const extras = {
+    ...(applyRuns ? { applyRuns } : {}),
+    ...(reviewRuns ? { reviewRuns } : {}),
+  };
+  let output: object = { ...report, ...extras };
   let baselineOk = true;
   if (values["update-baseline"]) {
     const merged = mergeBaseline(existing, current);
@@ -183,7 +198,7 @@ async function main(): Promise<void> {
   } else if (existing) {
     const diff = diffBaseline(existing, current);
     printDiff(diff);
-    output = applyRuns ? { ...attachDiff(report, diff), applyRuns } : attachDiff(report, diff);
+    output = { ...attachDiff(report, diff), ...extras };
     baselineOk = diffPasses(diff);
   } else {
     console.log("\nNo committed baseline yet — run with --update-baseline to create one.");

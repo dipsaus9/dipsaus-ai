@@ -36,7 +36,6 @@ export function severityOf(rule: string): Severity {
 export interface EvalConfig {
   models: string[];
   runs: number;
-  lineTolerance: number;
   /** minimum detection rate: high rules, and med/low rules */
   thresholds: { high: number; medLow: number };
   /**
@@ -54,7 +53,6 @@ export interface EvalConfig {
 export const defaultConfig: EvalConfig = {
   models: ["claude-sonnet-5"],
   runs: 5,
-  lineTolerance: 2,
   thresholds: { high: 1, medLow: 0.8 },
   judgeModel: "claude-sonnet-5",
   judgeVotes: 3,
