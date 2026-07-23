@@ -1,0 +1,9 @@
+{
+  "files": {
+    "Bad.tsx": {
+      "expected": [{ "rule": "state.colocate", "line": 30 }],
+      "alsoAcceptable": []
+    },
+    "Good.tsx": { "expected": [], "alsoAcceptable": [] }
+  }
+}

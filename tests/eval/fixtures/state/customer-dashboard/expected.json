@@ -1,0 +1,12 @@
+{
+  "files": {
+    "Bad.tsx": {
+      "expected": [
+        { "rule": "state.server-fetch", "line": 85 },
+        { "rule": "state.derived-effect", "line": 98 },
+        { "rule": "state.prop-drilling", "line": 52 }
+      ],
+      "alsoAcceptable": ["srp.mixed-concerns", "srp.presentational"]
+    }
+  }
+}
