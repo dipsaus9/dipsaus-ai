@@ -1,0 +1,9 @@
+{
+  "files": {
+    "Bad.tsx": {
+      "expected": [{ "rule": "srp.props-cap", "line": 13 }],
+      "alsoAcceptable": ["comp.config-soup"]
+    },
+    "Good.tsx": { "expected": [], "alsoAcceptable": [] }
+  }
+}

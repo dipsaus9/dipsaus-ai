@@ -1,0 +1,9 @@
+{
+  "files": {
+    "Bad.tsx": {
+      "expected": [{ "rule": "srp.presentational", "line": 11 }],
+      "alsoAcceptable": []
+    },
+    "Good.tsx": { "expected": [], "alsoAcceptable": [] }
+  }
+}

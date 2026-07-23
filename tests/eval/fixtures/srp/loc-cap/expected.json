@@ -1,0 +1,9 @@
+{
+  "files": {
+    "Bad.tsx": {
+      "expected": [{ "rule": "srp.loc-cap", "line": 41 }],
+      "alsoAcceptable": []
+    },
+    "Good.tsx": { "expected": [], "alsoAcceptable": [] }
+  }
+}

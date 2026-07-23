@@ -1,0 +1,10 @@
+{
+  "files": {
+    "Bad.tsx": {
+      "expected": [{ "rule": "boundary.hardwired-render", "line": 17 }],
+      "alsoAcceptable": []
+    },
+    "Good.tsx": { "expected": [], "alsoAcceptable": [] },
+    "billing/index.tsx": { "expected": [], "alsoAcceptable": [] }
+  }
+}
