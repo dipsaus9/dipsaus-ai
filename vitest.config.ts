@@ -13,6 +13,13 @@ export default defineConfig({
           name: "unit",
           include: ["tests/unit/**/*.test.ts"],
           environment: "node",
+          server: {
+            deps: {
+              // typescript ships a sourceMappingURL but no .map files —
+              // keep it out of the transform pipeline to silence the warning
+              external: [/node_modules\/typescript/],
+            },
+          },
         },
       },
       {
