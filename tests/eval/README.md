@@ -51,16 +51,27 @@ Scale down first: `--filter derived-effect --runs 1` is a one-call smoke.
 - **A/B results** are stored in `runner/results/` beside the baselines but never diffed
   against them.
 
-## Known limitation (2026-07-24)
+## Known limitations (2026-07-24, post Demo-seam refresh)
 
-The apply baseline carries honest 0/5 rates on the composition fixtures, `srp/props-cap`
-and `srp/god-component`: their behavior tests pin the **old prop API** that those very
-rules require changing, so the refactor task is contradictory as posed — the model
-keeps the legacy API (or wraps it) and the judge/caps grader rightly fails it.
-`srp/jsx-depth-cap` (2/5) and `srp/loc-cap` (3/5) are genuine model findings, and
-`state.derived-effect` review detection is observably flaky (3/5 in the baseline run).
-Follow-up work: redesign behavior tests for API-changing fixtures to assert behavior
-through a refactor-stable surface, then refresh the apply baseline.
+The original API-pinning flaw is fixed: Demo-seam tests let apply refactors reshape
+APIs, and the previously 0/5 fixtures now pass (`config-soup` and `props-cap` 5/5,
+`god-component` 4/5). The refreshed apply baseline still carries honest sub-bar rates
+with three distinct causes:
+
+- **Timeout noise** — six runs died on the 240 s CLI timeout late in the run
+  (`hooks-cap` 2/5, `internal-state` 3/5, one `god-component` miss are mostly this),
+  understating those rates.
+- **Genuine model/skill gaps** — `srp/effects-cap` (3/5, leaves 3 effects),
+  `state/server-fetch` (3/5, once kept the antipattern, once broke behavior).
+- **Judge strictness beyond the skill's text** — `variant-compound` 0/5: refactors
+  remove the variant prop and build compound parts, but duplicate the shared shell,
+  which the rubric fails while the skill never teaches shell extraction. Related:
+  nine 2–1 judge verdicts accumulated in one run — the judge-instability signal.
+  Changing rubric text (or teaching the skill shell extraction) is deliberate
+  future work requiring a baseline reset.
+
+`state.derived-effect` review detection also remains observably flaky (3/5 in the
+review baseline).
 
 ## Label schema
 
