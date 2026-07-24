@@ -58,8 +58,8 @@ export const defaultConfig: EvalConfig = {
   thresholds: { high: 1, medLow: 0.8 },
   judgeModel: "claude-sonnet-5",
   judgeVotes: 3,
-  concurrency: 1,
+  concurrency: 4,
   claudeBin:
     process.env.CLAUDE_BIN ?? `${os.homedir()}/.local/bin/claude`,
-  timeoutMs: 240_000,
+  timeoutMs: 480_000,
 };
