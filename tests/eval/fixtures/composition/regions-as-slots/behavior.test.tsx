@@ -1,25 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import { ArticleCard } from "./Bad";
+import { describe, expect, it } from "vitest";
+import { ArticleCardDemo } from "./Demo";
 import { ArticleByline } from "./Good";
 
 describe("composition/regions-as-slots", () => {
-  it("Bad renders every configured region and fires the action", () => {
-    const onCta = vi.fn();
-    render(
-      <ArticleCard
-        kicker="Guides"
-        title="Choosing a standing desk"
-        body="Height range matters more than motor speed."
-        footerNote="Updated July 2026"
-        ctaLabel="Read guide"
-        onCta={onCta}
-      />,
-    );
+  it("Demo renders every region and surfaces the action", () => {
+    render(<ArticleCardDemo />);
     expect(screen.getByText("Choosing a standing desk")).toBeDefined();
+    expect(screen.getByText("Height range matters more than motor speed.")).toBeDefined();
     expect(screen.getByText("Updated July 2026")).toBeDefined();
     fireEvent.click(screen.getByText("Read guide"));
-    expect(onCta).toHaveBeenCalledOnce();
+    expect(screen.getByRole("status").textContent).toBe("cta-clicked");
   });
 
   it("Good renders the byline", () => {

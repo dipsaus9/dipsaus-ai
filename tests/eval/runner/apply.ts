@@ -112,7 +112,9 @@ function buildApplyPrompt(fixture: FixtureCase): string {
     "Refactor the files in the current working directory in place so they",
     `satisfy the architecture standards from your instructions: ${files}.`,
     "Use your file tools to edit them. Preserve behavior — behavior.test.tsx",
-    "must keep passing and MUST NOT be modified. Keep TypeScript strict-clean.",
+    "must keep passing and MUST NOT be modified. If a Demo.tsx exists, it is",
+    "the caller the tests exercise: update its usage to your new API so its",
+    "rendered output stays identical. Keep TypeScript strict-clean.",
     "You may create new files (extracted hooks/components) in this directory.",
     "Finish with a summary of what changed.",
   ].join("\n");

@@ -1,32 +1,16 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import { AccountDashboard } from "./Bad";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { AccountDashboardDemo } from "./Demo";
 
-const orders = [
-  { id: "SO-1", placedAt: "2026-05-01", total: 100, status: "open" as const },
-  { id: "SO-2", placedAt: "2026-06-12", total: 50, status: "delivered" as const },
-];
-const notifications = [{ id: "n-1", message: "Your order SO-1 is being picked" }];
-
+// Asserted through the Demo seam only — the refactor may split the dashboard
+// into any shape as long as Demo keeps rendering this behavior.
 describe("srp/god-component", () => {
-  it("computes stats, filters orders and switches tabs", () => {
-    const onAnalyticsEvent = vi.fn();
-    render(
-      <AccountDashboard
-        displayName="Dennis"
-        memberSince="2020-02-02"
-        orders={orders}
-        notifications={notifications}
-        taxRate={0.21}
-        refreshIntervalMs={60000}
-        onAnalyticsEvent={onAnalyticsEvent}
-      />,
-    );
+  it("computes stats, filters orders, switches tabs and reports analytics", () => {
+    render(<AccountDashboardDemo />);
     // 6 loyalty years × 12 + 2 orders × 3 = 78; lifetime 150 × 1.21 = 181.50
     expect(screen.getByText("Loyalty score 78")).toBeDefined();
     expect(screen.getByText("Lifetime value €181.50")).toBeDefined();
     expect(screen.getByText("1 open orders")).toBeDefined();
-    expect(onAnalyticsEvent).toHaveBeenCalledWith("dashboard-tab:orders");
 
     fireEvent.click(screen.getByText("Show filters"));
     fireEvent.change(screen.getByLabelText("Search orders"), {
@@ -37,6 +21,11 @@ describe("srp/god-component", () => {
 
     fireEvent.click(screen.getByText("Notifications"));
     expect(screen.getByText("Your order SO-1 is being picked")).toBeDefined();
-    expect(onAnalyticsEvent).toHaveBeenCalledWith("dashboard-tab:notifications");
+
+    const analytics = within(screen.getByLabelText("analytics"))
+      .getAllByRole("listitem")
+      .map((item) => item.textContent);
+    expect(analytics).toContain("dashboard-tab:orders");
+    expect(analytics).toContain("dashboard-tab:notifications");
   });
 });

@@ -109,7 +109,10 @@ Labels are AI-drafted and human-approved via PR review.
 
 - `fixtures/<group>/` — bad/good fixture pairs. The seed pair
   (`fixtures/seed/{Bad,Good}.tsx`) exists to prove the island compiles, renders and tests
-  independently. `fixtures/srp/<rule>/` holds the labeled category-1 pairs (one directory
+  independently. Fixtures whose rules demand an API change additionally carry a
+  **`Demo.tsx` caller seam**: the behavior test asserts only Demo's rendered output, the
+  model may update Demo (product code, listed expected-clean in `expected.json`) but
+  never the test — so behavior stays pinned while the component's API is free to change. `fixtures/srp/<rule>/` holds the labeled category-1 pairs (one directory
   per rule, plus `god-component/`), each with `expected.json` labels and a
   `behavior.test.tsx`; `fixtures/composition/<rule>/` holds the category-2 pairs the same
   way (plus `dashboard-panel/`, the multi-violation config-soup case);
