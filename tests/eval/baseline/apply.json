@@ -1,0 +1,189 @@
+{
+  "kind": "review-baseline",
+  "entries": [
+    {
+      "rule": "apply.pass",
+      "fixture": "composition/config-soup",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 0,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "composition/dashboard-panel",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 0,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "composition/regions-as-slots",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 0,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "composition/slots-over-config",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 0,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "composition/variant-compound",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 0,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/deep-import",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/effects-cap",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 4,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/foreign-logic",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/god-component",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 0,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/hardwired-render",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/hooks-cap",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/internal-state",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/jsx-depth-cap",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 2,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/loc-cap",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 3,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/mixed-concerns",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/presentational",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "srp/props-cap",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 0,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "state/colocate",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "state/customer-dashboard",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "state/derived-effect",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 4,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "state/global-discipline",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "state/prop-drilling",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "state/server-fetch",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    }
+  ]
+}

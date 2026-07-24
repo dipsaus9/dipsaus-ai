@@ -1,0 +1,253 @@
+{
+  "kind": "review-baseline",
+  "entries": [
+    {
+      "rule": "comp.config-soup",
+      "fixture": "composition/config-soup",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "comp.config-soup",
+      "fixture": "composition/dashboard-panel",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "comp.regions-as-slots",
+      "fixture": "composition/dashboard-panel",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "comp.slots-over-config",
+      "fixture": "composition/dashboard-panel",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "comp.regions-as-slots",
+      "fixture": "composition/regions-as-slots",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "comp.slots-over-config",
+      "fixture": "composition/slots-over-config",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "comp.variant-compound",
+      "fixture": "composition/variant-compound",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "boundary.deep-import",
+      "fixture": "srp/deep-import",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.effects-cap",
+      "fixture": "srp/effects-cap",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "boundary.foreign-logic",
+      "fixture": "srp/foreign-logic",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.effects-cap",
+      "fixture": "srp/god-component",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.hooks-cap",
+      "fixture": "srp/god-component",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.jsx-depth-cap",
+      "fixture": "srp/god-component",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.mixed-concerns",
+      "fixture": "srp/god-component",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.props-cap",
+      "fixture": "srp/god-component",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "boundary.hardwired-render",
+      "fixture": "srp/hardwired-render",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.hooks-cap",
+      "fixture": "srp/hooks-cap",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "boundary.internal-state",
+      "fixture": "srp/internal-state",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.jsx-depth-cap",
+      "fixture": "srp/jsx-depth-cap",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.loc-cap",
+      "fixture": "srp/loc-cap",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.mixed-concerns",
+      "fixture": "srp/mixed-concerns",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.presentational",
+      "fixture": "srp/presentational",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.props-cap",
+      "fixture": "srp/props-cap",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "state.colocate",
+      "fixture": "state/colocate",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "state.derived-effect",
+      "fixture": "state/customer-dashboard",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "state.prop-drilling",
+      "fixture": "state/customer-dashboard",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "state.server-fetch",
+      "fixture": "state/customer-dashboard",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "state.derived-effect",
+      "fixture": "state/derived-effect",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 3,
+      "runs": 5
+    },
+    {
+      "rule": "state.global-discipline",
+      "fixture": "state/global-discipline",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "state.prop-drilling",
+      "fixture": "state/prop-drilling",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "state.server-fetch",
+      "fixture": "state/server-fetch",
+      "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    }
+  ]
+}

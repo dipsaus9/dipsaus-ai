@@ -51,6 +51,17 @@ Scale down first: `--filter derived-effect --runs 1` is a one-call smoke.
 - **A/B results** are stored in `runner/results/` beside the baselines but never diffed
   against them.
 
+## Known limitation (2026-07-24)
+
+The apply baseline carries honest 0/5 rates on the composition fixtures, `srp/props-cap`
+and `srp/god-component`: their behavior tests pin the **old prop API** that those very
+rules require changing, so the refactor task is contradictory as posed — the model
+keeps the legacy API (or wraps it) and the judge/caps grader rightly fails it.
+`srp/jsx-depth-cap` (2/5) and `srp/loc-cap` (3/5) are genuine model findings, and
+`state.derived-effect` review detection is observably flaky (3/5 in the baseline run).
+Follow-up work: redesign behavior tests for API-changing fixtures to assert behavior
+through a refactor-stable surface, then refresh the apply baseline.
+
 ## Label schema
 
 Each fixture directory carries an `expected.json` — the ground-truth labels the eval
