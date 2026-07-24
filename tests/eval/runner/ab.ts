@@ -2,6 +2,7 @@ import { runApply, type ApplyRunRecord, APPLY_RULE } from "./apply";
 import { RULES, type EvalConfig } from "./config";
 import { readSkillMd } from "./fixtures";
 import { judgeRefactor } from "./judge";
+import { mapPool } from "./pool";
 import { buildControlSystemPrompt, buildSystemPrompt } from "./prompt";
 import { runReview } from "./run";
 import type { EvalReport } from "./types";
@@ -192,7 +193,7 @@ export async function runAb(options: AbRunOptions): Promise<AbReport> {
     ),
     0xd1e5a,
   );
-  for (const job of jobs) {
+  await mapPool(jobs, config.concurrency, async (job) => {
     const verdicts = await judgeRefactor({
       config,
       files: job.run.refactoredFiles ?? {},
@@ -204,7 +205,7 @@ export async function runAb(options: AbRunOptions): Promise<AbReport> {
     job.run.pass = job.run.pass && (job.run.checks.judge ?? true);
     delete job.run.refactoredFiles;
     delete job.run.pendingJudgeRules;
-  }
+  });
 
   return computeAbReport(config.models, arms.skill, arms.control);
 }

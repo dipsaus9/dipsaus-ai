@@ -20,6 +20,8 @@ bun run test:eval --model claude-sonnet-5 --model claude-haiku-4-5-20251001
 full bun binary path if a shell wrapper shadows `bun`.)
 
 Flags: `--model` (repeatable), `--runs`, `--filter` (substring of `category/dir`),
+`--concurrency` (parallel model sessions, default 1 — 4 is a sane ceiling given API
+rate limits and local tsc/vitest load; progress lines interleave),
 `--claude-bin` (default `~/.local/bin/claude`, or `CLAUDE_BIN`), `--out` (JSON path),
 `--update-baseline` (rewrite `tests/eval/baseline/review.json` from this run — the only
 way the baseline changes; commit the result via PR).
