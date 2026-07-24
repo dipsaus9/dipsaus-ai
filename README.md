@@ -202,6 +202,12 @@ bun run test        # Vitest unit — deterministic, CI-safe
 
 CI (`.github/workflows/ci.yml`) runs exactly those three on push to `main` and on every PR.
 
+The `react-architecture` skill has its own **eval harness** under `tests/eval/` — a
+labeled fixture corpus, a runner driving headless `claude` calls (review scoring,
+sandboxed apply grading with an LLM judge, skill-on/off A/B), and a committed regression
+baseline. It is billed and strictly on-command (`bun run test:eval`), never part of CI —
+see `tests/eval/README.md` for the full workflow.
+
 Work is tracked with [Backlog.md](https://github.com/MrLesk/Backlog.md) under `backlog/`. See
 `.claude/CLAUDE.md` for architecture and working conventions.
 

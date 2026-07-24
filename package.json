@@ -17,7 +17,8 @@
     "lint": "oxlint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project unit --passWithNoTests",
-    "test:eval": "vitest run --project eval"
+    "test:eval": "bun tests/eval/runner/run.ts",
+    "test:eval:fixtures": "vitest run --project eval"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",

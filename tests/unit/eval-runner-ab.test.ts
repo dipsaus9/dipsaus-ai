@@ -64,7 +64,7 @@ function score(overrides: Partial<RuleScore>): RuleScore {
 
 function report(scores: RuleScore[], fps: EvalReport["falsePositives"] = []): EvalReport {
   return {
-    config: { models: ["m1"], runs: 5, lineTolerance: 2, thresholds: { high: 1, medLow: 0.8 } },
+    config: { models: ["m1"], runs: 5, thresholds: { high: 1, medLow: 0.8 } },
     scores,
     falsePositives: fps,
     failedRuns: [],

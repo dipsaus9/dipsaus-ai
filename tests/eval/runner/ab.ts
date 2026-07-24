@@ -166,7 +166,7 @@ export async function runAb(options: AbRunOptions): Promise<AbReport> {
   const arms = {} as Record<Arm, { review: EvalReport; apply: EvalReport; applyRuns: ApplyRunRecord[] }>;
   for (const arm of ["skill", "control"] as const) {
     log(`--- arm: ${arm} — review ---`);
-    const review = await runReview({
+    const { report: review } = await runReview({
       config,
       filter,
       systemAppend: prompts[arm],

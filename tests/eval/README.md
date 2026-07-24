@@ -1,8 +1,9 @@
-# tests/eval — fixture island
+# tests/eval — the react-architecture eval harness
 
-Self-contained eval project for the `react-architecture` skill harness. Fixtures here
-**deliberately violate** the repo's own standards, so the island is fenced off from every
-CI gate:
+Everything needed to answer two questions about the `react-architecture` skill: *does it
+still work after an edit* (regression baseline) and *does it help at all* (A/B). The
+fixture corpus here **deliberately violates** the repo's own standards, so the island is
+fenced off from every CI gate:
 
 - **Typecheck** — `tests/eval` is excluded in the root `tsconfig.json`; this directory has
   its own `tsconfig.json` (strict, `react-jsx`, DOM libs). A type error in a fixture never
@@ -10,18 +11,56 @@ CI gate:
 - **Lint** — `fixtures` is in `.oxlintrc.json` `ignorePatterns`, so rule-violating fixture
   code never fails `bun run lint`.
 - **Unit tests** — CI's `bun run test` runs the `unit` vitest project only and never picks
-  up files under `tests/eval`.
+  up files under `tests/eval`. (The runner's parser/matcher/judge/AB logic **is**
+  unit-tested — deterministically, in `tests/unit/eval-runner-*.test.ts`.)
 
-## Running the eval suite
+## Commands
 
-On-command only, never in CI:
+| Command | What | Cost |
+|---|---|---|
+| `bun run test:eval` | review-mode eval, full matrix, diffs vs baseline | **billed** |
+| `bun run test:eval --mode apply` | apply-mode eval (sandbox + graders + judge) | **billed**, agentic |
+| `bun run test:eval --mode ab` | skill-on vs skill-off delta report | **billed**, ~2× |
+| `bun run test:eval --update-baseline` | rewrite the committed baseline from this run | **billed** |
+| `bun run test:eval:fixtures` | the island's own vitest suite (fixture behavior tests) | free, deterministic |
 
-```bash
-bun run test:eval        # vitest run --project eval (jsdom)
-```
-
-If a shell wrapper shadows `bun` (exit 127), call the binary directly:
+Flags: `--model` (repeatable), `--runs` (K), `--filter <substring of category/dir>`,
+`--claude-bin`, `--out`, `--verbose` (A/B: print both arm prompts). Defaults live in
+`runner/config.ts`. If a shell wrapper shadows `bun` (exit 127), use the binary directly:
 `~/.bun/bin/bun run test:eval`.
+
+## Cost expectations (defaults: 23 cases, K=5, one model)
+
+- **review**: ~115 single-shot calls per model.
+- **apply**: ~115 *agentic* runs per model (the model edits files — several × a review
+  call) plus up to ~105 judge votes on composition fixtures.
+- **ab**: everything above, twice.
+
+Scale down first: `--filter derived-effect --runs 1` is a one-call smoke.
+
+## Policies
+
+- **Thresholds** (`runner/config.ts`): high-severity rules K/K, med/low ≥ 80%,
+  `apply.pass` ≥ 80%, good twins zero findings in every run.
+- **Baseline** — `baseline/review.json` + `baseline/apply.json` change **only** via
+  `--update-baseline`, reviewed in a PR; filtered updates merge over the file. Any rate
+  drop in a plain run is a named regression and fails the run. See `baseline/README.md`.
+- **Judge pin** — the judge model is pinned by exact id (`judgeModel`); changing it or any
+  rubric text under `rubrics/` requires a deliberate baseline reset in the same PR. See
+  `rubrics/README.md`.
+- **A/B results** are stored in `runner/results/` beside the baselines but never diffed
+  against them.
+
+## Known limitation (2026-07-24)
+
+The apply baseline carries honest 0/5 rates on the composition fixtures, `srp/props-cap`
+and `srp/god-component`: their behavior tests pin the **old prop API** that those very
+rules require changing, so the refactor task is contradictory as posed — the model
+keeps the legacy API (or wraps it) and the judge/caps grader rightly fails it.
+`srp/jsx-depth-cap` (2/5) and `srp/loc-cap` (3/5) are genuine model findings, and
+`state.derived-effect` review detection is observably flaky (3/5 in the baseline run).
+Follow-up work: redesign behavior tests for API-changing fixtures to assert behavior
+through a refactor-stable surface, then refresh the apply baseline.
 
 ## Label schema
 
@@ -45,8 +84,11 @@ follow it, never redefine it.
   relative to the directory. Listing a file with an empty `expected` means "expected
   clean": reporting any finding there is a false positive.
 - `expected` — findings a correct review must produce: `rule` is a stable rule id from
-  the skill's Rule index; `line` is the 1-based rule-trigger line. The matcher must
-  accept a reported line within **±2** of the label.
+  the skill's Rule index; `line` is the 1-based rule-trigger line, kept as **anchor
+  documentation** for humans reviewing labels. The matcher scores on **rule + file
+  only** — the first real eval run showed models find the right rule on the right file
+  near-perfectly but anchor lines inconsistently (the props interface vs the signature,
+  the first hook vs the over-cap hook), so no line window is stable across models.
 - `alsoAcceptable` — rule ids (any line) that legitimately overlap the seeded violation
   (e.g. 7 props triggers both `srp.props-cap` and `comp.config-soup`). Reporting them is
   neither required nor punished.

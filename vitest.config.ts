@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 // Two suites:
 // - unit — fast, deterministic, no network. Runs in CI (`bun run test`).
 // - eval — the tests/eval fixture island (react + jsdom). On-command only
-//   (`bun run test:eval`); never part of the CI unit run.
+//   (`bun run test:eval:fixtures`); never part of the CI unit run.
 export default defineConfig({
   test: {
     passWithNoTests: true,
