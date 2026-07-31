@@ -4,6 +4,7 @@ title: Baseline refresh on the fixed harness (billed)
 status: To Do
 assignee: []
 created_date: '2026-07-31 08:20'
+updated_date: '2026-07-31 13:58'
 labels:
   - story
 dependencies:
@@ -14,6 +15,7 @@ dependencies:
   - DIP-3.5
   - DIP-3.6
   - DIP-3.7
+  - DIP-3.10
 references:
   - tests/eval/baseline/
   - tests/eval/README.md
