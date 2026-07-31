@@ -31,11 +31,12 @@ single-shot calls keep their own 480 s budget). Defaults live in `runner/config.
 If a shell wrapper shadows `bun` (exit 127), use the binary directly:
 `~/.bun/bin/bun run test:eval`.
 
-## Cost expectations (defaults: 23 cases, K=5, one model)
+## Cost expectations (defaults: 25 cases, K=5, one model)
 
-- **review**: ~215 single-shot calls per model — two calls per Good-twin fixture
-  (detection: Bad+Demo; precision: Good alone) since the DIP-3.1 leak split.
-- **apply**: ~115 *agentic* runs per model (the model edits files — several × a review
+- **review**: ~225 single-shot calls per model — two calls per Good-twin fixture
+  (detection: Bad+Demo; precision: Good alone) since the DIP-3.1 leak split. Hard-tier
+  fixtures are multi-file, so their calls carry noticeably more tokens.
+- **apply**: ~125 *agentic* runs per model (the model edits files — several × a review
   call) plus up to ~105 judge votes on composition fixtures. Each run's final sandbox
   is preserved under `runner/results/artifacts/<mode>-<run-id>/` (git-ignored) for
   human review; every `ApplyRunRecord` carries `durationMs`.
@@ -153,6 +154,13 @@ Labels are AI-drafted and human-approved via PR review.
   way (plus `dashboard-panel/`, the multi-violation config-soup case);
   `fixtures/state/<rule>/` holds the category-3 pairs (plus `customer-dashboard/`, the
   multi-violation fetch + derived-state + drilling case).
+- `fixtures/hard/<name>/` — the **hard tier**: realistic multi-file feature folders
+  (component + hooks + utils across files, 200–400 lines) with 2–4 violations buried in
+  working, rule-clean code across ≥ 2 categories. Files carry real names
+  (`CheckoutReview.tsx`, `InboxPanel.tsx`), not `Bad.tsx`; the Good exemplar lives in a
+  `Good/` subtree (routed to the precision call and the judge exactly like `Good.tsx`).
+  This is the corpus segment where detection is not at ceiling — small-tier fixtures
+  isolate one rule for labeling precision, hard-tier fixtures measure discrimination.
 - `*.test.tsx` — tests for the island itself, run under jsdom with
   `@testing-library/react`. Each fixture's `behavior.test.tsx` exercises only Bad/Demo
   (it ships into the apply sandbox, where the Good twin does not exist); the Good-twin

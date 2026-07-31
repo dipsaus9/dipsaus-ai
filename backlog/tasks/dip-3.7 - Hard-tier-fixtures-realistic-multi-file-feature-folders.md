@@ -1,9 +1,10 @@
 ---
 id: DIP-3.7
 title: 'Hard-tier fixtures: realistic multi-file feature folders'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-31 08:20'
+updated_date: '2026-07-31 13:53'
 labels:
   - story
 dependencies:
