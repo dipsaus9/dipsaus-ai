@@ -1,9 +1,14 @@
 import { runApply, type ApplyRunRecord, APPLY_RULE } from "./apply";
 import { RULES, type EvalConfig } from "./config";
-import { readSkillMd } from "./fixtures";
+import { discoverCases, readSkillMd } from "./fixtures";
 import { judgeRefactor } from "./judge";
 import { mapPool } from "./pool";
-import { buildControlSystemPrompt, buildSystemPrompt } from "./prompt";
+import {
+  buildControlSystemPrompt,
+  buildSystemPrompt,
+  buildUserPrompt,
+  splitReviewCalls,
+} from "./prompt";
 import { runReview } from "./run";
 import type { EvalReport } from "./types";
 
@@ -162,6 +167,16 @@ export async function runAb(options: AbRunOptions): Promise<AbReport> {
   if (options.verbose) {
     console.log("=== ARM skill — system prompt ===\n" + prompts.skill);
     console.log("\n=== ARM control — system prompt ===\n" + prompts.control);
+    // Both arms share the review-call split; show it once on a sample fixture.
+    const sample = discoverCases(filter).find(
+      (fixture) => splitReviewCalls(fixture).length > 1,
+    );
+    for (const call of sample ? splitReviewCalls(sample) : []) {
+      console.log(
+        `\n=== review call: ${call.kind} (${sample?.name}) — user prompt ===\n` +
+          buildUserPrompt(call.sources),
+      );
+    }
   }
 
   const arms = {} as Record<Arm, { review: EvalReport; apply: EvalReport; applyRuns: ApplyRunRecord[] }>;
