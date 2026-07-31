@@ -1,7 +1,7 @@
 {
   "files": {
     "Bad.tsx": {
-      "expected": [{ "rule": "boundary.hardwired-render", "line": 17 }],
+      "expected": [{ "rule": "boundary.hardwired-render", "line": 56 }],
       "alsoAcceptable": []
     },
     "Good.tsx": { "expected": [], "alsoAcceptable": [] },

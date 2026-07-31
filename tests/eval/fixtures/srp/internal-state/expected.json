@@ -1,7 +1,7 @@
 {
   "files": {
     "Bad.tsx": {
-      "expected": [{ "rule": "boundary.internal-state", "line": 9 }],
+      "expected": [{ "rule": "boundary.internal-state", "line": 34 }],
       "alsoAcceptable": []
     },
     "Good.tsx": { "expected": [], "alsoAcceptable": [] },
