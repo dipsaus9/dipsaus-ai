@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { invokeClaude } from "./claude";
@@ -35,13 +35,52 @@ export function readRubric(rule: string): string {
 }
 
 /**
- * Blind prompt: rubric + refactored sources only. No model ids, no skill-on/off
- * arm, no fixture labels, no run metadata — DIP-2.10 reuses this blindness.
+ * Read a fixture's Good twin as the judge's reference exemplar — from the
+ * fixture directory, never from the sandbox (the refactoring model must not
+ * see it; only the judge may). Returns undefined when the fixture has none.
  */
-export function buildJudgePrompt(rubric: string, files: Record<string, string>): string {
+export function readExemplar(fixtureDir: string): string | undefined {
+  const single = path.join(fixtureDir, "Good.tsx");
+  if (existsSync(single)) {
+    return readFileSync(single, "utf8");
+  }
+  const dir = path.join(fixtureDir, "Good");
+  if (existsSync(dir)) {
+    return readdirSync(dir)
+      .filter((name) => /\.tsx?$/.test(name))
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => `// Good/${name}\n${readFileSync(path.join(dir, name), "utf8")}`)
+      .join("\n");
+  }
+  return undefined;
+}
+
+/**
+ * Blind prompt: rubric + refactored sources, optionally calibrated by a
+ * known-good exemplar. No model ids, no skill-on/off arm, no fixture labels,
+ * no run metadata — DIP-2.10 reuses this blindness.
+ */
+export function buildJudgePrompt(
+  rubric: string,
+  files: Record<string, string>,
+  exemplar?: string,
+): string {
   const sources = Object.entries(files)
     .map(([name, content]) => `### File: ${name}\n\n\`\`\`tsx\n${content}\`\`\``)
     .join("\n\n");
+  const reference = exemplar
+    ? [
+        "",
+        "REFERENCE — one acceptable target shape, NOT the only one. Use it to",
+        "calibrate what satisfying the rubric looks like. Do NOT fail the",
+        "refactor merely for differing from it: a different decomposition,",
+        "naming, or file layout still passes when the rubric criteria hold.",
+        "",
+        "```tsx",
+        exemplar,
+        "```",
+      ]
+    : [];
   return [
     "You are judging a React/TypeScript refactor against one rubric.",
     "Apply ONLY the rubric below to the code below. Be strict: when criteria",
@@ -54,6 +93,7 @@ export function buildJudgePrompt(rubric: string, files: Record<string, string>):
     "---",
     rubric,
     "---",
+    ...reference,
     "",
     sources,
   ].join("\n");
@@ -94,6 +134,9 @@ export interface JudgeOptions {
   /** refactored sources, relative name -> content */
   files: Record<string, string>;
   rules: string[];
+  /** known-good reference source (fixture's Good twin) — calibrates, never
+   * demands an exact match */
+  exemplar?: string;
   log?: (message: string) => void;
 }
 
@@ -103,7 +146,7 @@ export async function judgeRefactor(options: JudgeOptions): Promise<JudgeVerdict
   const log = options.log ?? (() => {});
   const verdicts: JudgeVerdict[] = [];
   for (const rule of judgeableRules(rules)) {
-    const prompt = buildJudgePrompt(readRubric(rule), files);
+    const prompt = buildJudgePrompt(readRubric(rule), files, options.exemplar);
     const votes: JudgeVote[] = [];
     for (let vote = 1; vote <= config.judgeVotes; vote += 1) {
       log(`judge ${rule} — vote ${vote}/${config.judgeVotes}`);
