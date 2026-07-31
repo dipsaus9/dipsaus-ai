@@ -1,9 +1,10 @@
 ---
 id: DIP-3.1
 title: 'Review-mode leak split: Bad+Demo and Good in separate calls'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-31 08:19'
+updated_date: '2026-07-31 10:06'
 labels:
   - story
 dependencies:
@@ -37,7 +38,7 @@ Branch: DIP-3.1/review-leak-split
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
-1. Split FixtureCase sources into detection-set/precision-set in fixtures.ts or at call site. 2. Prompt builder takes a file subset. 3. run.ts loops two invocations per Good-twin fixture; K applies per call pair. 4. ab.ts reuses the same loop for both arms. 5. Unit tests.
+1. prompt.ts: splitReviewCalls(fixture) -> [{kind: detection, sources minus Good*}, {kind: precision, Good* only}] (single call when no Good twin); buildUserPrompt takes a sources map. 2. run.ts: worker invokes each call sequentially inside the pool slot and merges findings into ONE RunRecord per (fixture, run) — ok = all calls parsed, raw = concatenated transcripts; matcher/aggregate untouched so schema and runs-count stay identical. 3. ab.ts: --verbose additionally prints the detection and precision user prompts for the first Good-twin fixture. 4. Unit tests in eval-runner-parser.test.ts for split + subset prompt + merge. 5. Gates.
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes

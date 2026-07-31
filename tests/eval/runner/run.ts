@@ -19,7 +19,7 @@ import { discoverCases, readSkillMd } from "./fixtures";
 import { aggregate } from "./matcher";
 import { parseReviewOutput } from "./parser";
 import { mapPool } from "./pool";
-import { buildSystemPrompt, buildUserPrompt } from "./prompt";
+import { buildSystemPrompt, buildUserPrompt, splitReviewCalls } from "./prompt";
 import { printReport } from "./report";
 import type { EvalReport, FixtureLabels, RunRecord } from "./types";
 
@@ -68,34 +68,44 @@ export async function runReview(options: ReviewRunOptions): Promise<{
     jobs,
     config.concurrency,
     async ({ model, fixture, run }) => {
-      log(`${model} × ${fixture.name} — run ${run}/${config.runs}`);
-      const result = await invokeClaude({
-        bin: config.claudeBin,
-        model,
-        systemAppend,
-        prompt: buildUserPrompt(fixture),
-        timeoutMs: config.timeoutMs,
-      });
-      if (!result.ok) {
-        return {
-          fixture: fixture.name,
+      // Detection (Bad + Demo) and precision (Good alone) are separate calls —
+      // the model must never see the Good twin next to the files it grades —
+      // but they merge into ONE record per run so aggregate() counts K runs,
+      // not K × calls. Findings self-attribute: each call's findings can only
+      // name files that call saw.
+      const calls = splitReviewCalls(fixture);
+      const findings: RunRecord["findings"] = [];
+      const raws: string[] = [];
+      const errors: string[] = [];
+      for (const call of calls) {
+        log(`${model} × ${fixture.name} [${call.kind}] — run ${run}/${config.runs}`);
+        const result = await invokeClaude({
+          bin: config.claudeBin,
           model,
-          run,
-          ok: false,
-          findings: [],
-          raw: result.stdout,
-          error: result.error ?? result.stderr.slice(0, 500),
-        };
+          systemAppend,
+          prompt: buildUserPrompt(call.sources),
+          timeoutMs: config.timeoutMs,
+        });
+        raws.push(`=== call: ${call.kind} ===\n${result.stdout}`);
+        if (!result.ok) {
+          errors.push(`${call.kind}: ${result.error ?? result.stderr.slice(0, 500)}`);
+          continue;
+        }
+        const parsed = parseReviewOutput(result.stdout);
+        if (!parsed.ok) {
+          errors.push(`${call.kind}: ${parsed.reason ?? "unparseable output"}`);
+          continue;
+        }
+        findings.push(...parsed.findings);
       }
-      const parsed = parseReviewOutput(result.stdout);
       return {
         fixture: fixture.name,
         model,
         run,
-        ok: parsed.ok,
-        findings: parsed.findings,
-        raw: result.stdout,
-        ...(parsed.ok ? {} : { error: parsed.reason ?? "unparseable output" }),
+        ok: errors.length === 0,
+        findings,
+        raw: raws.join("\n"),
+        ...(errors.length === 0 ? {} : { error: errors.join(" | ") }),
       };
     },
   );

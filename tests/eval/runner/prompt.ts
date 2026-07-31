@@ -44,8 +44,41 @@ export function buildControlSystemPrompt(ruleIds: string[]): string {
   ].join("\n");
 }
 
-export function buildUserPrompt(fixture: FixtureCase): string {
-  const files = Object.entries(fixture.sources)
+/** Good-twin files: the answer key. They must never share a prompt with the
+ * violating files, or the model can find violations by diffing. */
+function isGoodTwin(file: string): boolean {
+  return file === "Good.tsx" || file.startsWith("Good/");
+}
+
+export interface ReviewCall {
+  /** detection = the violating files (Bad + Demo + support); precision = the
+   * clean Good twin alone, graded purely on false positives */
+  kind: "detection" | "precision";
+  sources: Record<string, string>;
+}
+
+/**
+ * Split one fixture into independent review calls so detection and precision
+ * are measured separately. Fixtures without a Good twin keep a single call.
+ */
+export function splitReviewCalls(fixture: FixtureCase): ReviewCall[] {
+  const detection: Record<string, string> = {};
+  const precision: Record<string, string> = {};
+  for (const [file, content] of Object.entries(fixture.sources)) {
+    (isGoodTwin(file) ? precision : detection)[file] = content;
+  }
+  const calls: ReviewCall[] = [];
+  if (Object.keys(detection).length > 0) {
+    calls.push({ kind: "detection", sources: detection });
+  }
+  if (Object.keys(precision).length > 0) {
+    calls.push({ kind: "precision", sources: precision });
+  }
+  return calls;
+}
+
+export function buildUserPrompt(sources: Record<string, string>): string {
+  const files = Object.entries(sources)
     .map(([file, content]) => `### File: ${file}\n\n\`\`\`tsx\n${content}\`\`\``)
     .join("\n\n");
   return [
