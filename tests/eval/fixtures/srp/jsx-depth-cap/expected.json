@@ -1,7 +1,7 @@
 {
   "files": {
     "Bad.tsx": {
-      "expected": [{ "rule": "srp.jsx-depth-cap", "line": 17 }],
+      "expected": [{ "rule": "srp.jsx-depth-cap", "line": 48 }],
       "alsoAcceptable": []
     },
     "Good.tsx": { "expected": [], "alsoAcceptable": [] }

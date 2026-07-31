@@ -1,7 +1,7 @@
 {
   "files": {
     "Bad.tsx": {
-      "expected": [{ "rule": "boundary.foreign-logic", "line": 11 }],
+      "expected": [{ "rule": "boundary.foreign-logic", "line": 38 }],
       "alsoAcceptable": []
     },
     "Good.tsx": { "expected": [], "alsoAcceptable": [] }

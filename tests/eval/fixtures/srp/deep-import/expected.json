@@ -1,7 +1,7 @@
 {
   "files": {
     "Bad.tsx": {
-      "expected": [{ "rule": "boundary.deep-import", "line": 3 }],
+      "expected": [{ "rule": "boundary.deep-import", "line": 1 }],
       "alsoAcceptable": []
     },
     "Good.tsx": { "expected": [], "alsoAcceptable": [] },
