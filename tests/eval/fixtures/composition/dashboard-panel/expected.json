@@ -8,6 +8,6 @@
       ],
       "alsoAcceptable": ["srp.props-cap", "comp.variant-compound"]
     },
-    "Demo.tsx": { "expected": [], "alsoAcceptable": [] }
+    "Demo.tsx": { "expected": [], "alsoAcceptable": ["comp.variant-compound"] }
   }
 }

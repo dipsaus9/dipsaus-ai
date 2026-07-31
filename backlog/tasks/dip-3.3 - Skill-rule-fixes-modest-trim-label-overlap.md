@@ -1,10 +1,10 @@
 ---
 id: DIP-3.3
 title: 'Skill rule fixes, modest trim, label overlap'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-31 08:19'
-updated_date: '2026-07-31 08:19'
+updated_date: '2026-07-31 11:52'
 labels:
   - story
 dependencies:
@@ -29,11 +29,11 @@ Branch: DIP-3.3/skill-fixes-labels
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 state.global-discipline section rewritten with a stated hypothesis (in the PR/commit body) for why the old text suppressed detection; rule id unchanged
-- [ ] #2 Variant/config boundary stated crisply in both rule sections; rule ids unchanged; Rule index ids stay in sync with runner/config.ts RULES
-- [ ] #3 SKILL.md byte count reduced 15-25% (from 8617 bytes) with no rule dropped and severities unchanged
-- [ ] #4 comp.variant-compound added to alsoAcceptable for composition/config-soup (Bad + Demo), composition/dashboard-panel (Bad + Demo), composition/slots-over-config (Bad + Demo) — matching the observed FP cluster
-- [ ] #5 Repo gates green
+- [x] #1 state.global-discipline section rewritten with a stated hypothesis (in the PR/commit body) for why the old text suppressed detection; rule id unchanged
+- [x] #2 Variant/config boundary stated crisply in both rule sections; rule ids unchanged; Rule index ids stay in sync with runner/config.ts RULES
+- [x] #3 SKILL.md byte count reduced 15-25% (from 8617 bytes) with no rule dropped and severities unchanged
+- [x] #4 comp.variant-compound added to alsoAcceptable for composition/config-soup (Bad + Demo), composition/dashboard-panel (Bad + Demo), composition/slots-over-config (Bad + Demo) — matching the observed FP cluster
+- [x] #5 Repo gates green
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -46,4 +46,12 @@ Branch: DIP-3.3/skill-fixes-labels
 
 <!-- SECTION:NOTES:BEGIN -->
 Any skill text change invalidates baselines — reset lands in DIP-3.8. Plugin manifests (package.json, plugin.json, marketplace.json) untouched — skill surface (name/purpose) unchanged.
+
+Key evidence for DIP-3.9: the entire skill-HURTS-state-detection A/B signal (75% vs 100%) was timeout noise — 8 of the skill arm's review failedRuns were 480s timeouts concentrated in state fixtures. Review-mode timeouts exist too, not just apply-mode ones; if they recur in DIP-3.8, consider a review-call retry or a higher single-shot budget as follow-up.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+SKILL.md trimmed 8617 -> 7320 bytes (15.1%) with all 20 rule ids, severities and output contracts unchanged. comp.variant-compound vs comp.config-soup boundary sharpened: variant-compound fires only on an enum-like discriminator prop switching a reused component between shapes; independent boolean/knob props are config-soup; both only when both patterns are present. comp.variant-compound added to alsoAcceptable on config-soup (Bad+Demo), dashboard-panel (Demo; Bad already had it) and slots-over-config (Bad+Demo). state.global-discipline: investigation falsified the suppression premise — the A/B 1/5 was four 480s review-call timeouts (both full review runs are 5/5 with the skill), so per user decision the section got a clarity pass only, with the hypothesis recorded in the commit body. Gates + island suite green.
+<!-- SECTION:FINAL_SUMMARY:END -->
