@@ -1,10 +1,10 @@
 ---
 id: DIP-3.3
 title: 'Skill rule fixes, modest trim, label overlap'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-31 08:19'
-updated_date: '2026-07-31 08:19'
+updated_date: '2026-07-31 11:06'
 labels:
   - story
 dependencies:
