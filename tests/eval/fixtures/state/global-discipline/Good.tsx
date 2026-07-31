@@ -1,7 +1,13 @@
-// Clean twin — the same hand-rolled store shape, but holding the signed-in
-// session (user + locale): a genuinely cross-cutting client concern that many
-// unrelated components read. Legitimate global state; a false-positive trap
-// for "any module store is a violation".
+/**
+ * Account menu label, driven by the signed-in session.
+ *
+ * The session (user + locale) is a genuinely app-wide concern: navigation,
+ * greetings, and localisation all read it, and no single component owns it.
+ * That is the case where a client-side global store is the right call
+ * (state.global-discipline) — module state exposed through
+ * useSyncExternalStore, holding client state only, never server-fetched
+ * data or any one component's local UI state.
+ */
 import { useSyncExternalStore } from "react";
 
 type Listener = () => void;

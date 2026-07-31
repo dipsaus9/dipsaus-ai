@@ -1,6 +1,13 @@
-// Clean twin — the genuinely-shared trap: selectedOrderId is lifted to the
-// workspace because BOTH children read it (the list highlights it, the detail
-// pane shows it). Lifting genuinely shared state is correct.
+/**
+ * Orders workspace: list + detail, sharing a selection.
+ *
+ * selectedOrderId lives on the workspace because BOTH children read it —
+ * the list highlights the selected row, the detail pane shows it. Lifting
+ * genuinely shared state to the nearest common owner is exactly what the
+ * colocation rule prescribes (state.colocate); pushing it into either child
+ * would orphan the other, and pushing it higher (or into a store) would
+ * widen its scope past its readers.
+ */
 import { useState } from "react";
 
 interface Order {
@@ -47,6 +54,7 @@ function OrderDetail({ order }: { order: Order | null }) {
 }
 
 export function OrdersWorkspace({ orders }: { orders: Order[] }) {
+  // Nearest common owner of the selection — both children consume it.
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const selected = orders.find((order) => order.id === selectedOrderId) ?? null;
 

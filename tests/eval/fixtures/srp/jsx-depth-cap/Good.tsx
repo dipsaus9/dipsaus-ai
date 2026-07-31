@@ -1,5 +1,11 @@
-// Clean twin — nesting is exactly depth 5 (section > ul > li > div > span),
-// sitting on the cap. A false-positive trap.
+/**
+ * Team directory list.
+ *
+ * The markup tops out at nesting depth five (section > ul > li > div > span),
+ * the deepest the depth budget allows (srp.jsx-depth-cap). Anything richer
+ * per row — avatars, actions, presence — would become a MemberRow component
+ * rather than another wrapper div.
+ */
 interface TeamMember {
   id: string;
   name: string;

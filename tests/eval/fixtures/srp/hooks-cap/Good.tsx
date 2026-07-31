@@ -1,4 +1,11 @@
-// Clean twin — exactly 5 hooks, sitting on the cap. A false-positive trap.
+/**
+ * Checkout form: three fields, a derived total, one submit callback.
+ *
+ * Five hooks — three field states, a ref, one memo — is the ceiling the hook
+ * budget allows (srp.hooks-cap: at most 5). The total is derived with
+ * useMemo rather than mirrored into state, and submit hands the values up
+ * instead of owning order logic here.
+ */
 import { useMemo, useRef, useState } from "react";
 
 interface CartItem {
@@ -19,6 +26,7 @@ export function CheckoutForm({
   const [address, setAddress] = useState("");
   const [shippingMethod, setShippingMethod] = useState("standard");
   const formRef = useRef<HTMLFormElement>(null);
+  // Derived during render (memoised) — never synced into state via an effect.
   const total = useMemo(
     () => items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
     [items],

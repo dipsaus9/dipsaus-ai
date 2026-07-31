@@ -1,7 +1,13 @@
-// Clean twin — the false-positive trap that matters most here: an effect with
-// the same useEffect + setState shape as a manual fetch, but it subscribes to
-// a push source. Syncing with an external subscription is exactly what
-// useEffect is for; there is no request/response server state involved.
+/**
+ * Live inventory badge fed by a push subscription.
+ *
+ * The effect subscribes to an external push source and cleans up on unmount
+ * — synchronising with an external system is exactly what useEffect is for.
+ * The server-state rule (state.server-fetch) bans request/response fetching
+ * via useEffect + useState, because that data belongs to a query library or
+ * route loader; a live subscription has no request lifecycle to cache, so
+ * this shape is correct as written.
+ */
 import { useEffect, useState } from "react";
 
 export function LiveInventoryBadge({

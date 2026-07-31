@@ -1,6 +1,13 @@
-// Clean twin — the empty state is a plain string prop, not render-config. Data
-// props are the right tool when the caller only varies text: a false-positive
-// trap for "every customisation must be a slot".
+/**
+ * Tag list with an empty-state label.
+ *
+ * The empty state is one line of text, so it arrives as a data prop. The
+ * slots rule (comp.slots-over-config) targets render-config — thunks
+ * returning JSX and flags toggling regions; a string prop for a purely
+ * textual variation keeps the caller's code smaller than a slot would.
+ * If callers ever need markup in the empty state, `emptyLabel` becomes a
+ * ReactNode slot — an additive change.
+ */
 export function TagList({
   tags,
   emptyLabel,

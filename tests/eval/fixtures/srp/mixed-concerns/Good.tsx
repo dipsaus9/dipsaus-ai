@@ -1,5 +1,12 @@
-// Clean twin — pricing logic lives in a custom hook; the component is
-// presentational. Still has local UI state (expanded), which is fine.
+/**
+ * Cart totals panel.
+ *
+ * Pricing policy (tier discounts, tax) lives in the useCartTotals hook; the
+ * component owns only presentation plus one piece of local UI state
+ * (srp.mixed-concerns, srp.presentational). The pricing rules can change —
+ * or be unit-tested — without touching any JSX, and the panel can be
+ * restyled without re-reading business logic.
+ */
 import { useEffect, useState } from "react";
 
 interface CartLine {
@@ -9,6 +16,8 @@ interface CartLine {
   quantity: number;
 }
 
+// One reason to change: pricing policy. Reports the subtotal view once per
+// change via the callback the caller provides.
 function useCartTotals(
   lines: CartLine[],
   taxRate: number,
@@ -44,6 +53,7 @@ export function CartTotals({
   taxRate: number;
   onTotalsViewed: (subtotal: number) => void;
 }) {
+  // Local UI state stays in the component — it is view concern, not pricing.
   const [expanded, setExpanded] = useState(false);
   const { subtotal, discount, tax, total } = useCartTotals(
     lines,

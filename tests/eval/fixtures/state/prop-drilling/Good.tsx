@@ -1,6 +1,13 @@
-// Clean twin — same tree, but the props pass through exactly ONE silent
-// intermediate (NotificationPanel), under the 2+ threshold the rule sets.
-// A false-positive trap for "any pass-through is drilling".
+/**
+ * Account page with notification preferences.
+ *
+ * The email opt-in passes through exactly one intermediate
+ * (NotificationPanel) on its way to the toggle. The drilling rule
+ * (state.prop-drilling) draws the line at 2+ silent intermediates — one
+ * pass-through keeps the data flow explicit and is cheaper than context or
+ * restructuring. If the tree deepens, the fix is composition: pass the
+ * toggle down as children.
+ */
 import { useState } from "react";
 
 function EmailToggle({

@@ -1,5 +1,11 @@
-// Clean twin — the same value computed during render, memoised. useMemo on a
-// derived value is correct and must not be confused with derived state.
+/**
+ * Search result summary line.
+ *
+ * The match count is derived data, so it is computed during render —
+ * memoised because the filter walks the list (state.derived-effect: derived
+ * values never round-trip through useState + useEffect). There is exactly
+ * one source of truth (items + query); the count can never be stale.
+ */
 import { useMemo } from "react";
 
 export function SearchSummary({

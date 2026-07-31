@@ -1,5 +1,12 @@
-// Clean twin — uses billing's public barrel. Importing another feature's
-// public API is allowed; a false-positive trap for over-eager boundary checks.
+/**
+ * Order total footer for the checkout summary.
+ *
+ * Depends on the billing feature only through its public barrel
+ * (`./billing`), never on its internal modules — the boundary rule
+ * (boundary.deep-import) exists so billing can reorganise its internals
+ * without breaking consumers. Tax math stays inside billing, where the
+ * domain knowledge lives; this component just presents the numbers.
+ */
 import { calcOrderTax } from "./billing";
 
 export function OrderTotalFooter({
@@ -9,6 +16,8 @@ export function OrderTotalFooter({
   subtotal: number;
   region: "eu" | "us";
 }) {
+  // Calling billing's public API is the sanctioned way to use another
+  // feature's logic — the import path is the contract.
   const tax = calcOrderTax(subtotal, region);
 
   return (

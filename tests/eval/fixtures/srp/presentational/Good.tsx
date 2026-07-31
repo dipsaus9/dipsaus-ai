@@ -1,5 +1,11 @@
-// Clean twin — grouping/sorting extracted into a hook; the component renders
-// what the hook returns.
+/**
+ * Invoice history, grouped by year.
+ *
+ * Grouping and ordering are data shaping, so they live in the
+ * useInvoicesByYear hook; the component maps the hook's output to markup
+ * (srp.presentational). New sort rules or grouping tweaks never touch JSX,
+ * and the list's styling never touches the data logic.
+ */
 import { useMemo } from "react";
 
 interface Invoice {

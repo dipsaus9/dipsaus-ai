@@ -1,6 +1,12 @@
-// Clean twin — several props, but they are flat data rendered into a single
-// region. No header/body/footer structure to slot, so prop-driven is the right
-// design: a false-positive trap.
+/**
+ * Article byline.
+ *
+ * Three flat data values rendered into one line of text. Slots
+ * (comp.regions-as-slots) are for components with distinct composable
+ * regions — a byline has none, so plain data props are the right design.
+ * Promoting these to ReactNode slots would only push formatting onto every
+ * caller.
+ */
 export function ArticleByline({
   author,
   publishedAt,
