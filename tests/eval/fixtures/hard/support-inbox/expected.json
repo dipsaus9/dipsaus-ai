@@ -1,0 +1,58 @@
+{
+  "files": {
+    "InboxPanel.tsx": {
+      "expected": [
+        {
+          "rule": "comp.config-soup",
+          "line": 3
+        },
+        {
+          "rule": "srp.props-cap",
+          "line": 11
+        }
+      ],
+      "alsoAcceptable": [
+        "comp.slots-over-config",
+        "comp.regions-as-slots",
+        "comp.variant-compound"
+      ]
+    },
+    "InboxLayout.tsx": {
+      "expected": [
+        {
+          "rule": "state.prop-drilling",
+          "line": 4
+        }
+      ],
+      "alsoAcceptable": []
+    },
+    "SidebarSection.tsx": {
+      "expected": [],
+      "alsoAcceptable": [
+        "state.prop-drilling"
+      ]
+    },
+    "InboxShell.tsx": {
+      "expected": [],
+      "alsoAcceptable": [
+        "state.prop-drilling"
+      ]
+    },
+    "Demo.tsx": {
+      "expected": [],
+      "alsoAcceptable": []
+    },
+    "tickets.ts": {
+      "expected": [],
+      "alsoAcceptable": []
+    },
+    "Good/InboxPanel.tsx": {
+      "expected": [],
+      "alsoAcceptable": []
+    },
+    "Good/InboxShell.tsx": {
+      "expected": [],
+      "alsoAcceptable": []
+    }
+  }
+}

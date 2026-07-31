@@ -1,0 +1,44 @@
+{
+  "files": {
+    "CheckoutReview.tsx": {
+      "expected": [
+        {
+          "rule": "boundary.deep-import",
+          "line": 3
+        },
+        {
+          "rule": "state.server-fetch",
+          "line": 30
+        },
+        {
+          "rule": "state.derived-effect",
+          "line": 42
+        }
+      ],
+      "alsoAcceptable": [
+        "srp.mixed-concerns",
+        "srp.presentational"
+      ]
+    },
+    "Demo.tsx": {
+      "expected": [],
+      "alsoAcceptable": []
+    },
+    "money.ts": {
+      "expected": [],
+      "alsoAcceptable": []
+    },
+    "inventory/index.ts": {
+      "expected": [],
+      "alsoAcceptable": []
+    },
+    "inventory/lib/stock.ts": {
+      "expected": [],
+      "alsoAcceptable": []
+    },
+    "Good/CheckoutReview.tsx": {
+      "expected": [],
+      "alsoAcceptable": []
+    }
+  }
+}
