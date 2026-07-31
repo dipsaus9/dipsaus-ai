@@ -1,10 +1,10 @@
 ---
 id: DIP-3.4
 title: 'Judge hybrid: rubric criteria plus Good.tsx exemplar'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-07-31 08:20'
-updated_date: '2026-07-31 11:57'
+updated_date: '2026-07-31 12:00'
 labels:
   - story
 dependencies:
@@ -29,10 +29,10 @@ Branch: DIP-3.4/judge-good-exemplar
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 judgeRefactor accepts an optional exemplar source; judge prompt frames it as one acceptable shape and forbids demanding an exact match; absent exemplar means current rubric-only prompt
-- [ ] #2 Apply flow (direct and A/B-deferred) passes the fixture Good.tsx as exemplar when it exists, read from the fixture dir, never from the sandbox
-- [ ] #3 rubrics/comp.variant-compound.md no longer requires shared-shell extraction; every rubric criterion traces to skill text; rubrics/README.md notes the reset rationale
-- [ ] #4 Judge unit tests cover exemplar and no-exemplar prompt shapes; repo gates green
+- [x] #1 judgeRefactor accepts an optional exemplar source; judge prompt frames it as one acceptable shape and forbids demanding an exact match; absent exemplar means current rubric-only prompt
+- [x] #2 Apply flow (direct and A/B-deferred) passes the fixture Good.tsx as exemplar when it exists, read from the fixture dir, never from the sandbox
+- [x] #3 rubrics/comp.variant-compound.md no longer requires shared-shell extraction; every rubric criterion traces to skill text; rubrics/README.md notes the reset rationale
+- [x] #4 Judge unit tests cover exemplar and no-exemplar prompt shapes; repo gates green
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -45,4 +45,12 @@ Branch: DIP-3.4/judge-good-exemplar
 
 <!-- SECTION:NOTES:BEGIN -->
 Rubric text change requires deliberate baseline reset — happens in DIP-3.8 (same epic), per rubrics/README.md policy. Watch 2-1 vote rate in DIP-3.8 output as instability signal; if still high, future work.
+
+Judge blindness preserved: exemplar is fixture code only, no arm/label/metadata. DIP-3.5 Good rewrites will flow into judge prompts automatically — its why-comments must not mention the eval/labels (already an AC there). Baseline reset obligation for this rubric change rides on DIP-3.8.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+judgeRefactor gained an optional exemplar: readExemplar(fixtureDir) loads Good.tsx (or concatenates a Good/ tree in stable order) from the fixture directory — never the sandbox — and buildJudgePrompt injects it as a REFERENCE framed as one acceptable target shape with an explicit instruction not to fail refactors merely for differing. Both judge paths pass it: the direct apply path and the A/B deferred batch (via an exemplar-by-fixture map). Fixtures without a Good twin stay rubric-only. comp.variant-compound rubric realigned: shared-shell criterion dropped with an Explicitly-NOT-required note; other three comp rubrics audited and trace to skill text. rubrics/README.md documents the exemplar contract and the reset rationale. Five new unit tests (161 green).
+<!-- SECTION:FINAL_SUMMARY:END -->
