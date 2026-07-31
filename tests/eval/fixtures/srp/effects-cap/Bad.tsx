@@ -1,6 +1,3 @@
-// Violates srp.effects-cap: 3 useEffect (> 2). Each effect is a legitimate
-// external sync (subscription, timer, document title) — no derived state,
-// no data fetching, so only the cap is broken.
 import { useEffect, useState } from "react";
 
 export function LiveOrderStatus({

@@ -1,6 +1,3 @@
-// Violates state.colocate: the page owns messageDraft purely to thread it
-// into MessageComposer. The page never reads the draft — submission flows
-// through onSend from the composer — so the state belongs inside the composer.
 import { useState } from "react";
 
 export function MessageComposer({

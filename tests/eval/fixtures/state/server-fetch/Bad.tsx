@@ -1,7 +1,3 @@
-// Violates state.server-fetch: server state fetched with a manual
-// useEffect + useState pair, inside a leaf component instead of at a
-// route/container boundary. The api client is injected so tests stay
-// offline — the anti-pattern is the effect/state plumbing, not the transport.
 import { useEffect, useState } from "react";
 
 interface Order {

@@ -1,6 +1,3 @@
-// Violates state.global-discipline: a module-level global store (hand-rolled,
-// stand-in for zustand & co) holds filtersPanelOpen — UI state used by exactly
-// one component. Local useState would do; nothing cross-cutting about it.
 import { useSyncExternalStore } from "react";
 
 type Listener = () => void;

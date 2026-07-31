@@ -1,7 +1,3 @@
-// Violates comp.config-soup: boolean visibility flags (showWarningIcon,
-// showCancel) configure which parts of the dialog exist — configuration over
-// composition, calling for a compound API. Six props keeps srp.props-cap out
-// of play; the flags alone are the trigger.
 export function OrderConfirmDialog({
   title,
   showWarningIcon,

@@ -1,7 +1,7 @@
 {
   "files": {
     "Bad.tsx": {
-      "expected": [{ "rule": "state.derived-effect", "line": 14 }],
+      "expected": [{ "rule": "state.derived-effect", "line": 12 }],
       "alsoAcceptable": []
     },
     "Good.tsx": { "expected": [], "alsoAcceptable": [] }

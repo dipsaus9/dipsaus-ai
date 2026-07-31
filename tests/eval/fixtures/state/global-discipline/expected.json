@@ -1,7 +1,7 @@
 {
   "files": {
     "Bad.tsx": {
-      "expected": [{ "rule": "state.global-discipline", "line": 31 }],
+      "expected": [{ "rule": "state.global-discipline", "line": 28 }],
       "alsoAcceptable": []
     },
     "Good.tsx": { "expected": [], "alsoAcceptable": [] }

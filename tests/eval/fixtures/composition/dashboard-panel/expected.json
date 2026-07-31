@@ -2,9 +2,9 @@
   "files": {
     "Bad.tsx": {
       "expected": [
-        { "rule": "comp.config-soup", "line": 9 },
-        { "rule": "comp.regions-as-slots", "line": 9 },
-        { "rule": "comp.slots-over-config", "line": 9 }
+        { "rule": "comp.config-soup", "line": 3 },
+        { "rule": "comp.regions-as-slots", "line": 3 },
+        { "rule": "comp.slots-over-config", "line": 3 }
       ],
       "alsoAcceptable": ["srp.props-cap", "comp.variant-compound"]
     },

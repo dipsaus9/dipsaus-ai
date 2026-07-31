@@ -1,7 +1,3 @@
-// Violates srp.mixed-concerns: one component owns pricing business logic
-// (tiered discount + tax), an analytics side-effect, and presentation. Stays
-// under every hard cap so only the SRP rule (and its med-severity corollary,
-// srp.presentational) is in play.
 import { useEffect, useState } from "react";
 
 interface CartLine {
