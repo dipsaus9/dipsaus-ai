@@ -46,7 +46,7 @@ export function buildControlSystemPrompt(ruleIds: string[]): string {
 
 /** Good-twin files: the answer key. They must never share a prompt with the
  * violating files, or the model can find violations by diffing. */
-function isGoodTwin(file: string): boolean {
+export function isGoodTwin(file: string): boolean {
   return file === "Good.tsx" || file.startsWith("Good/");
 }
 

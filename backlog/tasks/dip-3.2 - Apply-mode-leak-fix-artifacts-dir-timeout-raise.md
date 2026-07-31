@@ -1,9 +1,10 @@
 ---
 id: DIP-3.2
 title: 'Apply-mode leak fix, artifacts dir, timeout raise'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-31 08:19'
+updated_date: '2026-07-31 10:18'
 labels:
   - story
 dependencies:

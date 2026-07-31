@@ -6,5 +6,8 @@ dist
 # Local eval benchmark trend (regenerated each run)
 tests/eval/results.jsonl
 
+# Apply-mode refactor snapshots — kept locally for human review, never committed
+tests/eval/runner/results/artifacts/
+
 # Per-user Claude Code state (never commit)
 .claude/settings.local.json

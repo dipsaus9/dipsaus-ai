@@ -1,3 +1,4 @@
+import path from "node:path";
 import { runApply, type ApplyRunRecord, APPLY_RULE } from "./apply";
 import { RULES, type EvalConfig } from "./config";
 import { discoverCases, readSkillMd } from "./fixtures";
@@ -156,6 +157,8 @@ export interface AbRunOptions {
   config: EvalConfig;
   filter?: string;
   verbose?: boolean;
+  /** apply-run sandboxes are preserved under <artifactsDir>/<arm>/ */
+  artifactsDir?: string;
   log?: (message: string) => void;
 }
 
@@ -194,6 +197,9 @@ export async function runAb(options: AbRunOptions): Promise<AbReport> {
       filter,
       systemAppend: prompts[arm],
       deferJudge: true,
+      ...(options.artifactsDir
+        ? { artifactsDir: path.join(options.artifactsDir, arm) }
+        : {}),
       log: (m) => log(`[${arm}] ${m}`),
     });
     arms[arm] = { review, apply: applyResult.report, applyRuns: applyResult.runs };
