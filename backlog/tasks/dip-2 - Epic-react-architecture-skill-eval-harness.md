@@ -1,9 +1,10 @@
 ---
 id: DIP-2
 title: 'Epic: react-architecture skill eval harness'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-17 14:16'
+updated_date: '2026-07-31 08:30'
 labels:
   - epic
 dependencies: []
@@ -25,3 +26,9 @@ Decisions (locked in planning, 2026-07-17): ground truth = AI-drafted labels app
 - [ ] #3 Skill-on vs skill-off A/B comparison reports the skill's added value per rule category
 - [ ] #4 Eval runs only on command (bun run test:eval), never in CI; bun run lint/typecheck/test remain green and untouched by the eval island
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Epic closed 2026-07-31 with DIP-2.12. Final summary: the harness stands — review + apply + judge + A/B modes, 23 labeled fixtures, committed baselines, Demo-seam grading. The founding question (does the skill help?) got its first A/B run on 2026-07-25 but the headline answer is contaminated: 24/25 skill-arm composition apply runs died on the 480s CLI timeout, the corpus sits at a detection ceiling (control ~100%), and both arms leaked Good.tsx into the model prompt. Honest per-category numbers and the contamination analysis live in tests/eval/README.md and tests/eval/ab/. The clean answer is epic DIP-3's exit criterion (DIP-3.9).
+<!-- SECTION:NOTES:END -->

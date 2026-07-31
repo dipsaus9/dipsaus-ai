@@ -73,6 +73,25 @@ with three distinct causes:
 `state.derived-effect` review detection also remains observably flaky (3/5 in the
 review baseline).
 
+## First A/B run (2026-07-25) — archived, headline contaminated
+
+Archived at `ab/ab-2026-07-25T10-46-08-267Z.json` (both arms, K=5, claude-sonnet-5).
+Per-category results:
+
+| Category | Detection (skill / control) | False positives | Apply pass (skill / control) |
+|---|---|---|---|
+| composition | 94% / 100% | 9 / 8 | **0% / 60%** |
+| srp | 100% / 99% | 2 / 1 | 93% / 100% |
+| state | 75% / 100% | 0 / 0 | 93% / 100% |
+
+**The headline ("skill hurts everything") is not trustworthy.** 24 of 25 skill-arm
+composition apply runs died on the 480 s CLI timeout (plus one API error) and were
+counted as failures — the control arm had zero errors. Skill-arm refactors are
+bigger jobs (compound components), so the timeout selectively killed the skill arm.
+Secondary caveats: the corpus sits at a detection ceiling (control ≈100%, fixtures
+too thin to discriminate) and both arms shared the Good.tsx leak. Epic DIP-3 fixes
+the harness (leak, timeout, corpus) and re-answers the question with a clean run.
+
 ## Label schema
 
 Each fixture directory carries an `expected.json` — the ground-truth labels the eval
