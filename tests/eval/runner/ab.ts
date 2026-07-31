@@ -2,7 +2,7 @@ import path from "node:path";
 import { runApply, type ApplyRunRecord, APPLY_RULE } from "./apply";
 import { RULES, type EvalConfig } from "./config";
 import { discoverCases, readSkillMd } from "./fixtures";
-import { judgeRefactor } from "./judge";
+import { judgeRefactor, readExemplar } from "./judge";
 import { mapPool } from "./pool";
 import {
   buildControlSystemPrompt,
@@ -206,6 +206,9 @@ export async function runAb(options: AbRunOptions): Promise<AbReport> {
   }
 
   // Judge both arms' pending refactors in one shuffled, arm-anonymous batch.
+  const exemplarByFixture = new Map(
+    discoverCases(filter).map((fixture) => [fixture.name, readExemplar(fixture.dir)]),
+  );
   const jobs = shuffled(
     (["skill", "control"] as const).flatMap((arm) =>
       arms[arm].applyRuns
@@ -219,6 +222,7 @@ export async function runAb(options: AbRunOptions): Promise<AbReport> {
       config,
       files: job.run.refactoredFiles ?? {},
       rules: job.run.pendingJudgeRules ?? [],
+      exemplar: exemplarByFixture.get(job.run.fixture),
       log,
     });
     job.run.judgeVerdicts = verdicts;

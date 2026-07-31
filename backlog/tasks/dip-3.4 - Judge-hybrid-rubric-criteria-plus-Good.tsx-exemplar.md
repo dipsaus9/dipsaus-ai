@@ -1,9 +1,10 @@
 ---
 id: DIP-3.4
 title: 'Judge hybrid: rubric criteria plus Good.tsx exemplar'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-07-31 08:20'
+updated_date: '2026-07-31 11:57'
 labels:
   - story
 dependencies:

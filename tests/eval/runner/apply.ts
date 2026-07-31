@@ -6,7 +6,7 @@ import { bannedPatterns, capViolations, measureComponents } from "./ast";
 import { invokeClaude } from "./claude";
 import type { EvalConfig } from "./config";
 import { discoverCases, readSkillMd } from "./fixtures";
-import { judgeRefactor, type JudgeVerdict } from "./judge";
+import { judgeRefactor, readExemplar, type JudgeVerdict } from "./judge";
 import { mapPool } from "./pool";
 import { buildSystemPrompt, isGoodTwin } from "./prompt";
 import {
@@ -223,7 +223,14 @@ export async function runApply(options: ApplyRunOptions): Promise<{
             refactoredFiles = files;
             pendingJudgeRules = judgedRules;
           } else {
-            judgeVerdicts = await judgeRefactor({ config, files, rules: judgedRules, log });
+            judgeVerdicts = await judgeRefactor({
+              config,
+              files,
+              rules: judgedRules,
+              // exemplar comes from the fixture dir — the sandbox never has it
+              exemplar: readExemplar(fixture.dir),
+              log,
+            });
             checks.judge = judgeVerdicts.every((verdict) => verdict.pass);
             for (const verdict of judgeVerdicts.filter((v) => !v.pass)) {
               detail.push(

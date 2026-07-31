@@ -1,9 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   buildJudgePrompt,
   judgeableRules,
   majorityVerdict,
   parseJudgeVote,
+  readExemplar,
   readRubric,
   type JudgeVote,
 } from "../eval/runner/judge";
@@ -95,5 +99,56 @@ describe("judgeableRules", () => {
     expect(
       judgeableRules(["comp.config-soup", "srp.props-cap", "comp.variant-compound"]),
     ).toEqual(["comp.config-soup", "comp.variant-compound"]);
+  });
+});
+
+describe("buildJudgePrompt with exemplar", () => {
+  const rubric = readRubric("comp.config-soup");
+  const files = { "Bad.tsx": "export function Dialog() { return null; }\n" };
+
+  it("frames the exemplar as one acceptable shape, before the judged code", () => {
+    const prompt = buildJudgePrompt(rubric, files, "export const GoodDialog = 1;\n");
+    expect(prompt).toContain("REFERENCE — one acceptable target shape, NOT the only one");
+    expect(prompt).toContain("export const GoodDialog = 1;");
+    expect(prompt.indexOf("GoodDialog")).toBeLessThan(prompt.indexOf("export function Dialog()"));
+  });
+
+  it("omits the reference section entirely without an exemplar", () => {
+    expect(buildJudgePrompt(rubric, files)).not.toContain("REFERENCE");
+  });
+});
+
+describe("readExemplar", () => {
+  const cleanups: (() => void)[] = [];
+  afterEach(() => {
+    while (cleanups.length > 0) {
+      cleanups.pop()?.();
+    }
+  });
+
+  function tmpFixtureDir(): string {
+    const dir = mkdtempSync(path.join(os.tmpdir(), "dipsaus-exemplar-"));
+    cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
+    return dir;
+  }
+
+  it("reads a single Good.tsx", () => {
+    const dir = tmpFixtureDir();
+    writeFileSync(path.join(dir, "Good.tsx"), "export const G = 1;\n");
+    expect(readExemplar(dir)).toBe("export const G = 1;\n");
+  });
+
+  it("concatenates a Good/ directory in stable order", () => {
+    const dir = tmpFixtureDir();
+    mkdirSync(path.join(dir, "Good"));
+    writeFileSync(path.join(dir, "Good", "B.tsx"), "export const B = 1;\n");
+    writeFileSync(path.join(dir, "Good", "A.tsx"), "export const A = 1;\n");
+    const exemplar = readExemplar(dir) ?? "";
+    expect(exemplar).toContain("// Good/A.tsx");
+    expect(exemplar.indexOf("A = 1")).toBeLessThan(exemplar.indexOf("B = 1"));
+  });
+
+  it("returns undefined when the fixture has no Good twin", () => {
+    expect(readExemplar(tmpFixtureDir())).toBeUndefined();
   });
 });
