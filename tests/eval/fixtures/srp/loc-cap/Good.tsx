@@ -1,5 +1,13 @@
-// Clean twin — the component function spans exactly 150 lines, sitting on the
-// cap. A false-positive trap.
+/**
+ * Read-only order detail panel.
+ *
+ * One flat rendering concern — sections of a single order laid out as
+ * definition lists. The component function spans exactly 150 lines, the
+ * ceiling the size budget allows (srp.loc-cap); a single field more and the
+ * sections would split into OrderCustomer / OrderShipping / OrderTotals
+ * children. No logic lives here: every value arrives formatted-ready on one
+ * typed prop.
+ */
 interface OrderDetails {
   reference: string;
   placedAt: string;

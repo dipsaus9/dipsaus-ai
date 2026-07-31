@@ -1,5 +1,12 @@
-// Clean twin — a one-off, single-shape component. The standard explicitly
-// allows a single-use component to stay prop-driven: a false-positive trap.
+/**
+ * Uptime badge for the status page header.
+ *
+ * A one-off, single-shape component: it renders one way, is used in one
+ * place, and switches nothing. The compound-API rule (comp.variant-compound)
+ * applies to components reused across 2+ shapes behind a variant
+ * discriminator — a single-use, single-shape component stays prop-driven by
+ * design. The className ternary is styling state, not a shape switch.
+ */
 export function UptimeBadge({
   label,
   uptimePercent,

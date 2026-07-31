@@ -1,6 +1,11 @@
-// Clean twin — billing computes the amount at the boundary; the profile card
-// only formats and renders what it receives. Formatting a currency value is
-// presentation, not foreign domain logic: a false-positive trap.
+/**
+ * Billing summary card on the profile page.
+ *
+ * The amount due is computed by the billing feature and arrives as a prop —
+ * profile renders it, billing owns it (boundary.foreign-logic). Formatting a
+ * currency value for display is presentation, not domain logic, so the
+ * `toFixed` here is exactly where it belongs.
+ */
 export function ProfileBillingCard({
   memberSince,
   amountDue,

@@ -1,4 +1,11 @@
-// Clean twin — exactly 6 props, sitting on the cap. A false-positive trap.
+/**
+ * Product tile for grid listings.
+ *
+ * Six props of flat display data is the ceiling the props budget allows
+ * (srp.props-cap: at most 6). They are all atomic values for one region of
+ * markup — the moment this tile needs configurable regions or more knobs,
+ * the design moves to composition instead of a seventh prop.
+ */
 interface ProductTileProps {
   id: string;
   title: string;
