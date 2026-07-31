@@ -18,6 +18,7 @@ import { defaultConfig, type EvalConfig } from "./config";
 import { discoverCases, readSkillMd } from "./fixtures";
 import { aggregate } from "./matcher";
 import { parseReviewOutput } from "./parser";
+import { mapPool } from "./pool";
 import { buildSystemPrompt, buildUserPrompt } from "./prompt";
 import { printReport } from "./report";
 import type { EvalReport, FixtureLabels, RunRecord } from "./types";
@@ -50,48 +51,54 @@ export async function runReview(options: ReviewRunOptions): Promise<{
     throw new Error(`no fixtures match filter ${JSON.stringify(filter ?? "")}`);
   }
   const systemAppend = options.systemAppend ?? buildSystemPrompt(readSkillMd());
-  const records: RunRecord[] = [];
   const labelsByFixture = new Map<string, FixtureLabels>(
     cases.map((c) => [c.name, c.labels]),
   );
 
-  for (const model of config.models) {
-    for (const fixture of cases) {
-      const prompt = buildUserPrompt(fixture);
-      for (let run = 1; run <= config.runs; run += 1) {
-        log(`${model} × ${fixture.name} — run ${run}/${config.runs}`);
-        const result = await invokeClaude({
-          bin: config.claudeBin,
-          model,
-          systemAppend,
-          prompt,
-          timeoutMs: config.timeoutMs,
-        });
-        if (!result.ok) {
-          records.push({
-            fixture: fixture.name,
-            model,
-            run,
-            ok: false,
-            findings: [],
-            raw: result.stdout,
-            error: result.error ?? result.stderr.slice(0, 500),
-          });
-          continue;
-        }
-        const parsed = parseReviewOutput(result.stdout);
-        records.push({
+  const jobs = config.models.flatMap((model) =>
+    cases.flatMap((fixture) =>
+      Array.from({ length: config.runs }, (_, index) => ({
+        model,
+        fixture,
+        run: index + 1,
+      })),
+    ),
+  );
+  const records: RunRecord[] = await mapPool(
+    jobs,
+    config.concurrency,
+    async ({ model, fixture, run }) => {
+      log(`${model} × ${fixture.name} — run ${run}/${config.runs}`);
+      const result = await invokeClaude({
+        bin: config.claudeBin,
+        model,
+        systemAppend,
+        prompt: buildUserPrompt(fixture),
+        timeoutMs: config.timeoutMs,
+      });
+      if (!result.ok) {
+        return {
           fixture: fixture.name,
           model,
           run,
-          ok: parsed.ok,
-          findings: parsed.findings,
+          ok: false,
+          findings: [],
           raw: result.stdout,
-          ...(parsed.ok ? {} : { error: parsed.reason ?? "unparseable output" }),
-        });
+          error: result.error ?? result.stderr.slice(0, 500),
+        };
       }
-    }
-  }
+      const parsed = parseReviewOutput(result.stdout);
+      return {
+        fixture: fixture.name,
+        model,
+        run,
+        ok: parsed.ok,
+        findings: parsed.findings,
+        raw: result.stdout,
+        ...(parsed.ok ? {} : { error: parsed.reason ?? "unparseable output" }),
+      };
+    },
+  );
 
   const report = aggregate(records, labelsByFixture, {
     thresholds: config.thresholds,
@@ -118,6 +125,7 @@ async function main(): Promise<void> {
       "update-baseline": { type: "boolean" },
       mode: { type: "string" },
       verbose: { type: "boolean" },
+      concurrency: { type: "string" },
     },
   });
   const mode = values.mode ?? "review";
@@ -130,9 +138,15 @@ async function main(): Promise<void> {
     models: values.model && values.model.length > 0 ? values.model : defaultConfig.models,
     runs: values.runs ? Number(values.runs) : defaultConfig.runs,
     claudeBin: values["claude-bin"] ?? defaultConfig.claudeBin,
+    concurrency: values.concurrency
+      ? Number(values.concurrency)
+      : defaultConfig.concurrency,
   };
   if (!Number.isInteger(config.runs) || config.runs < 1) {
     throw new Error(`--runs must be a positive integer, got ${values.runs}`);
+  }
+  if (!Number.isInteger(config.concurrency) || config.concurrency < 1) {
+    throw new Error(`--concurrency must be a positive integer, got ${values.concurrency}`);
   }
 
   if (mode === "ab") {

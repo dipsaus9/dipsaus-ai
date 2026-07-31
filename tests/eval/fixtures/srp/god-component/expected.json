@@ -9,6 +9,7 @@
         { "rule": "srp.jsx-depth-cap", "line": 101 }
       ],
       "alsoAcceptable": ["comp.config-soup", "srp.presentational"]
-    }
+    },
+    "Demo.tsx": { "expected": [], "alsoAcceptable": [] }
   }
 }

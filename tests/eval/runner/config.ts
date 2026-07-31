@@ -46,6 +46,8 @@ export interface EvalConfig {
   judgeModel: string;
   /** votes per judge verdict; majority decides */
   judgeVotes: number;
+  /** concurrent model sessions; raise with care (API rate limits, local tsc/vitest load) */
+  concurrency: number;
   claudeBin: string;
   timeoutMs: number;
 }
@@ -56,7 +58,8 @@ export const defaultConfig: EvalConfig = {
   thresholds: { high: 1, medLow: 0.8 },
   judgeModel: "claude-sonnet-5",
   judgeVotes: 3,
+  concurrency: 4,
   claudeBin:
     process.env.CLAUDE_BIN ?? `${os.homedir()}/.local/bin/claude`,
-  timeoutMs: 240_000,
+  timeoutMs: 480_000,
 };

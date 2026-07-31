@@ -7,6 +7,7 @@ import { invokeClaude } from "./claude";
 import type { EvalConfig } from "./config";
 import { discoverCases, readSkillMd } from "./fixtures";
 import { judgeRefactor, type JudgeVerdict } from "./judge";
+import { mapPool } from "./pool";
 import { buildSystemPrompt } from "./prompt";
 import {
   assertSandboxPath,
@@ -112,7 +113,9 @@ function buildApplyPrompt(fixture: FixtureCase): string {
     "Refactor the files in the current working directory in place so they",
     `satisfy the architecture standards from your instructions: ${files}.`,
     "Use your file tools to edit them. Preserve behavior — behavior.test.tsx",
-    "must keep passing and MUST NOT be modified. Keep TypeScript strict-clean.",
+    "must keep passing and MUST NOT be modified. If a Demo.tsx exists, it is",
+    "the caller the tests exercise: update its usage to your new API so its",
+    "rendered output stays identical. Keep TypeScript strict-clean.",
     "You may create new files (extracted hooks/components) in this directory.",
     "Finish with a summary of what changed.",
   ].join("\n");
@@ -142,90 +145,97 @@ export async function runApply(options: ApplyRunOptions): Promise<{
     throw new Error(`no bad fixtures match filter ${JSON.stringify(filter ?? "")}`);
   }
   const systemAppend = options.systemAppend ?? buildSystemPrompt(readSkillMd());
-  const runs: ApplyRunRecord[] = [];
 
-  for (const model of config.models) {
-    for (const fixture of cases) {
+  const jobs = config.models.flatMap((model) =>
+    cases.flatMap((fixture) =>
+      Array.from({ length: config.runs }, (_, index) => ({
+        model,
+        fixture,
+        run: index + 1,
+      })),
+    ),
+  );
+  const runs: ApplyRunRecord[] = await mapPool(
+    jobs,
+    config.concurrency,
+    async ({ model, fixture, run }) => {
       const originalHash = hashDir(fixture.dir);
-      for (let run = 1; run <= config.runs; run += 1) {
-        log(`apply ${model} × ${fixture.name} — run ${run}/${config.runs}`);
-        const sandbox = createSandbox(fixture.dir);
-        try {
-          const invocation = await invokeClaude({
-            bin: config.claudeBin,
-            model,
-            systemAppend,
-            prompt: buildApplyPrompt(fixture),
-            timeoutMs: config.timeoutMs,
-            cwd: sandbox.dir,
-            extraArgs: [
-              "--permission-mode",
-              "acceptEdits",
-              "--allowedTools",
-              "Read,Edit,Write,Glob,Grep",
-            ],
-          });
-          restoreBehaviorTest(sandbox);
-          const originalsUntouched = hashDir(fixture.dir) === originalHash;
-          if (!invocation.ok) {
-            runs.push({
-              fixture: fixture.name,
-              model,
-              run,
-              pass: false,
-              checks: { originalsUntouched, caps: false, banned: false, tsc: false, behaviorTests: false },
-              detail: [],
-              error: invocation.error ?? "CLI failure",
-            });
-            continue;
-          }
-          const grade = gradeSandbox(sandbox);
-          const checks: ApplyChecks = { originalsUntouched, ...grade.checks };
-          const detail = [...grade.detail];
-          const mechanicalPass =
-            originalsUntouched && grade.checks.caps && grade.checks.banned &&
-            grade.checks.tsc && grade.checks.behaviorTests;
-          const judgedRules = Object.values(fixture.labels.files)
-            .flatMap((label) => label.expected.map((expected) => expected.rule))
-            .filter((rule) => rule.startsWith("comp."));
-          let judgeVerdicts: JudgeVerdict[] | undefined;
-          let refactoredFiles: Record<string, string> | undefined;
-          let pendingJudgeRules: string[] | undefined;
-          if (mechanicalPass && judgedRules.length > 0) {
-            const files: Record<string, string> = {};
-            for (const file of sandboxSourceFiles(sandbox.dir)) {
-              files[path.relative(sandbox.dir, file)] = readFileSync(file, "utf8");
-            }
-            if (options.deferJudge) {
-              refactoredFiles = files;
-              pendingJudgeRules = judgedRules;
-            } else {
-              judgeVerdicts = await judgeRefactor({ config, files, rules: judgedRules, log });
-              checks.judge = judgeVerdicts.every((verdict) => verdict.pass);
-              for (const verdict of judgeVerdicts.filter((v) => !v.pass)) {
-                detail.push(
-                  `judge: ${verdict.rule} failed — ${verdict.majorityReasoning.join(" | ")}`,
-                );
-              }
-            }
-          }
-          runs.push({
+      log(`apply ${model} × ${fixture.name} — run ${run}/${config.runs}`);
+      const sandbox = createSandbox(fixture.dir);
+      try {
+        const invocation = await invokeClaude({
+          bin: config.claudeBin,
+          model,
+          systemAppend,
+          prompt: buildApplyPrompt(fixture),
+          timeoutMs: config.timeoutMs,
+          cwd: sandbox.dir,
+          extraArgs: [
+            "--permission-mode",
+            "acceptEdits",
+            "--allowedTools",
+            "Read,Edit,Write,Glob,Grep",
+          ],
+        });
+        restoreBehaviorTest(sandbox);
+        const originalsUntouched = hashDir(fixture.dir) === originalHash;
+        if (!invocation.ok) {
+          return {
             fixture: fixture.name,
             model,
             run,
-            pass: mechanicalPass && (checks.judge ?? true),
-            checks,
-            detail,
-            ...(judgeVerdicts ? { judgeVerdicts } : {}),
-            ...(refactoredFiles ? { refactoredFiles } : {}),
-            ...(pendingJudgeRules ? { pendingJudgeRules } : {}),
-          });
-        } finally {
-          destroySandbox(sandbox);
+            pass: false,
+            checks: { originalsUntouched, caps: false, banned: false, tsc: false, behaviorTests: false },
+            detail: [],
+            error: invocation.error ?? "CLI failure",
+          };
         }
+        const grade = gradeSandbox(sandbox);
+        const checks: ApplyChecks = { originalsUntouched, ...grade.checks };
+        const detail = [...grade.detail];
+        const mechanicalPass =
+          originalsUntouched && grade.checks.caps && grade.checks.banned &&
+          grade.checks.tsc && grade.checks.behaviorTests;
+        const judgedRules = Object.values(fixture.labels.files)
+          .flatMap((label) => label.expected.map((expected) => expected.rule))
+          .filter((rule) => rule.startsWith("comp."));
+        let judgeVerdicts: JudgeVerdict[] | undefined;
+        let refactoredFiles: Record<string, string> | undefined;
+        let pendingJudgeRules: string[] | undefined;
+        if (mechanicalPass && judgedRules.length > 0) {
+          const files: Record<string, string> = {};
+          for (const file of sandboxSourceFiles(sandbox.dir)) {
+            files[path.relative(sandbox.dir, file)] = readFileSync(file, "utf8");
+          }
+          if (options.deferJudge) {
+            refactoredFiles = files;
+            pendingJudgeRules = judgedRules;
+          } else {
+            judgeVerdicts = await judgeRefactor({ config, files, rules: judgedRules, log });
+            checks.judge = judgeVerdicts.every((verdict) => verdict.pass);
+            for (const verdict of judgeVerdicts.filter((v) => !v.pass)) {
+              detail.push(
+                `judge: ${verdict.rule} failed — ${verdict.majorityReasoning.join(" | ")}`,
+              );
+            }
+          }
+        }
+        return {
+          fixture: fixture.name,
+          model,
+          run,
+          pass: mechanicalPass && (checks.judge ?? true),
+          checks,
+          detail,
+          ...(judgeVerdicts ? { judgeVerdicts } : {}),
+          ...(refactoredFiles ? { refactoredFiles } : {}),
+          ...(pendingJudgeRules ? { pendingJudgeRules } : {}),
+        };
+      } finally {
+        destroySandbox(sandbox);
       }
-    }
-  }
+    },
+  );
 
   return { report: applyReport(runs, config), runs };
 }

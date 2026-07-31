@@ -1,42 +1,24 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { OrderConfirmDialog } from "./Bad";
+import { OrderDialogsDemo } from "./Demo";
 import { InlineAlert } from "./Good";
 
 describe("composition/config-soup", () => {
-  it("Bad shows the cancel button and icon when the flags are on", () => {
-    const onConfirm = vi.fn();
-    const onCancel = vi.fn();
-    render(
-      <OrderConfirmDialog
-        title="Cancel order SO-812?"
-        showWarningIcon={true}
-        showCancel={true}
-        confirmLabel="Yes, cancel it"
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-      />,
-    );
-    fireEvent.click(screen.getByText("Cancel"));
-    expect(onCancel).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByText("Yes, cancel it"));
-    expect(onConfirm).toHaveBeenCalledOnce();
-  });
+  it("Demo renders both dialog shapes and surfaces the flows", () => {
+    render(<OrderDialogsDemo />);
+    expect(screen.getByText("Cancel order SO-812?")).toBeDefined();
+    expect(screen.getByText("Confirm payment")).toBeDefined();
+    // only the full dialog offers cancel and the warning icon
+    expect(screen.getAllByText("Cancel")).toHaveLength(1);
+    expect(screen.getAllByText("⚠")).toHaveLength(1);
 
-  it("Bad hides the optional parts when the flags are off", () => {
-    render(
-      <OrderConfirmDialog
-        title="Confirm payment"
-        showWarningIcon={false}
-        showCancel={false}
-        confirmLabel="Pay €48.50"
-        onConfirm={vi.fn()}
-        onCancel={vi.fn()}
-      />,
-    );
-    expect(screen.queryByText("Cancel")).toBeNull();
-    expect(screen.queryByText("⚠")).toBeNull();
-    expect(screen.getByText("Pay €48.50")).toBeDefined();
+    fireEvent.click(screen.getByText("Cancel"));
+    fireEvent.click(screen.getByText("Yes, cancel it"));
+    fireEvent.click(screen.getByText("Pay €48.50"));
+    const actions = within(screen.getByLabelText("actions"))
+      .getAllByRole("listitem")
+      .map((item) => item.textContent);
+    expect(actions).toEqual(["kept-order", "cancel-order-confirmed", "paid"]);
   });
 
   it("Good renders the alert and dismisses", () => {

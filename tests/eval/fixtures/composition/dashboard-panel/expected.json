@@ -7,6 +7,7 @@
         { "rule": "comp.slots-over-config", "line": 9 }
       ],
       "alsoAcceptable": ["srp.props-cap", "comp.variant-compound"]
-    }
+    },
+    "Demo.tsx": { "expected": [], "alsoAcceptable": [] }
   }
 }

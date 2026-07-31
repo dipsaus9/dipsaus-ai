@@ -30,7 +30,7 @@
       "fixture": "composition/dashboard-panel",
       "file": "Bad.tsx",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 4,
       "runs": 5
     },
     {
@@ -222,7 +222,7 @@
       "fixture": "state/derived-effect",
       "file": "Bad.tsx",
       "model": "claude-sonnet-5",
-      "detected": 3,
+      "detected": 5,
       "runs": 5
     },
     {
