@@ -1,7 +1,3 @@
-// Violates comp.slots-over-config: zero-argument render-config props
-// (renderHeading / renderEmpty / renderFooter) are slots in disguise — they
-// take no data from the component, so children/slots is strictly better. Item
-// rendering stays internal, keeping the violation unambiguous.
 import type { ReactNode } from "react";
 
 interface ActivityEvent {

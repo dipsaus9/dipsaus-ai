@@ -1,6 +1,3 @@
-// Violates srp.presentational (med): nontrivial grouping/sorting logic sits
-// inline in the component body instead of a custom hook. It is a single
-// concern (no side effects, no fetching), so srp.mixed-concerns does not apply.
 interface Invoice {
   id: string;
   issuedAt: string;

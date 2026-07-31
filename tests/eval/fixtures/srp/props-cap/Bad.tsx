@@ -1,5 +1,3 @@
-// Violates srp.props-cap: 7 props (> 6). Distinct data props, not config flags —
-// though > 6 props also legitimately triggers comp.config-soup (see expected.json).
 interface ProductTileProps {
   id: string;
   title: string;

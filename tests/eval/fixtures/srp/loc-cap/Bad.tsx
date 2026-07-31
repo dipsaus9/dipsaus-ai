@@ -1,5 +1,3 @@
-// Violates srp.loc-cap: the component function spans > 150 lines. It is a pure
-// presentational component — one prop, no hooks, depth <= 5 — so only the cap is broken.
 interface OrderDetails {
   reference: string;
   placedAt: string;

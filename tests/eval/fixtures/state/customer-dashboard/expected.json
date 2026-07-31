@@ -2,9 +2,9 @@
   "files": {
     "Bad.tsx": {
       "expected": [
-        { "rule": "state.server-fetch", "line": 85 },
-        { "rule": "state.derived-effect", "line": 98 },
-        { "rule": "state.prop-drilling", "line": 52 }
+        { "rule": "state.server-fetch", "line": 78 },
+        { "rule": "state.derived-effect", "line": 91 },
+        { "rule": "state.prop-drilling", "line": 45 }
       ],
       "alsoAcceptable": ["srp.mixed-concerns", "srp.presentational"]
     }

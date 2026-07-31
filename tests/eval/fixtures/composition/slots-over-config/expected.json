@@ -1,7 +1,7 @@
 {
   "files": {
     "Bad.tsx": {
-      "expected": [{ "rule": "comp.slots-over-config", "line": 12 }],
+      "expected": [{ "rule": "comp.slots-over-config", "line": 8 }],
       "alsoAcceptable": ["comp.regions-as-slots", "comp.variant-compound"]
     },
     "Good.tsx": { "expected": [], "alsoAcceptable": [] },

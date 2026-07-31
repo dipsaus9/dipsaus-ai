@@ -1,4 +1,3 @@
-// Violates srp.hooks-cap: 6 hooks (> 5). Everything else within limits.
 import { useMemo, useRef, useState } from "react";
 
 interface CartItem {

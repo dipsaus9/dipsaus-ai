@@ -1,6 +1,3 @@
-// Violates comp.variant-compound: one component reused in two distinct shapes,
-// switched by a variant prop whose branches render different layouts. Should be
-// a compound API (MetricCard.Kpi / MetricCard.Trend) instead of a variant map.
 export function MetricCard({
   variant,
   label,

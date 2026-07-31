@@ -1,5 +1,3 @@
-// Violates state.derived-effect: matchCount mirrors props (items × query)
-// via useEffect + useState instead of being computed during render.
 import { useEffect, useState } from "react";
 
 export function SearchSummary({

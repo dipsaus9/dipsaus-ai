@@ -1,6 +1,3 @@
-// Violates state.prop-drilling: emailOptIn and onEmailOptInChange are
-// threaded through TWO intermediate components (SettingsSection,
-// NotificationPanel) that never use them — only EmailToggle does.
 import { useState } from "react";
 
 function EmailToggle({

@@ -1,9 +1,3 @@
-// Realistic god component. Violates several category-1 rules at once:
-// srp.props-cap (7 props), srp.hooks-cap (7 hooks), srp.effects-cap
-// (3 effects), srp.mixed-concerns (stats/loyalty business logic + side
-// effects + presentation) and srp.jsx-depth-cap (depth 6 in the orders list).
-// No boundary or state-rule violations: data arrives via props, effects sync
-// outward only.
 import { useEffect, useState } from "react";
 
 interface OrderSummary {

@@ -1,9 +1,3 @@
-// Realistic config-soup component, multi-labeled. Violates at once:
-// comp.config-soup (visibility flags + a density variant map + 9 props),
-// comp.regions-as-slots (header/body/footer regions all configured via props),
-// comp.slots-over-config (flag soup instead of composition). The 9 props also
-// trip srp.props-cap, and the density map arguably comp.variant-compound —
-// both tolerated via alsoAcceptable.
 import { useState } from "react";
 
 export function DashboardPanel({

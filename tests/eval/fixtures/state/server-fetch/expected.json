@@ -1,7 +1,7 @@
 {
   "files": {
     "Bad.tsx": {
-      "expected": [{ "rule": "state.server-fetch", "line": 22 }],
+      "expected": [{ "rule": "state.server-fetch", "line": 18 }],
       "alsoAcceptable": ["srp.mixed-concerns"]
     },
     "Good.tsx": { "expected": [], "alsoAcceptable": [] }

@@ -1,6 +1,3 @@
-// Violates comp.regions-as-slots: distinct regions (header kicker/title, body,
-// footer note + action) are all driven by configuration props instead of being
-// exposed as slots/children. Six props, so srp.props-cap is not in play.
 export function ArticleCard({
   kicker,
   title,

@@ -1,7 +1,7 @@
 {
   "files": {
     "Bad.tsx": {
-      "expected": [{ "rule": "comp.variant-compound", "line": 4 }],
+      "expected": [{ "rule": "comp.variant-compound", "line": 1 }],
       "alsoAcceptable": ["comp.config-soup"]
     },
     "Good.tsx": { "expected": [], "alsoAcceptable": [] },

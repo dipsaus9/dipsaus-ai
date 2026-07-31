@@ -1,10 +1,3 @@
-// Realistic multi-violation component. Violates at once:
-// state.server-fetch (manual useEffect+useState fetch in the component),
-// state.derived-effect (lifetimeValue mirrored into state from orders),
-// state.prop-drilling (customerId + onContactSupport threaded through two
-// silent intermediates down to SupportLink). Hooks (5) and effects (2) sit
-// exactly on their caps, so no category-1 rule co-triggers mechanically —
-// though the fetch+logic+presentation mix plausibly reads as mixed concerns.
 import { useEffect, useState } from "react";
 
 interface Order {
