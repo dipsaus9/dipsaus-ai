@@ -49,7 +49,11 @@ export interface EvalConfig {
   /** concurrent model sessions; raise with care (API rate limits, local tsc/vitest load) */
   concurrency: number;
   claudeBin: string;
+  /** single-shot calls: review + judge */
   timeoutMs: number;
+  /** agentic apply runs — skill-driven refactors routinely outlive the
+   * single-shot budget (24/25 A/B composition runs died at 480s) */
+  applyTimeoutMs: number;
 }
 
 export const defaultConfig: EvalConfig = {
@@ -62,4 +66,5 @@ export const defaultConfig: EvalConfig = {
   claudeBin:
     process.env.CLAUDE_BIN ?? `${os.homedir()}/.local/bin/claude`,
   timeoutMs: 480_000,
+  applyTimeoutMs: 900_000,
 };

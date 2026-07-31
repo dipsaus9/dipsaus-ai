@@ -8,7 +8,7 @@ import type { EvalConfig } from "./config";
 import { discoverCases, readSkillMd } from "./fixtures";
 import { judgeRefactor, type JudgeVerdict } from "./judge";
 import { mapPool } from "./pool";
-import { buildSystemPrompt } from "./prompt";
+import { buildSystemPrompt, isGoodTwin } from "./prompt";
 import {
   assertSandboxPath,
   createSandbox,
@@ -16,6 +16,7 @@ import {
   hashDir,
   restoreBehaviorTest,
   sandboxSourceFiles,
+  snapshotSandbox,
   type Sandbox,
 } from "./sandbox";
 import type { EvalReport, FixtureCase, RuleScore, VerdictFailure } from "./types";
@@ -43,6 +44,9 @@ export interface ApplyRunRecord {
   model: string;
   run: number;
   pass: boolean;
+  /** wall-clock of the agentic claude invocation — the data that validates
+   * (or corrects) the applyTimeoutMs choice */
+  durationMs: number;
   checks: ApplyChecks;
   /** failing command output / violation details, captured per AC5 */
   detail: string[];
@@ -106,8 +110,10 @@ export function gradeSandbox(sandbox: Sandbox): ApplyGrade {
 }
 
 function buildApplyPrompt(fixture: FixtureCase): string {
+  // The Good twin is the answer key: it is excluded from the sandbox, so it
+  // must not appear in the file list either.
   const files = Object.keys(fixture.sources)
-    .filter((file) => file.endsWith(".tsx") || file.endsWith(".ts"))
+    .filter((file) => (file.endsWith(".tsx") || file.endsWith(".ts")) && !isGoodTwin(file))
     .join(", ");
   return [
     "Refactor the files in the current working directory in place so they",
@@ -129,6 +135,9 @@ export interface ApplyRunOptions {
   /** skip judging and instead snapshot refactored sources onto each record —
    * A/B mode judges later, with both arms' jobs shuffled together */
   deferJudge?: boolean;
+  /** when set, each run's final sandbox state is preserved under
+   * <artifactsDir>/<fixture>-run<k>/ for human review */
+  artifactsDir?: string;
   log?: (message: string) => void;
 }
 
@@ -162,13 +171,14 @@ export async function runApply(options: ApplyRunOptions): Promise<{
       const originalHash = hashDir(fixture.dir);
       log(`apply ${model} × ${fixture.name} — run ${run}/${config.runs}`);
       const sandbox = createSandbox(fixture.dir);
+      const startedAt = Date.now();
       try {
         const invocation = await invokeClaude({
           bin: config.claudeBin,
           model,
           systemAppend,
           prompt: buildApplyPrompt(fixture),
-          timeoutMs: config.timeoutMs,
+          timeoutMs: config.applyTimeoutMs,
           cwd: sandbox.dir,
           extraArgs: [
             "--permission-mode",
@@ -177,6 +187,7 @@ export async function runApply(options: ApplyRunOptions): Promise<{
             "Read,Edit,Write,Glob,Grep",
           ],
         });
+        const durationMs = Date.now() - startedAt;
         restoreBehaviorTest(sandbox);
         const originalsUntouched = hashDir(fixture.dir) === originalHash;
         if (!invocation.ok) {
@@ -185,6 +196,7 @@ export async function runApply(options: ApplyRunOptions): Promise<{
             model,
             run,
             pass: false,
+            durationMs,
             checks: { originalsUntouched, caps: false, banned: false, tsc: false, behaviorTests: false },
             detail: [],
             error: invocation.error ?? "CLI failure",
@@ -225,6 +237,7 @@ export async function runApply(options: ApplyRunOptions): Promise<{
           model,
           run,
           pass: mechanicalPass && (checks.judge ?? true),
+          durationMs,
           checks,
           detail,
           ...(judgeVerdicts ? { judgeVerdicts } : {}),
@@ -232,6 +245,15 @@ export async function runApply(options: ApplyRunOptions): Promise<{
           ...(pendingJudgeRules ? { pendingJudgeRules } : {}),
         };
       } finally {
+        if (options.artifactsDir) {
+          snapshotSandbox(
+            sandbox,
+            path.join(
+              options.artifactsDir,
+              `${fixture.name.replace(/\//g, "-")}-${model}-run${run}`,
+            ),
+          );
+        }
         destroySandbox(sandbox);
       }
     },

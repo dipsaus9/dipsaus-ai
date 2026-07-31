@@ -136,6 +136,7 @@ async function main(): Promise<void> {
       mode: { type: "string" },
       verbose: { type: "boolean" },
       concurrency: { type: "string" },
+      timeout: { type: "string" },
     },
   });
   const mode = values.mode ?? "review";
@@ -151,6 +152,11 @@ async function main(): Promise<void> {
     concurrency: values.concurrency
       ? Number(values.concurrency)
       : defaultConfig.concurrency,
+    // --timeout is in seconds (README talks in seconds) and governs the
+    // agentic apply runs; review/judge single-shot calls keep timeoutMs.
+    applyTimeoutMs: values.timeout
+      ? Number(values.timeout) * 1000
+      : defaultConfig.applyTimeoutMs,
   };
   if (!Number.isInteger(config.runs) || config.runs < 1) {
     throw new Error(`--runs must be a positive integer, got ${values.runs}`);
@@ -158,6 +164,12 @@ async function main(): Promise<void> {
   if (!Number.isInteger(config.concurrency) || config.concurrency < 1) {
     throw new Error(`--concurrency must be a positive integer, got ${values.concurrency}`);
   }
+  if (!Number.isInteger(config.applyTimeoutMs) || config.applyTimeoutMs < 1000) {
+    throw new Error(`--timeout must be a positive integer (seconds), got ${values.timeout}`);
+  }
+
+  const runId = new Date().toISOString().replace(/[:.]/g, "-");
+  const artifactsRoot = path.join(RUNNER_DIR, "results", "artifacts", `${mode}-${runId}`);
 
   if (mode === "ab") {
     // A/B answers a different question on a different lifecycle: results are
@@ -166,15 +178,10 @@ async function main(): Promise<void> {
       config,
       filter: values.filter,
       verbose: values.verbose,
+      artifactsDir: artifactsRoot,
       log: (message) => console.log(message),
     });
-    const abOut =
-      values.out ??
-      path.join(
-        RUNNER_DIR,
-        "results",
-        `ab-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
-      );
+    const abOut = values.out ?? path.join(RUNNER_DIR, "results", `ab-${runId}.json`);
     mkdirSync(path.dirname(abOut), { recursive: true });
     writeFileSync(abOut, `${JSON.stringify(abReport, null, 2)}\n`);
     printAbReport(abReport);
@@ -189,6 +196,7 @@ async function main(): Promise<void> {
     const applyResult = await runApply({
       config,
       filter: values.filter,
+      artifactsDir: artifactsRoot,
       log: (message) => console.log(message),
     });
     report = applyResult.report;
@@ -229,13 +237,7 @@ async function main(): Promise<void> {
     console.log("\nNo committed baseline yet — run with --update-baseline to create one.");
   }
 
-  const outPath =
-    values.out ??
-    path.join(
-      RUNNER_DIR,
-      "results",
-      `${mode}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
-    );
+  const outPath = values.out ?? path.join(RUNNER_DIR, "results", `${mode}-${runId}.json`);
   mkdirSync(path.dirname(outPath), { recursive: true });
   writeFileSync(outPath, `${JSON.stringify(output, null, 2)}\n`);
 

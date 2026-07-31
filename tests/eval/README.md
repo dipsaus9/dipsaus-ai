@@ -25,15 +25,20 @@ fenced off from every CI gate:
 | `bun run test:eval:fixtures` | the island's own vitest suite (fixture behavior tests) | free, deterministic |
 
 Flags: `--model` (repeatable), `--runs` (K), `--filter <substring of category/dir>`,
-`--claude-bin`, `--out`, `--verbose` (A/B: print both arm prompts). Defaults live in
-`runner/config.ts`. If a shell wrapper shadows `bun` (exit 127), use the binary directly:
+`--claude-bin`, `--out`, `--verbose` (A/B: print both arm prompts + both review-call
+prompts), `--timeout <seconds>` (agentic apply runs; default 900 — review/judge
+single-shot calls keep their own 480 s budget). Defaults live in `runner/config.ts`.
+If a shell wrapper shadows `bun` (exit 127), use the binary directly:
 `~/.bun/bin/bun run test:eval`.
 
 ## Cost expectations (defaults: 23 cases, K=5, one model)
 
-- **review**: ~115 single-shot calls per model.
+- **review**: ~215 single-shot calls per model — two calls per Good-twin fixture
+  (detection: Bad+Demo; precision: Good alone) since the DIP-3.1 leak split.
 - **apply**: ~115 *agentic* runs per model (the model edits files — several × a review
-  call) plus up to ~105 judge votes on composition fixtures.
+  call) plus up to ~105 judge votes on composition fixtures. Each run's final sandbox
+  is preserved under `runner/results/artifacts/<mode>-<run-id>/` (git-ignored) for
+  human review; every `ApplyRunRecord` carries `durationMs`.
 - **ab**: everything above, twice.
 
 Scale down first: `--filter derived-effect --runs 1` is a one-call smoke.
@@ -149,4 +154,7 @@ Labels are AI-drafted and human-approved via PR review.
   `fixtures/state/<rule>/` holds the category-3 pairs (plus `customer-dashboard/`, the
   multi-violation fetch + derived-state + drilling case).
 - `*.test.tsx` — tests for the island itself, run under jsdom with
-  `@testing-library/react`.
+  `@testing-library/react`. Each fixture's `behavior.test.tsx` exercises only Bad/Demo
+  (it ships into the apply sandbox, where the Good twin does not exist); the Good-twin
+  parity assertions live in a sibling `good.test.tsx`, which — like `Good.tsx` itself
+  and `expected.json` — never enters the sandbox.

@@ -78,6 +78,7 @@ function applyRun(pass: boolean, fixture = "composition/config-soup"): ApplyRunR
     model: "m1",
     run: 1,
     pass,
+    durationMs: 1000,
     checks: { originalsUntouched: true, caps: true, banned: true, tsc: true, behaviorTests: pass },
     detail: [],
   };

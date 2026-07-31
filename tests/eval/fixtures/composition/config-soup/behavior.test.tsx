@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { OrderDialogsDemo } from "./Demo";
-import { InlineAlert } from "./Good";
 
 describe("composition/config-soup", () => {
   it("Demo renders both dialog shapes and surfaces the flows", () => {
@@ -19,14 +18,5 @@ describe("composition/config-soup", () => {
       .getAllByRole("listitem")
       .map((item) => item.textContent);
     expect(actions).toEqual(["kept-order", "cancel-order-confirmed", "paid"]);
-  });
-
-  it("Good renders the alert and dismisses", () => {
-    const onDismiss = vi.fn();
-    render(
-      <InlineAlert message="Coupon applied" dismissible={true} onDismiss={onDismiss} />,
-    );
-    fireEvent.click(screen.getByLabelText("Dismiss"));
-    expect(onDismiss).toHaveBeenCalledOnce();
   });
 });

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import {
   cpSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -81,17 +82,32 @@ export interface Sandbox {
 }
 
 /**
- * Copy a fixture directory into a fresh tmpdir sandbox. expected.json is
- * excluded (labels must not leak to the model). The repo's node_modules is
- * symlinked in and standalone tsconfig/vitest configs are generated so tsc
- * and vitest resolve everything from inside the tmpdir.
+ * Files that must never reach the apply sandbox: expected.json (the labels)
+ * and the Good twin (the answer — a model could copy it instead of
+ * refactoring). Island-only test files (anything but behavior.test.tsx) stay
+ * out too: they may import Good and would fail with it gone.
+ */
+export function isSandboxExcluded(name: string): boolean {
+  return (
+    name === "expected.json" ||
+    name === "Good.tsx" ||
+    name === "Good" ||
+    (/\.test\.tsx?$/.test(name) && name !== "behavior.test.tsx")
+  );
+}
+
+/**
+ * Copy a fixture directory into a fresh tmpdir sandbox, minus the excluded
+ * files. The repo's node_modules is symlinked in and standalone tsconfig /
+ * vitest configs are generated so tsc and vitest resolve everything from
+ * inside the tmpdir.
  */
 export function createSandbox(fixtureDir: string): Sandbox {
   const dir = mkdtempSync(path.join(os.tmpdir(), "dipsaus-eval-apply-"));
   assertSandboxPath(dir);
   cpSync(fixtureDir, dir, {
     recursive: true,
-    filter: (source) => path.basename(source) !== "expected.json",
+    filter: (source) => !isSandboxExcluded(path.basename(source)),
   });
   symlinkSync(path.join(REPO_ROOT, "node_modules"), path.join(dir, "node_modules"));
   writeFileSync(path.join(dir, "tsconfig.json"), `${JSON.stringify(SANDBOX_TSCONFIG, null, 2)}\n`);
@@ -138,6 +154,22 @@ export function sandboxSourceFiles(dir: string): string[] {
   };
   walk(dir);
   return files.sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Preserve the sandbox's final state (post-restore, as graded) for human
+ * review — everything except the node_modules symlink and generated configs.
+ */
+export function snapshotSandbox(sandbox: Sandbox, destDir: string): void {
+  assertSandboxPath(sandbox.dir);
+  mkdirSync(destDir, { recursive: true });
+  cpSync(sandbox.dir, destDir, {
+    recursive: true,
+    filter: (source) => {
+      const name = path.basename(source);
+      return name !== "node_modules" && name !== "tsconfig.json" && name !== "vitest.config.mts";
+    },
+  });
 }
 
 export function destroySandbox(sandbox: Sandbox): void {
