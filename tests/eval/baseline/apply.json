@@ -14,7 +14,7 @@
       "fixture": "composition/dashboard-panel",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 3,
+      "detected": 4,
       "runs": 5
     },
     {
@@ -22,7 +22,7 @@
       "fixture": "composition/regions-as-slots",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 3,
+      "detected": 4,
       "runs": 5
     },
     {
@@ -30,7 +30,7 @@
       "fixture": "composition/slots-over-config",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -38,7 +38,23 @@
       "fixture": "composition/variant-compound",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 0,
+      "detected": 2,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "hard/checkout-review",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 4,
+      "runs": 5
+    },
+    {
+      "rule": "apply.pass",
+      "fixture": "hard/support-inbox",
+      "file": "-",
+      "model": "claude-sonnet-5",
+      "detected": 1,
       "runs": 5
     },
     {
@@ -54,7 +70,7 @@
       "fixture": "srp/effects-cap",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 3,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -70,7 +86,7 @@
       "fixture": "srp/god-component",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -86,7 +102,7 @@
       "fixture": "srp/hooks-cap",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 2,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -94,7 +110,7 @@
       "fixture": "srp/internal-state",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 3,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -102,7 +118,7 @@
       "fixture": "srp/jsx-depth-cap",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 4,
       "runs": 5
     },
     {
@@ -110,7 +126,7 @@
       "fixture": "srp/loc-cap",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -126,7 +142,7 @@
       "fixture": "srp/presentational",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -134,7 +150,7 @@
       "fixture": "srp/props-cap",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 4,
       "runs": 5
     },
     {
@@ -150,7 +166,7 @@
       "fixture": "state/customer-dashboard",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -158,7 +174,7 @@
       "fixture": "state/derived-effect",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -182,7 +198,7 @@
       "fixture": "state/server-fetch",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 3,
+      "detected": 5,
       "runs": 5
     }
   ]

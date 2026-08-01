@@ -46,13 +46,61 @@
       "fixture": "composition/slots-over-config",
       "file": "Bad.tsx",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 3,
       "runs": 5
     },
     {
       "rule": "comp.variant-compound",
       "fixture": "composition/variant-compound",
       "file": "Bad.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "boundary.deep-import",
+      "fixture": "hard/checkout-review",
+      "file": "CheckoutReview.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "state.derived-effect",
+      "fixture": "hard/checkout-review",
+      "file": "CheckoutReview.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "state.server-fetch",
+      "fixture": "hard/checkout-review",
+      "file": "CheckoutReview.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "state.prop-drilling",
+      "fixture": "hard/support-inbox",
+      "file": "InboxLayout.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "comp.config-soup",
+      "fixture": "hard/support-inbox",
+      "file": "InboxPanel.tsx",
+      "model": "claude-sonnet-5",
+      "detected": 5,
+      "runs": 5
+    },
+    {
+      "rule": "srp.props-cap",
+      "fixture": "hard/support-inbox",
+      "file": "InboxPanel.tsx",
       "model": "claude-sonnet-5",
       "detected": 5,
       "runs": 5
@@ -126,7 +174,7 @@
       "fixture": "srp/hardwired-render",
       "file": "Bad.tsx",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 4,
       "runs": 5
     },
     {
@@ -150,7 +198,7 @@
       "fixture": "srp/jsx-depth-cap",
       "file": "Bad.tsx",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 4,
       "runs": 5
     },
     {
@@ -174,7 +222,7 @@
       "fixture": "srp/presentational",
       "file": "Bad.tsx",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 3,
       "runs": 5
     },
     {
@@ -190,7 +238,7 @@
       "fixture": "state/colocate",
       "file": "Bad.tsx",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 2,
       "runs": 5
     },
     {
@@ -206,7 +254,7 @@
       "fixture": "state/customer-dashboard",
       "file": "Bad.tsx",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 3,
       "runs": 5
     },
     {
