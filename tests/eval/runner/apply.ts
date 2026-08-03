@@ -9,6 +9,7 @@ import { discoverCases, readSkillMd } from "./fixtures";
 import { judgeRefactor, readExemplar, type JudgeVerdict } from "./judge";
 import { mapPool } from "./pool";
 import { buildSystemPrompt, isGoodTwin } from "./prompt";
+import { retryFailedRuns } from "./retry";
 import {
   assertSandboxPath,
   createSandbox,
@@ -57,6 +58,8 @@ export interface ApplyRunRecord {
   /** rules a deferred judge still needs to grade */
   pendingJudgeRules?: string[];
   error?: string;
+  /** true when this record replaced a failed run via the end-of-run retry pass */
+  retried?: boolean;
 }
 
 export interface ApplyGrade {
@@ -164,10 +167,7 @@ export async function runApply(options: ApplyRunOptions): Promise<{
       })),
     ),
   );
-  const runs: ApplyRunRecord[] = await mapPool(
-    jobs,
-    config.concurrency,
-    async ({ model, fixture, run }) => {
+  const applyWorker = async ({ model, fixture, run }: (typeof jobs)[number]): Promise<ApplyRunRecord> => {
       const originalHash = hashDir(fixture.dir);
       log(`apply ${model} × ${fixture.name} — run ${run}/${config.runs}`);
       const sandbox = createSandbox(fixture.dir);
@@ -263,8 +263,17 @@ export async function runApply(options: ApplyRunOptions): Promise<{
         }
         destroySandbox(sandbox);
       }
-    },
-  );
+  };
+  const firstPass: ApplyRunRecord[] = await mapPool(jobs, config.concurrency, applyWorker);
+  // only CLI failures retry — a graded refactor that failed its checks is a
+  // real result, not a transient
+  const runs = await retryFailedRuns(jobs, firstPass, {
+    retries: config.retries,
+    failed: (record) => record.error !== undefined,
+    rerun: applyWorker,
+    describe: ({ model, fixture, run }) => `apply ${model} × ${fixture.name} — run ${run}`,
+    log,
+  });
 
   return { report: applyReport(runs, config), runs };
 }

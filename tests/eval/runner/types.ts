@@ -45,6 +45,8 @@ export interface RunRecord {
   findings: Finding[];
   raw: string;
   error?: string;
+  /** true when this record replaced a failed run via the end-of-run retry pass */
+  retried?: boolean;
 }
 
 export interface RuleScore {

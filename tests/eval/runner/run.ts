@@ -20,6 +20,7 @@ import { aggregate } from "./matcher";
 import { parseReviewOutput } from "./parser";
 import { mapPool } from "./pool";
 import { buildSystemPrompt, buildUserPrompt, splitReviewCalls } from "./prompt";
+import { retryFailedRuns } from "./retry";
 import { printReport } from "./report";
 import type { EvalReport, FixtureLabels, RunRecord } from "./types";
 
@@ -64,10 +65,7 @@ export async function runReview(options: ReviewRunOptions): Promise<{
       })),
     ),
   );
-  const records: RunRecord[] = await mapPool(
-    jobs,
-    config.concurrency,
-    async ({ model, fixture, run }) => {
+  const reviewWorker = async ({ model, fixture, run }: (typeof jobs)[number]): Promise<RunRecord> => {
       // Detection (Bad + Demo) and precision (Good alone) are separate calls —
       // the model must never see the Good twin next to the files it grades —
       // but they merge into ONE record per run so aggregate() counts K runs,
@@ -107,8 +105,15 @@ export async function runReview(options: ReviewRunOptions): Promise<{
         raw: raws.join("\n"),
         ...(errors.length === 0 ? {} : { error: errors.join(" | ") }),
       };
-    },
-  );
+  };
+  const firstPass: RunRecord[] = await mapPool(jobs, config.concurrency, reviewWorker);
+  const records = await retryFailedRuns(jobs, firstPass, {
+    retries: config.retries,
+    failed: (record) => !record.ok,
+    rerun: reviewWorker,
+    describe: ({ model, fixture, run }) => `${model} × ${fixture.name} — run ${run}`,
+    log,
+  });
 
   const report = aggregate(records, labelsByFixture, {
     thresholds: config.thresholds,
