@@ -1,9 +1,10 @@
 ---
 id: DIP-4.2
 title: 'Judge vote parser takes the final VERDICT, not the first'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-03 05:52'
+updated_date: '2026-08-03 12:58'
 labels:
   - story
 dependencies:
@@ -26,9 +27,9 @@ Branch: DIP-4.2/judge-final-verdict
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 parseJudgeVote returns the verdict of the last VERDICT: pass|fail occurrence in the raw output; reasoning extraction stays consistent with that final block
-- [ ] #2 A unit test replays the observed DIP-3.8 deliberation transcript (early fail wording, final VERDICT: pass) and asserts verdict pass
-- [ ] #3 Repo gates green
+- [x] #1 parseJudgeVote returns the verdict of the last VERDICT: pass|fail occurrence in the raw output; reasoning extraction stays consistent with that final block
+- [x] #2 A unit test replays the observed DIP-3.8 deliberation transcript (early fail wording, final VERDICT: pass) and asserts verdict pass
+- [x] #3 Repo gates green
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -42,3 +43,9 @@ Branch: DIP-4.2/judge-final-verdict
 <!-- SECTION:NOTES:BEGIN -->
 Depends on DIP-3.9 deliberately: the A/B reuses the DIP-3.8 skill arm judged with the current parser — fixing parsing before the control arm runs would judge the two arms differently and bias the comparison against the skill. Deliver only after the A/B answer is archived.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+parseJudgeVote now takes the last VERDICT: occurrence and the reasoning after the last REASONING: marker (one coherent final block). Regression test replays the observed DIP-3.8 variant-compound run 2 self-correcting transcript and asserts pass; single-verdict outputs unchanged; unparseable fallback intact. 174 unit tests green. Affects only future judged runs — the DIP-4.4 filtered reset re-measures the affected fixtures.
+<!-- SECTION:FINAL_SUMMARY:END -->
