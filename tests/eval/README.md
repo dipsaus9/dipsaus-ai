@@ -57,27 +57,49 @@ Scale down first: `--filter derived-effect --runs 1` is a one-call smoke.
 - **A/B results** are stored in `runner/results/` beside the baselines but never diffed
   against them.
 
-## Known limitations (2026-07-24, post Demo-seam refresh)
+## Known limitations (2026-07-31, post DIP-3 baseline refresh)
 
-The original API-pinning flaw is fixed: Demo-seam tests let apply refactors reshape
-APIs, and the previously 0/5 fixtures now pass (`config-soup` and `props-cap` 5/5,
-`god-component` 4/5). The refreshed apply baseline still carries honest sub-bar rates
-with three distinct causes:
+First baselines on the leak-free harness (split review calls, no Good in the apply
+sandbox, rule-announcing comments stripped, hard tier added; K=5, claude-sonnet-5).
+The detection ceiling is gone — sub-100% rates below are real measurements, not
+leak artifacts.
 
-- **Timeout noise** — six runs died on the 240 s CLI timeout late in the run
-  (`hooks-cap` 2/5, `internal-state` 3/5, one `god-component` miss are mostly this),
-  understating those rates.
-- **Genuine model/skill gaps** — `srp/effects-cap` (3/5, leaves 3 effects),
-  `state/server-fetch` (3/5, once kept the antipattern, once broke behavior).
-- **Judge strictness beyond the skill's text** — `variant-compound` 0/5: refactors
-  remove the variant prop and build compound parts, but duplicate the shared shell,
-  which the rubric fails while the skill never teaches shell extraction. Related:
-  nine 2–1 judge verdicts accumulated in one run — the judge-instability signal.
-  Changing rubric text (or teaching the skill shell extraction) is deliberate
-  future work requiring a baseline reset.
+**Review — genuine detection gaps** (all runs completed, no infra noise):
 
-`state.derived-effect` review detection also remains observably flaky (3/5 in the
-review baseline).
+- `state.colocate` 2/5 — weakest rule in the corpus.
+- `srp.presentational` 3/5 — the model *sees* the component but labels it
+  `srp.mixed-concerns` instead (mislabeling, not blindness).
+- `state.prop-drilling` on `customer-dashboard` 3/5 (5/5 on the isolated fixture —
+  drilling hides in multi-violation context).
+- `comp.slots-over-config` 3/5 on its own fixture, 4/5 on `dashboard-panel`.
+- `boundary.hardwired-render` and `srp.jsx-depth-cap` 4/5 (high-severity, so any
+  miss shows as a threshold violation).
+- **FP pattern**: `srp/loc-cap`'s Bad draws `srp.mixed-concerns` +
+  `comp.regions-as-slots` in every run (not in `alsoAcceptable`). Good twins stayed
+  clean in all runs, so the precision gate is unaffected.
+
+**Apply — strong except composition judging** (23/25 fixtures at 4/5 or 5/5; all
+of srp and state at 5/5 except `jsx-depth-cap` and `props-cap` at 4/5):
+
+- `comp.variant-compound` 2/5 — two failures are genuine (a `variant` prop
+  survives on `Root`); one is a **judge harness artifact**: votes whose structured
+  verdict says `fail` while their own reasoning text concludes pass.
+- `hard/support-inbox` 1/5 — every failure hinges on a surviving `compact` boolean
+  that only toggles a className. Judges split 2–1 repeatedly on whether a
+  style-only boolean is config-soup: rubric ambiguity, not a clear model failure.
+  Clarifying the rubric is deliberate future work requiring a baseline reset.
+- Judge instability: **8 verdicts decided 2–1** in the full run (5 of them
+  `comp.config-soup`, 3 on `hard/support-inbox`).
+
+**Timeouts and the 900 s budget** — verdict: 900 s is ample, keep it. Completed
+apply runs are bimodal-free: min 28 s, median 74 s, p90 126 s, max 325 s
+(`god-component`); nothing landed between 325 s and the 900 s cap. The only
+timeouts in the refresh were 9 *consecutive* runs during a ~30 min API outage
+window (bracketed by an explicit `Connection closed mid-response` error); filtered
+re-runs of those fixtures completed in 40–106 s and were merged into the baseline
+per the filtered-update policy. Review calls saw the same congestion pattern
+(16 timeouts at 480 s in the first pass, all clean on re-run). Treat a *cluster*
+of consecutive timeouts as an outage signal — re-run filtered — not as a rate.
 
 ## First A/B run (2026-07-25) — archived, headline contaminated
 
