@@ -27,7 +27,12 @@ fenced off from every CI gate:
 Flags: `--model` (repeatable), `--runs` (K), `--filter <substring of category/dir>`,
 `--claude-bin`, `--out`, `--verbose` (A/B: print both arm prompts + both review-call
 prompts), `--timeout <seconds>` (agentic apply runs; default 900 — review/judge
-single-shot calls keep their own 480 s budget). Defaults live in `runner/config.ts`.
+single-shot calls keep their own 480 s budget). Runs that fail on a timeout or CLI
+error are retried once each, sequentially, after the full matrix has drained (the
+matrix is the backoff — transient outage windows close before the pass starts);
+a successful retry replaces the failed record and carries `retried: true` in the
+results JSON, a double failure keeps both errors. `retries` in `runner/config.ts`
+(0 disables). Defaults live in `runner/config.ts`.
 If a shell wrapper shadows `bun` (exit 127), use the binary directly:
 `~/.bun/bin/bun run test:eval`.
 
@@ -98,8 +103,11 @@ timeouts in the refresh were 9 *consecutive* runs during a ~30 min API outage
 window (bracketed by an explicit `Connection closed mid-response` error); filtered
 re-runs of those fixtures completed in 40–106 s and were merged into the baseline
 per the filtered-update policy. Review calls saw the same congestion pattern
-(16 timeouts at 480 s in the first pass, all clean on re-run). Treat a *cluster*
-of consecutive timeouts as an outage signal — re-run filtered — not as a rate.
+(16 timeouts at 480 s in the first pass, all clean on re-run). Since DIP-4.1 the
+runner retries failed runs automatically at end of run, so a lone timeout heals
+itself; a run that fails *twice* (`error` carrying a `| retry:` segment) survived
+the retry spacing and is worth investigating — or re-running filtered — before
+trusting its rate.
 
 ## First A/B run (2026-07-25) — archived, headline contaminated
 
