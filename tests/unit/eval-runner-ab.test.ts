@@ -1,8 +1,18 @@
-import { describe, expect, it } from "vitest";
-import { computeAbReport, mulberry32, shuffled } from "../eval/runner/ab";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  computeAbReport,
+  loadReusedSkillArm,
+  mulberry32,
+  REUSE_MAX_AGE_DAYS,
+  shuffled,
+} from "../eval/runner/ab";
 import type { ApplyRunRecord } from "../eval/runner/apply";
+import { defaultConfig, type EvalConfig } from "../eval/runner/config";
 import { buildControlSystemPrompt } from "../eval/runner/prompt";
-import type { EvalReport, RuleScore } from "../eval/runner/types";
+import type { EvalReport, RuleScore, RunRecord } from "../eval/runner/types";
 
 describe("buildControlSystemPrompt", () => {
   const prompt = buildControlSystemPrompt(["srp.loc-cap", "state.derived-effect"]);
@@ -118,5 +128,99 @@ describe("computeAbReport", () => {
     const arm = { review: report([score({})]), apply: report([]), applyRuns: [] };
     const ab = computeAbReport(["m1"], arm, arm);
     expect(ab.kind).toBe("ab-comparison");
+  });
+});
+
+describe("loadReusedSkillArm", () => {
+  const FIXTURE = "state/derived-effect";
+  const config: EvalConfig = { ...defaultConfig, models: ["m1"], runs: 2 };
+  let dir: string;
+  beforeEach(() => {
+    dir = mkdtempSync(path.join(os.tmpdir(), "reuse-arm-"));
+  });
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  const reviewRecord = (run: number, overrides: Partial<RunRecord> = {}): RunRecord => ({
+    fixture: FIXTURE,
+    model: "m1",
+    run,
+    ok: true,
+    findings: [{ severity: "high", rule: "state.derived-effect", file: "Bad.tsx", line: 12 }],
+    raw: "",
+    ...overrides,
+  });
+  const applyRecord = (run: number, overrides: Partial<ApplyRunRecord> = {}): ApplyRunRecord => ({
+    fixture: FIXTURE,
+    model: "m1",
+    run,
+    pass: true,
+    durationMs: 100,
+    checks: { originalsUntouched: true, caps: true, banned: true, tsc: true, behaviorTests: true },
+    detail: [],
+    ...overrides,
+  });
+  const write = (
+    name: string,
+    body: { reviewRuns?: RunRecord[]; applyRuns?: ApplyRunRecord[] },
+    stored: { models?: string[]; runs?: number } = { models: ["m1"], runs: 2 },
+  ): string => {
+    const file = path.join(dir, name);
+    writeFileSync(file, JSON.stringify({ config: stored, ...body }));
+    return file;
+  };
+
+  it("merges files last-wins and rebuilds both reports from the records", () => {
+    const full = write("full.json", {
+      reviewRuns: [
+        reviewRecord(1),
+        reviewRecord(2, { ok: false, findings: [], error: "timeout after 480000ms" }),
+      ],
+    });
+    const heal = write("heal.json", { reviewRuns: [reviewRecord(2, { retried: true })] });
+    const apply = write("apply.json", { applyRuns: [applyRecord(1), applyRecord(2, { pass: false })] });
+    const arm = loadReusedSkillArm([full, heal, apply], config, FIXTURE);
+    expect(arm.warnings).toEqual([]);
+    const detection = arm.review.scores.find((s) => s.rule === "state.derived-effect");
+    expect(detection).toMatchObject({ detected: 2, runs: 2 });
+    const applyScore = arm.apply.scores.find((s) => s.rule === "apply.pass");
+    expect(applyScore).toMatchObject({ detected: 1, runs: 2 });
+    expect(arm.applyRuns).toHaveLength(2);
+  });
+
+  it("rejects a file produced under a different config", () => {
+    const file = write("full.json", { reviewRuns: [reviewRecord(1), reviewRecord(2)] }, { models: ["other"], runs: 2 });
+    expect(() => loadReusedSkillArm([file], config, FIXTURE)).toThrow(/produced with models/);
+  });
+
+  it("rejects a merged set with holes in the matrix", () => {
+    const file = write("full.json", {
+      reviewRuns: [reviewRecord(1), reviewRecord(2)],
+      // no apply file passed at all
+    });
+    expect(() => loadReusedSkillArm([file], config, FIXTURE)).toThrow(/missing: apply/);
+  });
+
+  it("rejects a merged set with surviving failed records", () => {
+    const review = write("review.json", {
+      reviewRuns: [reviewRecord(1), reviewRecord(2, { ok: false, findings: [], error: "boom" })],
+    });
+    const apply = write("apply.json", { applyRuns: [applyRecord(1), applyRecord(2)] });
+    expect(() => loadReusedSkillArm([review, apply], config, FIXTURE)).toThrow(/failed: review/);
+  });
+
+  it("rejects a file with neither reviewRuns nor applyRuns", () => {
+    const file = write("empty.json", {});
+    expect(() => loadReusedSkillArm([file], config, FIXTURE)).toThrow(/neither reviewRuns nor applyRuns/);
+  });
+
+  it("warns when a reused file is older than the reuse window", () => {
+    const review = write("review.json", { reviewRuns: [reviewRecord(1), reviewRecord(2)] });
+    const apply = write("apply.json", { applyRuns: [applyRecord(1), applyRecord(2)] });
+    const future = Date.now() + (REUSE_MAX_AGE_DAYS + 2) * 86_400_000;
+    const arm = loadReusedSkillArm([review, apply], config, FIXTURE, future);
+    expect(arm.warnings).toHaveLength(2);
+    expect(arm.warnings[0]).toMatch(/days old/);
   });
 });
