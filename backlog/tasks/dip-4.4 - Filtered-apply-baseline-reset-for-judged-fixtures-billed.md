@@ -4,6 +4,7 @@ title: Filtered apply-baseline reset for judged fixtures (billed)
 status: To Do
 assignee: []
 created_date: '2026-08-03 05:53'
+updated_date: '2026-08-03 12:23'
 labels:
   - story
 dependencies:
@@ -44,4 +45,6 @@ Branch: DIP-4.4/judged-baseline-reset
 
 <!-- SECTION:NOTES:BEGIN -->
 Cost: ~35 agentic runs + judge votes (about a quarter of a full apply matrix). Retry pass (DIP-4.1) protects the run from outage windows. Filtered-update merge policy per tests/eval/baseline/README.md.
+
+Decision hook from the DIP-3.9 A/B: after this reset, read comp.variant-compound's fresh apply rate. If it still sits at or below 3/5, plan a follow-up story 'micro-example for variant-compound in SKILL.md' — a 3-4 line before/after signature sketch showing the variant prop must NOT survive on Root (the observed failure mode: model builds compound parts but keeps variant='kpi' on the root). Skill text change implies another baseline reset + filtered A/B spot-check. Secondary candidate if srp FPs stay high in review runs: negative examples / alsoAcceptable label sweep (control arm had 60 FPs too, so partly corpus work, not skill text).
 <!-- SECTION:NOTES:END -->
