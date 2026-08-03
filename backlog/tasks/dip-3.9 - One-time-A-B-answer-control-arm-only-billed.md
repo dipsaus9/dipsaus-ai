@@ -4,10 +4,12 @@ title: 'One-time A/B answer, control arm only (billed)'
 status: To Do
 assignee: []
 created_date: '2026-07-31 08:21'
+updated_date: '2026-08-03 05:53'
 labels:
   - story
 dependencies:
   - DIP-3.8
+  - DIP-4.1
 references:
   - tests/eval/runner/ab.ts
   - tests/eval/ab/
