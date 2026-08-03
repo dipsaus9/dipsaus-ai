@@ -38,6 +38,39 @@ describe("parseJudgeVote", () => {
     expect(parsed.parsed).toBe(false);
     expect(parsed.reasoning).toContain("unparseable");
   });
+
+  // Regression: DIP-3.8 refresh, composition/variant-compound run 2 — the
+  // judge deliberated, emitted an early fail, self-corrected, and the parser
+  // recorded the draft instead of the final verdict.
+  it("takes the final VERDICT when a deliberating judge self-corrects", () => {
+    const parsed = parseJudgeVote(
+      [
+        "VERDICT: fail",
+        "REASONING: Compound parts stay separate — `MetricCard.Kpi` and",
+        "`MetricCard.Trend` exist as distinct components, no `variant` prop",
+        "survives on the public API. Wait — check again: no god-part switch,",
+        "no variant prop. Passes.",
+        "",
+        "VERDICT: pass",
+        "REASONING: No `variant`/`kind` prop remains on the public API —",
+        "separate compound parts, shared-shell extraction explicitly not",
+        "required.",
+      ].join("\n"),
+    );
+    expect(parsed.verdict).toBe("pass");
+    expect(parsed.parsed).toBe(true);
+    expect(parsed.reasoning).toContain("No `variant`/`kind` prop remains");
+    expect(parsed.reasoning).not.toContain("Wait — check again");
+  });
+
+  it("keeps single-verdict output unchanged", () => {
+    const parsed = parseJudgeVote("VERDICT: fail\nREASONING: showX flags survive.");
+    expect(parsed).toEqual({
+      verdict: "fail",
+      reasoning: "showX flags survive.",
+      parsed: true,
+    });
+  });
 });
 
 describe("majorityVerdict", () => {

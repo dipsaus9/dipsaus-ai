@@ -100,18 +100,27 @@ export function buildJudgePrompt(
 }
 
 export function parseJudgeVote(raw: string): JudgeVote {
-  const match = /VERDICT:\s*(pass|fail)/i.exec(raw);
-  const reasoningMatch = /REASONING:\s*([\s\S]*)/i.exec(raw);
-  if (!match || match[1] === undefined) {
+  // A deliberating judge may emit VERDICT more than once and self-correct
+  // (seen in the DIP-3.8 refresh: an early fail followed by a reasoned
+  // "VERDICT: pass"). The final occurrence is the verdict; the reasoning is
+  // whatever follows the final REASONING marker, so the two stay one block.
+  const verdictMatches = [...raw.matchAll(/VERDICT:\s*(pass|fail)/gi)];
+  const verdict = verdictMatches.at(-1)?.[1];
+  if (verdict === undefined) {
     return {
       verdict: "fail",
       reasoning: `unparseable judge output: ${raw.trim().slice(0, 200)}`,
       parsed: false,
     };
   }
+  const reasoningMatches = [...raw.matchAll(/REASONING:\s*/gi)];
+  const lastReasoning = reasoningMatches.at(-1);
+  const reasoning = lastReasoning
+    ? raw.slice((lastReasoning.index ?? 0) + lastReasoning[0].length)
+    : "";
   return {
-    verdict: match[1].toLowerCase() as "pass" | "fail",
-    reasoning: (reasoningMatch?.[1] ?? "").trim().slice(0, 1000),
+    verdict: verdict.toLowerCase() as "pass" | "fail",
+    reasoning: reasoning.trim().slice(0, 1000),
     parsed: true,
   };
 }
