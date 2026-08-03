@@ -54,6 +54,9 @@ export interface EvalConfig {
   /** agentic apply runs — skill-driven refactors routinely outlive the
    * single-shot budget (24/25 A/B composition runs died at 480s) */
   applyTimeoutMs: number;
+  /** end-of-run retries per failed run (transient timeouts / CLI errors);
+   * 0 disables the pass — see retry.ts */
+  retries: number;
 }
 
 export const defaultConfig: EvalConfig = {
@@ -67,4 +70,5 @@ export const defaultConfig: EvalConfig = {
     process.env.CLAUDE_BIN ?? `${os.homedir()}/.local/bin/claude`,
   timeoutMs: 480_000,
   applyTimeoutMs: 900_000,
+  retries: 1,
 };
