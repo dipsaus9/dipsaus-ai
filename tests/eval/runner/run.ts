@@ -142,6 +142,7 @@ async function main(): Promise<void> {
       verbose: { type: "boolean" },
       concurrency: { type: "string" },
       timeout: { type: "string" },
+      "reuse-skill-arm": { type: "string", multiple: true },
     },
   });
   const mode = values.mode ?? "review";
@@ -184,6 +185,7 @@ async function main(): Promise<void> {
       filter: values.filter,
       verbose: values.verbose,
       artifactsDir: artifactsRoot,
+      ...(values["reuse-skill-arm"] ? { reuseSkillArm: values["reuse-skill-arm"] } : {}),
       log: (message) => console.log(message),
     });
     const abOut = values.out ?? path.join(RUNNER_DIR, "results", `ab-${runId}.json`);

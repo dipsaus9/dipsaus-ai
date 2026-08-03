@@ -128,6 +128,36 @@ Secondary caveats: the corpus sits at a detection ceiling (control ≈100%, fixt
 too thin to discriminate) and both arms shared the Good.tsx leak. Epic DIP-3 fixes
 the harness (leak, timeout, corpus) and re-answers the question with a clean run.
 
+## The A/B answer (2026-08-03) — does the skill help?
+
+**Yes, decisively where it claims to: the control arm cannot produce compound
+refactors at all (0% composition apply), the skill arm lands them at 80%.**
+Archived at `ab/ab-2026-08-03-repaired.json` (K=5, claude-sonnet-5; skill arm
+reused from the DIP-3.8 baseline files via `--reuse-skill-arm`, control arm run
+fresh — same corpus, same judge, judged control-only in the deferred batch).
+
+| Category | Detection (skill / control) | False positives | Apply pass (skill / control) |
+|---|---|---|---|
+| composition | **91% / 77%** | 2 / 1 | **80% / 0%** |
+| hard | 100% / 97% | 0 / 0 | 50% / 70% |
+| srp | 95% / 88% | 71 / 60 | 97% / 97% |
+| state | 88% / 93% | 1 / 3 | 100% / 97% |
+
+Honest caveats, in the report's `repairs` field and here:
+
+- **Repair provenance** — 12 control apply runs died on a mid-run session usage
+  limit (11 in state, 1 in hard); those records were replaced from filtered
+  re-runs and the report recomputed. The dramatic-looking raw "state apply
+  63% → 100%" delta was that noise — healed control state apply is 97%.
+- **hard apply 50% vs 70%** — driven by `support-inbox`, where the judge fails
+  the skill arm's compound refactors on a style-only `compact` boolean (the
+  DIP-4.3 rubric ambiguity). Re-measured after that fix lands.
+- **srp false positives are high in both arms** (71 vs 60) — models pile extra
+  findings onto srp Bad files regardless of the skill; the skill adds slightly
+  more. Corpus-wide FP discipline is future work.
+- **state detection dips with the skill** (88% vs 93%) — small but real; the
+  skill's state rules cost a little recall vs a bare rule list.
+
 ## Label schema
 
 Each fixture directory carries an `expected.json` — the ground-truth labels the eval
