@@ -63,6 +63,20 @@ composition for rendering.
 - Prefer **children/slots over render-config**; no boolean-flag soup. **[med]**
   `comp.slots-over-config`
 
+In these refactors the discriminator/gate prop must **die**, not get renamed:
+
+```tsx
+// Before: <MetricCard variant="kpi" showSubtitle />
+// After — the caller composes; no prop selects or gates anything:
+<MetricCard.Kpi>
+  <MetricCard.Subtitle>Weekly</MetricCard.Subtitle>
+</MetricCard.Kpi>
+```
+
+A prop that only re-skins an always-rendered element (`compact` switching a class)
+is fine; a prop that decides **what renders** is the antipattern under any name —
+`variant`, `showSubtitle`, or a renamed semantic like `density`.
+
 ### 3. State & data boundaries
 
 - **Server state**: never fetch via manual `useEffect` + `useState`. Use a server-state
