@@ -6,7 +6,7 @@
       "fixture": "composition/config-soup",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 4,
       "runs": 5
     },
     {
@@ -14,7 +14,7 @@
       "fixture": "composition/dashboard-panel",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 3,
+      "detected": 4,
       "runs": 5
     },
     {
@@ -30,7 +30,7 @@
       "fixture": "composition/slots-over-config",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 3,
       "runs": 5
     },
     {
@@ -38,7 +38,7 @@
       "fixture": "composition/variant-compound",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 3,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -46,7 +46,7 @@
       "fixture": "hard/checkout-review",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -54,7 +54,7 @@
       "fixture": "hard/support-inbox",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 5,
+      "detected": 4,
       "runs": 5
     },
     {
