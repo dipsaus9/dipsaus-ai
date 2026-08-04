@@ -1,10 +1,10 @@
 ---
 id: DIP-4.4
 title: Filtered apply-baseline reset for judged fixtures (billed)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-03 05:53'
-updated_date: '2026-08-03 12:23'
+updated_date: '2026-08-04 08:11'
 labels:
   - story
 dependencies:
@@ -29,10 +29,10 @@ Branch: DIP-4.4/judged-baseline-reset
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Apply runs with --filter composition and --filter hard executed on the user explicit command with --update-baseline; merged baseline approved by the user and committed
-- [ ] #2 tests/eval/README.md known-limitations updated: support-inbox and variant-compound entries restated from the new data
-- [ ] #3 Judge 2-1 instability count of the re-run recorded in the story implementation notes
-- [ ] #4 Repo gates green
+- [x] #1 Apply runs with --filter composition and --filter hard executed on the user explicit command with --update-baseline; merged baseline approved by the user and committed
+- [x] #2 tests/eval/README.md known-limitations updated: support-inbox and variant-compound entries restated from the new data
+- [x] #3 Judge 2-1 instability count of the re-run recorded in the story implementation notes
+- [x] #4 Repo gates green
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -47,4 +47,12 @@ Branch: DIP-4.4/judged-baseline-reset
 Cost: ~35 agentic runs + judge votes (about a quarter of a full apply matrix). Retry pass (DIP-4.1) protects the run from outage windows. Filtered-update merge policy per tests/eval/baseline/README.md.
 
 Decision hook from the DIP-3.9 A/B: after this reset, read comp.variant-compound's fresh apply rate. If it still sits at or below 3/5, plan a follow-up story 'micro-example for variant-compound in SKILL.md' — a 3-4 line before/after signature sketch showing the variant prop must NOT survive on Root (the observed failure mode: model builds compound parts but keeps variant='kpi' on the root). Skill text change implies another baseline reset + filtered A/B spot-check. Secondary candidate if srp FPs stay high in review runs: negative examples / alsoAcceptable label sweep (control arm had 60 FPs too, so partly corpus work, not skill text).
+
+Reset results (2026-08-04, ~40 agentic runs incl. srp/hardwired-render matched by the 'hard' substring filter — harmless 5/5 merge): support-inbox 1/5 -> 5/5 (rubric fix was the whole story), variant-compound 2/5 -> 3/5 (parse fix recovered the artifact vote; remaining failures genuine variant-prop survival -> micro-example story justified per the decision hook), dashboard-panel 4/5 -> 3/5 (new honest failures: density prop gates Subtitle rendering — the new mechanical tiebreak correctly classifies it as part-gating), regions-as-slots 4/5 -> 5/5. Judge 2-1 instability count: 1 (slots-over-config run 1), down from 8 in the DIP-3.8 full run. Zero failed runs, retry pass never triggered.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Filtered apply-baseline reset delivered on user command: composition + hard re-measured (~40 agentic runs, zero failures, retry never needed) under the fixed judge parser and clarified rubric. support-inbox 1/5 -> 5/5, variant-compound 2/5 -> 3/5, dashboard-panel 4/5 -> 3/5 (honest new failures: renamed part-gating props), regions-as-slots 4/5 -> 5/5. Judge 2-1 count: 1 (was 8). Baseline approved by the user and committed; README known-limitations restated. Follow-up justified per the decision hook: composition micro-examples in SKILL.md (discriminator/gate props must not survive), covering both variant-compound and dashboard-panel failure modes.
+<!-- SECTION:FINAL_SUMMARY:END -->
