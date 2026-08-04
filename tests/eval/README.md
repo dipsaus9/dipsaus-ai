@@ -196,6 +196,14 @@ follow it, never redefine it.
 - `alsoAcceptable` — rule ids (any line) that legitimately overlap the seeded violation
   (e.g. 7 props triggers both `srp.props-cap` and `comp.config-soup`). Reporting them is
   neither required nor punished.
+- `anyOf` (on an `expected` entry) — the full accepted-name set when two rules
+  *genuinely* describe the same seeded violation: a finding naming any listed id on
+  the labeled file scores the hit. `rule` stays the canonical id (it names the
+  baseline entry and resolves severity). Added in DIP-6.2 for
+  `slots-over-config`, where regions-passed-as-render-config is both
+  `comp.slots-over-config` and `comp.regions-as-slots` and 3 of 5 correct
+  detections were scored as misses over the naming split. Use sparingly — an
+  `anyOf` hides a naming distinction the skill claims to teach.
 
 Trigger-line conventions: caps label the first construct past the cap (6th hook, 3rd
 `useEffect`, first element past depth 5) except LOC and props, which label the component
