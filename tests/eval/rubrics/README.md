@@ -14,6 +14,14 @@ the rubric graded beyond the skill's text (baseline showed structural 0/5). Ever
 criterion now traces to SKILL.md. This change plus the exemplar addition ships with the
 epic's deliberate baseline reset (DIP-3.8).
 
+**2026-08-04 reset (DIP-4.3):** `comp.config-soup` gained an explicit NOT-a-violation
+criterion for style-only boolean toggles (a prop that only switches CSS class/style on
+an always-rendered element). The skill's text bans part-gating flags, render-config
+props and prop-threaded shared state — not styling modifiers — yet judges split 2–1
+three times on `hard/support-inbox`'s `compact` className toggle and failed every
+otherwise-sound compound refactor on it (1/5 in the DIP-3.8 baseline, sole cause).
+Ships with the DIP-4.4 filtered baseline reset for judged fixtures.
+
 **Drift containment (these are part of the eval's ground truth):**
 
 - The judge model is pinned by exact id in `tests/eval/runner/config.ts`

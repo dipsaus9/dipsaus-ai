@@ -19,6 +19,16 @@ variant maps. Judge whether the refactor replaces configuration with composition
 - The flags moved into a single `config`/`options` object — same soup, one bowl.
 - Parts became components but a required wrapper still instantiates them from flags.
 
+**Explicitly NOT a violation:**
+
+- A boolean prop whose only effect is toggling a CSS class or inline style on an
+  element that always renders (`compact`, `elevated`, `inverted`). This rule bans
+  flags that gate optional parts (`showHeader`, `hideFooter`), render-config
+  props, and state threaded between parts — a pure styling modifier gates no part
+  and selects no layout branch. Decide ambiguity mechanically: if omitting the prop
+  changes only `class`/`style` attribute values and never which elements render,
+  it **passes**.
+
 **Worked example — pass:**
 
 ```tsx
