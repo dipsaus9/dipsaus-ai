@@ -91,16 +91,18 @@ criterion:
 
 - `hard/support-inbox` 1/5 → **5/5** — the old rate was entirely the style-boolean
   rubric ambiguity; with the explicit NOT-a-violation criterion the compound
-  refactors pass as they should.
-- `comp.variant-compound` 2/5 → **3/5** — the parse fix recovered the artifact
-  vote; the remaining failures are genuine: a `variant` prop survives on the
-  public API (`Root` or a shared section part). Candidate fix: a micro-example in
-  SKILL.md showing the discriminator must not survive the refactor.
-- `comp.dashboard-panel` 4/5 → **3/5** — new honest failures: refactors introduce
-  a `density` prop that gates `Subtitle`'s rendering (`return null`), which the
-  rubric's mechanical tiebreak correctly classifies as part-gating, not styling.
-- Judge instability collapsed: **1 verdict decided 2–1** in the reset (was 8 in
-  the DIP-3.8 full run).
+  refactors pass as they should. (4/5 in the DIP-5.2 re-measure — one-run variance.)
+- `comp.variant-compound` 3/5 → **5/5** and `dashboard-panel` 3/5 → **4/5** after
+  the DIP-5.1 SKILL.md micro-example ("the discriminator/gate prop must die, not
+  get renamed") — **verdict: the micro-example moved exactly the rates it
+  targeted.** Judge instability on those rubrics: zero.
+- `comp.slots-over-config` is the new weak spot: apply 5/5 → **3/5**, review
+  detection 3/5 → **2/5** (it was always the flakiest detection). One failure is
+  a genuinely lazy refactor (`renderHeading`-style thunk props left on the API);
+  the rest are borderline judge calls — all **8** 2–1 verdicts of the DIP-5.2
+  re-measure sit on this one rubric (e.g. arguing an internal `events.length`
+  conditional counts as gating). Next rubric-ambiguity candidate, same treatment
+  as DIP-4.3 gave config-soup.
 
 **Timeouts and the 900 s budget** — verdict: 900 s is ample, keep it. Completed
 apply runs are bimodal-free: min 28 s, median 74 s, p90 126 s, max 325 s
