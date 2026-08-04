@@ -83,18 +83,24 @@ leak artifacts.
   `comp.regions-as-slots` in every run (not in `alsoAcceptable`). Good twins stayed
   clean in all runs, so the precision gate is unaffected.
 
-**Apply — strong except composition judging** (23/25 fixtures at 4/5 or 5/5; all
-of srp and state at 5/5 except `jsx-depth-cap` and `props-cap` at 4/5):
+**Apply — strong except composition judging** (24/25 fixtures at 4/5 or 5/5 after
+the 2026-08-04 DIP-4.4 reset; all of srp and state at 5/5 except `jsx-depth-cap`
+and `props-cap` at 4/5). The judged fixtures (composition + hard) were re-measured
+after the DIP-4.2 final-VERDICT parse fix and the DIP-4.3 style-boolean rubric
+criterion:
 
-- `comp.variant-compound` 2/5 — two failures are genuine (a `variant` prop
-  survives on `Root`); one is a **judge harness artifact**: votes whose structured
-  verdict says `fail` while their own reasoning text concludes pass.
-- `hard/support-inbox` 1/5 — every failure hinges on a surviving `compact` boolean
-  that only toggles a className. Judges split 2–1 repeatedly on whether a
-  style-only boolean is config-soup: rubric ambiguity, not a clear model failure.
-  Clarifying the rubric is deliberate future work requiring a baseline reset.
-- Judge instability: **8 verdicts decided 2–1** in the full run (5 of them
-  `comp.config-soup`, 3 on `hard/support-inbox`).
+- `hard/support-inbox` 1/5 → **5/5** — the old rate was entirely the style-boolean
+  rubric ambiguity; with the explicit NOT-a-violation criterion the compound
+  refactors pass as they should.
+- `comp.variant-compound` 2/5 → **3/5** — the parse fix recovered the artifact
+  vote; the remaining failures are genuine: a `variant` prop survives on the
+  public API (`Root` or a shared section part). Candidate fix: a micro-example in
+  SKILL.md showing the discriminator must not survive the refactor.
+- `comp.dashboard-panel` 4/5 → **3/5** — new honest failures: refactors introduce
+  a `density` prop that gates `Subtitle`'s rendering (`return null`), which the
+  rubric's mechanical tiebreak correctly classifies as part-gating, not styling.
+- Judge instability collapsed: **1 verdict decided 2–1** in the reset (was 8 in
+  the DIP-3.8 full run).
 
 **Timeouts and the 900 s budget** — verdict: 900 s is ample, keep it. Completed
 apply runs are bimodal-free: min 28 s, median 74 s, p90 126 s, max 325 s
