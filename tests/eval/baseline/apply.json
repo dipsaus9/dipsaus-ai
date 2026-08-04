@@ -14,7 +14,7 @@
       "fixture": "composition/dashboard-panel",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 3,
       "runs": 5
     },
     {
@@ -22,7 +22,7 @@
       "fixture": "composition/regions-as-slots",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -38,7 +38,7 @@
       "fixture": "composition/variant-compound",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 2,
+      "detected": 3,
       "runs": 5
     },
     {
@@ -54,7 +54,7 @@
       "fixture": "hard/support-inbox",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 1,
+      "detected": 5,
       "runs": 5
     },
     {
