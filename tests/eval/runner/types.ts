@@ -14,8 +14,12 @@ export interface ParseResult {
 }
 
 export interface ExpectedFinding {
+  /** canonical rule id — names the baseline entry and resolves severity */
   rule: string;
   line: number;
+  /** full accepted-name set for genuinely-overlapping rules; a finding naming
+   * any listed id (or `rule`) on the labeled file scores this hit */
+  anyOf?: string[];
 }
 
 export interface FileLabel {

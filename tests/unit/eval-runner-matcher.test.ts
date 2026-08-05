@@ -64,6 +64,71 @@ describe("matchRun", () => {
   });
 });
 
+describe("matchRun with anyOf", () => {
+  const ANY_OF_LABELS: FixtureLabels = {
+    files: {
+      "Bad.tsx": {
+        expected: [
+          {
+            rule: "comp.slots-over-config",
+            line: 8,
+            anyOf: ["comp.slots-over-config", "comp.regions-as-slots"],
+          },
+        ],
+        alsoAcceptable: ["comp.variant-compound"],
+      },
+      "Good.tsx": { expected: [], alsoAcceptable: [] },
+    },
+  };
+
+  it("scores a hit when a finding names any listed rule", () => {
+    const match = matchRun([finding("comp.regions-as-slots", "Bad.tsx", 8)], ANY_OF_LABELS);
+    expect(match.detected[0]?.hit).toBe(true);
+    expect(match.falsePositives).toEqual([]);
+  });
+
+  it("still misses when the finding names an unlisted rule", () => {
+    const match = matchRun([finding("comp.config-soup", "Bad.tsx", 8)], ANY_OF_LABELS);
+    expect(match.detected[0]?.hit).toBe(false);
+    expect(match.falsePositives).toHaveLength(1);
+  });
+
+  it("treats a second finding naming another accepted id as noise, not an FP", () => {
+    const match = matchRun(
+      [
+        finding("comp.slots-over-config", "Bad.tsx", 8),
+        finding("comp.regions-as-slots", "Bad.tsx", 8),
+      ],
+      ANY_OF_LABELS,
+    );
+    expect(match.detected[0]?.hit).toBe(true);
+    expect(match.falsePositives).toEqual([]);
+  });
+
+  it("keeps the canonical rule on the score entry regardless of the matched name", () => {
+    const anyOfRecord: RunRecord = {
+      fixture: "composition/slots-over-config",
+      model: "m1",
+      run: 1,
+      ok: true,
+      findings: [finding("comp.regions-as-slots", "Bad.tsx", 8)],
+      raw: "",
+    };
+    const report = aggregate(
+      [anyOfRecord],
+      new Map([["composition/slots-over-config", ANY_OF_LABELS]]),
+      { thresholds: { high: 1, medLow: 0.8 }, models: ["m1"], runs: 1 },
+    );
+    const score = report.scores.find((s) => s.fixture === "composition/slots-over-config");
+    expect(score).toMatchObject({ rule: "comp.slots-over-config", detected: 1, runs: 1 });
+  });
+
+  it("leaves plain-rule labels byte-identical in behavior", () => {
+    const match = matchRun([finding("srp.props-cap", "Bad.tsx", 13)], LABELS);
+    expect(match.detected[0]?.hit).toBe(true);
+  });
+});
+
 function record(
   run: number,
   findings: Finding[],

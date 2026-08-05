@@ -29,6 +29,11 @@ export interface RunMatch {
   falsePositives: Finding[];
 }
 
+/** The rule ids that score an expected finding: its canonical id plus anyOf. */
+function acceptedRules(expected: ExpectedFinding): Set<string> {
+  return new Set([expected.rule, ...(expected.anyOf ?? [])]);
+}
+
 /**
  * Match one run's findings against a fixture's labels on **rule + file**.
  * The labeled line is documentation of the trigger, not part of the pass/fail
@@ -42,8 +47,9 @@ export function matchRun(findings: Finding[], labels: FixtureLabels): RunMatch {
 
   for (const [file, label] of Object.entries(labels.files)) {
     for (const expected of label.expected) {
+      const accepted = acceptedRules(expected);
       const index = unclaimed.findIndex(
-        (finding) => fileMatches(finding.file, file) && finding.rule === expected.rule,
+        (finding) => fileMatches(finding.file, file) && accepted.has(finding.rule),
       );
       const hit = index >= 0;
       if (hit) {
@@ -62,7 +68,7 @@ export function matchRun(findings: Finding[], labels: FixtureLabels): RunMatch {
     }
     const [, label] = entry;
     // duplicates of an already-claimed expected rule are noise, not FPs
-    if (label.expected.some((expected) => expected.rule === finding.rule)) {
+    if (label.expected.some((expected) => acceptedRules(expected).has(finding.rule))) {
       return false;
     }
     return !(label.alsoAcceptable ?? []).includes(finding.rule);
