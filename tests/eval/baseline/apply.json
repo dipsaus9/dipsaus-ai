@@ -14,7 +14,7 @@
       "fixture": "composition/dashboard-panel",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -30,7 +30,7 @@
       "fixture": "composition/slots-over-config",
       "file": "-",
       "model": "claude-sonnet-5",
-      "detected": 3,
+      "detected": 5,
       "runs": 5
     },
     {

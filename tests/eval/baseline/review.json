@@ -22,7 +22,7 @@
       "fixture": "composition/dashboard-panel",
       "file": "Bad.tsx",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -30,7 +30,7 @@
       "fixture": "composition/dashboard-panel",
       "file": "Bad.tsx",
       "model": "claude-sonnet-5",
-      "detected": 4,
+      "detected": 5,
       "runs": 5
     },
     {
@@ -46,7 +46,7 @@
       "fixture": "composition/slots-over-config",
       "file": "Bad.tsx",
       "model": "claude-sonnet-5",
-      "detected": 2,
+      "detected": 5,
       "runs": 5
     },
     {
