@@ -22,6 +22,14 @@ three times on `hard/support-inbox`'s `compact` className toggle and failed ever
 otherwise-sound compound refactor on it (1/5 in the DIP-3.8 baseline, sole cause).
 Ships with the DIP-4.4 filtered baseline reset for judged fixtures.
 
+**2026-08-04 reset (DIP-6.1):** `comp.slots-over-config` gained an explicit
+NOT-a-violation criterion: the component choosing between its own slot props on
+data state (`events.length === 0 ? empty : …`) is normal conditional rendering —
+the rubric's own pass worked example uses that exact pattern, yet all 8 judge 2–1
+verdicts of the DIP-5.2 re-measure sat on this rubric, several failing that
+pattern as flag-gating. The fail criteria stay reserved for caller-facing
+configuration (thunks, flags). Ships with the DIP-6.3 filtered re-measure.
+
 **Drift containment (these are part of the eval's ground truth):**
 
 - The judge model is pinned by exact id in `tests/eval/runner/config.ts`

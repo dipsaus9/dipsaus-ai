@@ -19,6 +19,15 @@ boolean-flag soup. Judge whether the refactor moves to children/slots.
 - Empty/fallback content still configured via flags instead of slot presence
   (`showEmptyState` instead of an `empty` slot or `children` check).
 
+**Explicitly NOT a violation:**
+
+- The component choosing between its **own slot props** based on data state —
+  `events.length === 0 ? empty : <ul>…</ul>` — is normal conditional rendering,
+  exactly what the pass worked example below does. The fail criterion targets
+  *caller-facing configuration* (flags, thunks) deciding what renders, never the
+  component's internal data-driven choice between slots the caller already
+  provided as plain JSX.
+
 **Worked example — pass:**
 
 ```tsx
