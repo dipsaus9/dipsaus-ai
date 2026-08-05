@@ -96,13 +96,16 @@ criterion:
   the DIP-5.1 SKILL.md micro-example ("the discriminator/gate prop must die, not
   get renamed") — **verdict: the micro-example moved exactly the rates it
   targeted.** Judge instability on those rubrics: zero.
-- `comp.slots-over-config` is the new weak spot: apply 5/5 → **3/5**, review
-  detection 3/5 → **2/5** (it was always the flakiest detection). One failure is
-  a genuinely lazy refactor (`renderHeading`-style thunk props left on the API);
-  the rest are borderline judge calls — all **8** 2–1 verdicts of the DIP-5.2
-  re-measure sit on this one rubric (e.g. arguing an internal `events.length`
-  conditional counts as gating). Next rubric-ambiguity candidate, same treatment
-  as DIP-4.3 gave config-soup.
+- `comp.slots-over-config` — resolved by DIP-6 (was the weak spot after DIP-5.2:
+  apply 3/5, detection 2/5, all 8 judge 2–1 verdicts). After the DIP-6.1 rubric
+  criterion (data-driven slot selection is not gating) and DIP-6.2 `anyOf`
+  labels, the DIP-6.3 re-measure reads **5/5 across the board**: slots apply
+  3/5 → 5/5 and dashboard-panel 3/5 → 5/5 (rubric fix), slots detection
+  2/5 → 5/5 — the detection recovery is **partly scoring semantics**: `anyOf`
+  now credits the equally-correct `comp.regions-as-slots` naming, so compare
+  pre/post-DIP-6.2 detection rates with that in mind. Residual: 6 judge 2–1
+  splits in the re-measure (5 on `dashboard-panel`), but majorities now land
+  consistently right — instability without wrong outcomes.
 
 **Timeouts and the 900 s budget** — verdict: 900 s is ample, keep it. Completed
 apply runs are bimodal-free: min 28 s, median 74 s, p90 126 s, max 325 s
