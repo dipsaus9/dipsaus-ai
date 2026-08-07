@@ -3,10 +3,10 @@ id: DIP-7.4
 title: >-
   flow-* skill skeleton: three SKILL.md files with contract split into
   reference/
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 10:49'
-updated_date: '2026-08-07 10:49'
+updated_date: '2026-08-07 13:19'
 labels:
   - story
 dependencies: []
@@ -34,11 +34,11 @@ Branch: DIP-7.4/flow-skill-skeleton
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 skills/flow-init/SKILL.md, skills/flow-plan/SKILL.md and skills/flow-deliver/SKILL.md exist with valid frontmatter and disable-model-invocation: true, so neither can be auto-picked while the live skills are still in use
-- [ ] #2 flow-plan and flow-deliver reproduce the behaviour of today's backlog-plan and backlog-deliver, with no behaviour change introduced in this story
-- [ ] #3 Long-form contract material lives in reference/ files, and each SKILL.md body points at its reference only at the step that needs it
-- [ ] #4 flow-init is a stub whose body states its intended scope and is explicitly marked not yet implemented
-- [ ] #5 skills/backlog-plan/ and skills/backlog-deliver/ are byte-identical before and after this story, verified with git diff
+- [x] #1 skills/flow-init/SKILL.md, skills/flow-plan/SKILL.md and skills/flow-deliver/SKILL.md exist with valid frontmatter and disable-model-invocation: true, so neither can be auto-picked while the live skills are still in use
+- [x] #2 flow-plan and flow-deliver reproduce the behaviour of today's backlog-plan and backlog-deliver, with no behaviour change introduced in this story
+- [x] #3 Long-form contract material lives in reference/ files, and each SKILL.md body points at its reference only at the step that needs it
+- [x] #4 flow-init is a stub whose body states its intended scope and is explicitly marked not yet implemented
+- [x] #5 skills/backlog-plan/ and skills/backlog-deliver/ are byte-identical before and after this story, verified with git diff
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -59,4 +59,12 @@ disable-model-invocation is the safety mechanism for the whole epic: without it,
 Do not create skills/flow-deliver/reference/parallel-delivery.md or review-and-pr.md here — DIP-7.1 and DIP-7.2 own those exact paths.
 
 Verify: git diff --stat on skills/backlog-plan and skills/backlog-deliver shows nothing.
+
+Delivered structurally. flow-plan = verbatim cp of backlog-plan (SKILL.md + reference/{config,story-standard,story-template}.md), frontmatter changed only (name: flow-plan, disable-model-invocation: true, description prefixed [under construction]). flow-deliver/SKILL.md = cp of backlog-deliver with same frontmatter change; the '## Git contract' section extracted to reference/git-contract.md and replaced by a pointer read at Steps 2/4/6-7 (Step 6 push instruction kept — that is the delivery step, not the contract). flow-deliver/reference/parallel-delivery.md + review-and-pr.md (spike-owned) left untouched. flow-init/SKILL.md = declared stub, disable-model-invocation, states DIP-7.8 scope. Decision: body prose keeps backlog-plan/backlog-deliver names because the DIP-7.11 cutover renames flow-*->backlog-*, making the prose self-consistent then. AC#5 verified: git diff on skills/backlog-plan + skills/backlog-deliver is empty (byte-identical). lint/typecheck/test green (markdown-only change).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Scaffolded the flow-* v2 namespace without touching the live skills. flow-plan is a verbatim copy of backlog-plan (reference/ included); flow-deliver copies backlog-deliver with its git contract extracted into reference/git-contract.md (read at the steps that need it, pointer left in the body); flow-init is a declared stub scoping DIP-7.8. All three carry disable-model-invocation: true so they cannot be auto-picked while the live skills are still delivering the epic. Body prose intentionally keeps the backlog-* names, which become correct at the DIP-7.11 cutover rename. backlog-plan and backlog-deliver are byte-identical (git diff empty); repo gates green. Unblocks DIP-7.5, 7.6, 7.7.
+<!-- SECTION:FINAL_SUMMARY:END -->
