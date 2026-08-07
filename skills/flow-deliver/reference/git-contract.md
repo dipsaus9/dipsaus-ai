@@ -22,9 +22,12 @@ never open the PR; you print a link and the human opens it.
 - `<slug>` — 2–4 words drawn from the story title: lowercase, hyphenated, no id repeated, no type
   prefix. Take it from the `Branch:` line in the task's description (`backlog-plan` writes it);
   derive it yourself only when the line is absent.
-- Cut from an up-to-date base: `git switch <base> && git pull --ff-only`, then
-  `git switch -c <id>/<slug>`. The base is the remote's default branch
-  (`git symbolic-ref refs/remotes/origin/HEAD`, else ask).
+- Cut from an up-to-date base. In **worktree mode** (the default) the branch is cut as the worktree
+  is created: `git worktree add <worktree.path>/<id> -b <id>/<slug> <base>` (see Step 2). With
+  worktree mode disabled, cut it in place: `git switch <base> && git pull --ff-only`, then
+  `git switch -c <id>/<slug>`. Either way the base is the remote's default branch
+  (`git symbolic-ref refs/remotes/origin/HEAD`, else ask), and the resulting branch is `<id>/<slug>`
+  verbatim.
 - Never reuse a branch across stories. **Never commit a story on the base branch.** Before every
   commit, confirm `git branch --show-current` is this story's branch.
 
