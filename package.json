@@ -16,6 +16,7 @@
   "scripts": {
     "lint": "oxlint .",
     "typecheck": "tsc --noEmit",
+    "workflow": "bun bin/backlog-workflow.ts",
     "test": "vitest run --project unit --passWithNoTests",
     "test:eval": "bun tests/eval/runner/run.ts",
     "test:eval:fixtures": "vitest run --project eval"
