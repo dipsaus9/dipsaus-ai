@@ -163,6 +163,30 @@ working tree is clean (everything is committed).
 - **Scope / criteria mismatch** → pause; amend the story via `backlog-plan` or spin a new story.
   Never silently expand scope.
 
+### Review gate — the real exit condition (before close-out)
+
+After the final green commit, an **independent reviewer** checks the work against the story
+contract before anything is pushed. The full protocol is in **`reference/review-and-pr.md`**
+(DIP-7.2); the essentials:
+
+1. **Spawn the reviewer** — subagent type **`dipsaus-ai:story-reviewer`** (read-only, ships in the
+   plugin's `agents/`). Give it **only** the diff (`git diff <base>...HEAD` + the changed-path
+   list) and the story's **outcome, acceptance criteria and References** — never your own plan or
+   reasoning. Independence is the point.
+2. **Read its verdict** — the JSON object `{ verdict, criteria[], scopeViolations[], findings[] }`.
+   `verdict` is `block` iff any acceptance criterion is `met: false` **or** `scopeViolations` is
+   non-empty. Everything else is **advisory** — recorded, never blocking.
+3. **On `block`:** feed the blocking findings back into the Step 4 loop and fix them, then
+   re-review. **Cap: 3 rounds.** After the **3rd** blocking verdict, **stop and escalate to the
+   user** with the outstanding findings — do **not** push, and leave the branch for a human. This
+   cap is what stops an autonomous run from burning a session on a disagreement it can't resolve.
+4. **Record it:** append the verdict and findings to the task through the CLI
+   (`backlog task edit <id> --append-notes "…"`), so the review survives the session.
+5. **`review.enabled: false`** (or no workflow config) → **skip this gate entirely**; the run
+   behaves exactly as it does today.
+
+Only once the reviewer returns `pass` (or the gate is disabled) do you proceed to close-out.
+
 ## Step 5 — Close out the story (on the branch)
 
 1. `backlog task edit <id> -s Done --final-summary "<what shipped, in one paragraph>"`.
@@ -178,18 +202,31 @@ working tree is clean (everything is committed).
    `chore(backlog): mark DIP-1.1 delivered, close epic DIP-1 (DIP-1.1)`. The task files under
    `backlog/tasks/` are tracked, so they belong on the branch with the work they describe.
 
-## Step 6 — Push (then tear the worktree down)
+## Step 6 — Push (then open/announce the PR, then tear the worktree down)
 
 1. `git push -u origin <id>/<slug>`. Keep the push output — it may carry the host's own create-PR
    link.
-2. **Worktree teardown (worktree mode only), after the push:**
+2. **PR mode** — read `pr.mode` from the workflow config (default `link`). Full rules in
+   `reference/review-and-pr.md`:
+   - **`link`** (default): print the compare URL exactly as today (derived per the git contract).
+     The human opens the PR. No host API — works the same on GitHub / GitLab / Bitbucket.
+   - **`create`**: **probe first** — `command -v gh`, then `gh auth status`. Both succeed →
+     `gh pr create --draft` with the story **outcome + acceptance criteria** as the body. If
+     **either** probe fails → **degrade to `link`**: print the compare URL and a one-line reason
+     (`gh not found` / `gh not authenticated`), and finish the story green. A successful delivery
+     **never** hinges on host-CLI auth.
+   - `create` is the **one documented exception** to the git-contract "git CLI only, never `gh`"
+     rule, and only when the repo opts in. The contract wording in `reference/git-contract.md` and
+     the project's `CLAUDE.md` are reconciled at cutover (DIP-7.11); until then `link` stays the
+     default so nothing changes for a repo that hasn't opted in.
+3. **Worktree teardown (worktree mode only), after the push:**
    `git worktree remove <worktree.path>/<id>`. This **refuses** a worktree holding uncommitted or
    untracked files (`fatal: … use --force`) — that refusal is the safety net. **Never pass
    `--force`.** On refusal, **stop and surface the uncommitted changes** to the user: work left
    over at teardown means the implement loop exited wrong. Removal **keeps the branch** `<id>/<slug>`
    (and its pushed remote), so the PR survives. Prune a checkout deleted out of band with
    `git worktree prune`.
-3. **Branch hygiene:** the `<id>/<slug>` branch stays until its PR merges, then it is deleted
+4. **Branch hygiene:** the `<id>/<slug>` branch stays until its PR merges, then it is deleted
    (locally and on the remote). A stale merged branch is what re-triggers the duplicate-task-id
    scan and shows up as a false in-flight claim at the next gate (see `reference/parallel-delivery.md`).
 
@@ -207,12 +244,15 @@ Present, in this order:
 2. **Commits** — `git log --oneline <base>..HEAD`.
 3. **Evidence** — each acceptance criterion with the command output / observation that proves it,
    and any risks or follow-ups.
-4. **The PR link, last** — derived per the git contract, on its own line, ready to click:
-   ```
-   Open the PR:
-   https://github.com/<owner>/<repo>/compare/<base>...<id>%2F<slug>?expand=1
-   ```
-   You do not open it. You do not merge it.
+4. **The PR, last** — depends on `pr.mode` (Step 6):
+   - **`link`** (default, or a `create` that degraded): the compare URL on its own line, ready to
+     click. You do not open it, you do not merge it:
+     ```
+     Open the PR:
+     https://github.com/<owner>/<repo>/compare/<base>...<id>%2F<slug>?expand=1
+     ```
+   - **`create`** (succeeded): report the **draft PR URL** `gh` returned, and say it is a draft
+     awaiting the human's review and merge. You opened it as a draft; you never merge it.
 
 Then record any notable design decision to memory (one lesson per file + a `MEMORY.md` pointer).
 
