@@ -1,8 +1,8 @@
 # dipsaus-ai
 
-An open-source toolkit of **skills, hooks, and an MCP** for working with Claude (or any AI
-CLI), packaged as a **single Claude Code plugin**. Install the whole thing from GitHub, or
-copy one skill into your own `~/.claude/skills/`.
+An open-source toolkit of **skills, hooks, an MCP, and a workflow CLI** for working with Claude
+(or any AI CLI), packaged as a **single Claude Code plugin**. Install the whole thing from GitHub,
+or copy a self-contained skill into your own `~/.claude/skills/`.
 
 Not published to npm. `bun` · `oxlint` · `Vitest` · `TypeScript`.
 
@@ -21,10 +21,10 @@ In Claude Code:
 ```
 
 `dipsaus-ai@dipsaus-ai` is `<plugin>@<marketplace>` — both are named `dipsaus-ai`.
-This registers every skill (`skills/`) and the example MCP (`.mcp.json`) at once. The MCP
-entry uses `${CLAUDE_PLUGIN_ROOT}`, so its path resolves wherever the plugin is installed.
-Requires [bun](https://bun.sh) on your PATH — the MCP server runs as TypeScript, no build
-step.
+This registers every skill (`skills/`), the hooks (`hooks/`), the reviewer agent (`agents/`), the
+workflow CLI (`bin/`) and the example MCP (`.mcp.json`) at once. Paths use `${CLAUDE_PLUGIN_ROOT}`,
+so they resolve wherever the plugin is installed. Requires [bun](https://bun.sh) on your PATH —
+everything runs as TypeScript, no build step.
 
 ### A single skill, standalone
 
@@ -68,7 +68,9 @@ so `skills/`, `mcp/`, and `.mcp.json` sit at the root alongside `.claude-plugin/
 | Type | Path | Notes |
 |------|------|-------|
 | Skills | `skills/` | one folder per skill: `SKILL.md` (+ optional `reference/`) |
-| Hooks | `hooks/` | event handlers registered in `hooks/hooks.json`; `dad-joke/` tells you a joke on long turns |
+| Hooks | `hooks/` | event handlers registered in `hooks/hooks.json`; `dad-joke/` tells you a joke on long turns; `backlog-guard/` is a PreToolUse git guard for the backlog workflow |
+| Agents | `agents/` | subagent definitions; `story-reviewer.md` is the backlog-deliver review gate |
+| CLI | `bin/` | `backlog-workflow.ts` — config validate, References-collision, verify-detect (read by the backlog-* skills) |
 | MCP | `mcp/` | TypeScript MCP server(s), run by bun; `example/` exposes a `hello` tool |
 | Plugin manifest | `.claude-plugin/` | `plugin.json` + `marketplace.json` |
 | Backlog | `backlog/` | work tracked with [Backlog.md](https://github.com/MrLesk/Backlog.md) — markdown tasks, `backlog` CLI |
@@ -79,9 +81,10 @@ Dev-only directories (`tests/`, `.claude/`) are ignored by the plugin loader.
 
 | Skill | Command | Does |
 |-------|---------|------|
-| `react-architecture` | — | Reviews (default) or refactors React/TypeScript components against strict architecture standards: single-responsibility hard caps, compound-component composition, state/data boundaries. |
-| `backlog-plan` | `/backlog-plan` | Grills you into a well-formed backlog: an epic + AI-first stories meeting a story standard, then **materializes on approval** — parent task + subtasks with all content in the task files, via the Backlog.md CLI. |
-| `backlog-deliver` | `/backlog-deliver DIP-1.1` | Drives **one** story from To Do to Done on its own `DIP-1.1/<slug>` branch: readiness gate → implement/verify/**commit** loop (autonomous, every commit green, acceptance criteria checked off as met) → one push → a file-by-file summary + a compare link **you** open the PR from. git CLI only, never `gh`. Handles `Type: spike` stories via a research + interview loop. |
+| `react-architecture` | — | Reviews (default) or refactors React/TypeScript components against strict architecture standards: single-responsibility hard caps, compound-component composition, state/data boundaries. Self-contained — copy the folder out. |
+| `backlog-init` | `/backlog-init` | Bootstraps the workflow in any repo: scans stack/scripts/base-branch, interviews only the gaps, writes a validated `.claude/backlog-workflow.json`, and runs `backlog init` when no backlog exists. |
+| `backlog-plan` | `/backlog-plan` | Grills you into a well-formed backlog: an epic + AI-first stories meeting a story standard, then **materializes on approval** via the Backlog.md CLI. Also **amends** an existing story and **refuses cross-epic scope collisions**. |
+| `backlog-deliver` | `/backlog-deliver DIP-1.1` | Drives **one** story from To Do to Done in an isolated git worktree on its `DIP-1.1/<slug>` branch: readiness gate → implement/verify/**commit** loop (autonomous, every commit green) → **independent reviewer gate** → one push → PR per the repo's `pr.mode` (printed link, or opt-in draft via `gh`). Handles `Type: spike` via research + interview. |
 
 ## The dad-joke hook
 
@@ -151,38 +154,53 @@ A broken hook can never break your session: both entrypoints wrap their entire b
 exit 0. A malformed payload, a corrupt state file, a missing `jokes.json`, or an API timeout
 costs you a joke and nothing else.
 
-## Backlog workflow skills
+## Backlog workflow (init · plan · deliver)
 
-`backlog-plan` and `backlog-deliver` turn [Backlog.md](https://github.com/MrLesk/Backlog.md)
-(markdown-native tasks, `backlog` CLI) into a standards-driven, AI-runnable workflow in **any**
-repo — install the plugin and they work everywhere. They form a loop: **plan** a backlog, then
-**deliver** its stories one at a time.
+Three skills turn [Backlog.md](https://github.com/MrLesk/Backlog.md) (markdown-native tasks,
+`backlog` CLI) into a standards-driven, AI-runnable workflow in **any** repo, of any stack. Unlike
+`react-architecture`, this suite is **plugin-only** — the skills share a bun CLI
+(`bin/backlog-workflow.ts`), guard hooks (`hooks/backlog-guard/`) and a reviewer agent
+(`agents/story-reviewer.md`), so install the plugin rather than copying a folder.
 
 ```
+/backlog-init             → scan repo → interview gaps → write .claude/backlog-workflow.json (+ backlog init)
 /backlog-plan             → interview → draft epic + stories → approve → materialize (To Do)
-/backlog-deliver DIP-1.1  → gate → branch DIP-1.1/<slug> → implement → verify → commit (loop)
-                            → push once → summary + PR link (you open it)
-                            (a spike spawns new stories, feeding back into the plan)
+/backlog-deliver DIP-1.1  → gate (claim + collisions) → worktree + branch DIP-1.1/<slug>
+                            → implement → verify → commit (loop) → reviewer gate → push once
+                            → PR per pr.mode (printed link, or opt-in draft via gh)
 ```
 
 **Story standard** — every story: one outcome · concrete title · objective acceptance criteria ·
 real dependencies · pickup-sized · verifiable · declared scope (References) · a named branch.
 Optional: plan/notes, `needs-refinement`, `needs-info`, `Type: spike`. Ids are Backlog.md's own
-(epic `DIP-4` → stories `DIP-4.1`, `DIP-4.2`), and all content lives in the task file itself —
-written only via the CLI, never by hand. Full contract: `skills/backlog-plan/reference/`.
+(epic `DIP-4` → stories `DIP-4.1`, `DIP-4.2`); all content lives in the task file, written only via
+the CLI. `backlog-plan` also **amends** a story and **refuses cross-epic References collisions**.
+Full contract: `skills/backlog-plan/reference/`.
 
-**Git contract** — fixed, not configurable, enforced by `backlog-deliver`:
+**Parallel-safe delivery** — with `worktree.enabled`, each story is delivered in its own
+`git worktree`, so several agents can run at once. Pickup is refused when a story is already claimed
+(its `<id>/<slug>` branch exists) or when its References collide with an in-flight story
+(`backlog-workflow collisions <id>`). See `skills/backlog-deliver/reference/parallel-delivery.md`.
 
-- one branch per story, `<id>/<slug>` (`DIP-1.1/two-tier-joke-formatter`), cut from the base;
-- commits on that branch are **autonomous** — no approval — split small when it helps, and
-  **verify runs green immediately before every commit**. No WIP commits;
-- **one push** at the end, then a summary of what changed and why, and a compare link;
-- **you open the PR.** The skill uses the **git CLI only** — never `gh`, `glab`, or a host API.
+**Review gate** — before the push, an independent `story-reviewer` subagent sees only the diff and
+the story contract and returns a JSON verdict; an unmet acceptance criterion or a scope violation
+**blocks the push** and re-enters the loop (capped, then escalates). See
+`skills/backlog-deliver/reference/review-and-pr.md`.
 
-**Config** — Backlog.md's own `backlog/config.yml` carries everything (`task_prefix` picked once
-at init; `auto_commit` must stay `false` — the delivery skill owns every commit). Verify is
-auto-detected from `package.json` scripts (`lint`/`typecheck`/`test`/`build`), falling back to
-per-story checks + self-review — so a repo with no pipeline still works.
+**Git + PR contract** — one branch per story, `<id>/<slug>`, cut from the base; commits are
+**autonomous** and **verify runs green before every commit** (no WIP commits); **one push** at the
+end. PR opening is per-repo via `pr.mode`: **`link`** (default) prints a compare link you open with
+the **git CLI only, no `gh`**; **`create`** opts into `gh pr create --draft`, degrading to a link
+when `gh` is missing. The contract is enforced by the `backlog-guard` PreToolUse hook, which blocks
+commits on the base branch, `git add -A`, base-branch pushes, `--no-verify`, and `gh`/`glab` in
+link mode — and no-ops in any repo without a workflow config.
+
+**Config** — per-repo settings live in `.claude/backlog-workflow.json` (schema + reader in
+`bin/backlog-workflow.ts`): `parallelism.maxAgents`, `worktree`, `verify`, `pr.mode`, `review`,
+`backlog`. `backlog-init` writes and validates it. Backlog.md's own `backlog/config.yml` still
+carries `task_prefix` and must keep `auto_commit: false` (delivery owns every commit). Verify
+commands are resolved by `backlog-workflow verify-detect` (node/bun, python, go, rust), falling
+back to per-story checks + self-review — so a repo with no pipeline still works.
 
 ## Roadmap
 

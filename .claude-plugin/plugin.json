@@ -1,7 +1,7 @@
 {
   "name": "dipsaus-ai",
   "displayName": "Dipsaus AI",
-  "description": "Skills, hooks + an MCP for frontend / full-stack work with Claude or any AI CLI. Includes a dad-joke hook that keeps you company during long turns.",
+  "description": "Skills, hooks, a reviewer agent, a workflow CLI + an MCP for Claude or any AI CLI. Includes an agentic Backlog.md workflow (init/plan/deliver with worktree-parallel delivery, a review gate and git-contract guard hooks), a React architecture skill, and a dad-joke hook for long turns.",
   "version": "0.1.0",
   "author": {
     "name": "dipsaus9",
