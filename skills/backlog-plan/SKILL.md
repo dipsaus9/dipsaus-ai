@@ -1,6 +1,6 @@
 ---
 name: backlog-plan
-description: Interview the user into a well-formed backlog for any repo using Backlog.md (MrLesk/Backlog.md) + Claude. Runs a grill-style, one-question-at-a-time session, decomposes the work into an epic + AI-first stories that meet the story standard (native DIP-n.m ids, acceptance criteria as done-when, dependencies, declared scopes via References, a named `<id>/<slug>` branch), then materializes it on approval — parent task + subtasks, all content in the task files via the CLI. Plans only: never cuts a branch or commits. Use when asked to "plan a backlog", "create stories", "grill me into a backlog", "break this down into stories", "set up the backlog", or invoked as /backlog-plan.
+description: Interview the user into a well-formed backlog for any repo using Backlog.md (MrLesk/Backlog.md) + Claude. Runs a grill-style, one-question-at-a-time session, decomposes the work into an epic + AI-first stories that meet the story standard (native ids, acceptance criteria as done-when, dependencies, declared scopes via References, a named `<id>/<slug>` branch), then materializes it on approval via the CLI. Also amends an existing story (amend mode) and refuses cross-epic scope collisions. Plans only — never cuts a branch or commits. Use when asked to "plan a backlog", "create stories", "break this down into stories", "set up the backlog", or invoked as /backlog-plan.
 ---
 
 # backlog-plan — grill a well-formed backlog into existence
@@ -128,20 +128,75 @@ create it, say which story failed and why, and resolve it with the user first. T
 make a story pickup-able — acceptance criteria decide when it is finished, References decide
 whether it is safe to start, the branch decides where it lands.
 
+**Cross-epic collision precondition.** The Step 2/4 overlap check only compares the stories in
+*this* run against each other. Before writing anything, also compare **each draft's References
+against every existing `To Do` / `In Progress` story** in the backlog — a new story can collide
+with an in-flight story from an older epic, and nothing else catches it. Read the existing stories'
+References (`backlog task list -s "To Do" --plain` / `-s "In Progress" --plain`, then
+`backlog task <id> --plain`) and apply the prefix rule from `reference/story-standard.md` § Scope
+(two paths collide when either is a prefix of the other on segment boundaries). A draft that
+collides with an in-flight story and has **no dependency edge** ordering them is **refused** — name
+both stories and resolve with the user (add the dependency, or resplit) first. (Drafts have no id
+yet, so this pre-check is manual; Step 3 below re-runs the same check via the CLI once ids exist.)
+
 Then, in order:
 
 1. **Epic:**
    `backlog task create "Epic: <name>" -d "<description>" --ac "…" [--ac …] -l epic --plain`
    → note the assigned id (e.g. `DIP-4`).
 2. **Each story, in dependency order** — one `create` carries everything:
-   `backlog task create "<title>" -p <epicId> -d "<outcome + Type + Branch>" --ac "…" [--ac …]
-   --ref <path> [--ref …] [--plan "…"] [--notes "…"] [--dep <storyId> …] -l story --plain`
+   `backlog task create "<title>" -p <epicId> --type <spike|feature|chore|docs>
+   -d "<outcome + Type + Branch>" --ac "…" [--ac …] --ref <path> [--ref …] [--plan "…"]
+   [--notes "…"] [--dep <storyId> …] -l story --plain`
    → note the assigned id (e.g. `DIP-4.1`), then finalize the branch line:
    `backlog task edit <id> -d "<same description with Branch: <id>/<slug>>"`.
    The description is the one field re-written after creation, because the branch embeds the id.
-3. **Report:** list the created epic + story ids, each story's branch, and where the task files
-   live (`backlog/tasks/`). Leave every story in **To Do** — and leave the working tree on the
-   base branch. The delivery skill cuts the branches and makes the commits; you don't.
+   - Set the **native `--type`** (`spike` for research/decision stories, else `feature`/`chore`/
+     `docs`) so type filtering and boards work. **Also keep the `Type: deliverable | spike` line**
+     in the description — the live `backlog-deliver` still reads it to switch into the spike flow.
+     Dropping that now-redundant line is **cutover work (DIP-7.11)**, once delivery reads
+     `--type` instead; do not remove it here.
+3. **Verify no cross-epic collision (machine check).** For each newly created story, run
+   `bun "${CLAUDE_PLUGIN_ROOT}/bin/backlog-workflow.ts" collisions <id>`. A non-zero result names
+   an existing `To Do` / `In Progress` story whose References prefix-overlap this one; that pair is
+   safe only if a dependency edge orders them. If it does not, **fix it now** (add the `--dep`
+   edge, or amend one story's References to resplit) — an undep'd collision is exactly what breaks a
+   parallel run. This backstops the pre-materialize check with the same logic delivery's gate uses.
+4. **Report:** list the created epic + story ids, each story's branch, its `--type`, and where the
+   task files live (`backlog/tasks/`). Leave every story in **To Do** — and leave the working tree
+   on the base branch. The delivery skill cuts the branches and makes the commits; you don't.
+
+## Amend mode — re-plan one existing story
+
+When delivery hits a scope/criteria mismatch it is told to "amend the story via backlog-plan". This is
+that path — invoked as **`backlog-plan amend <id>`**. It re-plans **one** existing story; it never
+creates a tree.
+
+1. **Load and confirm.** `backlog task <id> --plain`. If the story is **`Done`**, refuse unless the
+   user explicitly confirms re-opening it — amending delivered work is a real decision, not a
+   default. If it is `In Progress`, warn that a branch may already exist for it.
+2. **Amend through the CLI only** (never hand-edit `backlog/tasks/`):
+   - acceptance criteria — `--ac` adds, `--remove-ac <n>` removes;
+   - References — `--ref` adds (state which paths change and why);
+   - dependencies — `--dep` adds edges;
+   - description / plan / notes — `-d` / `--plan` / `--notes`.
+3. **Re-check the standard.** The amended story must still meet every required item — objective
+   criteria, path-shaped References, a valid `Branch:` line. Amend mode is as strict as creation:
+   it must not become the hole through which an unscoped story enters.
+4. **Re-run the collision check** for the amended id
+   (`bun "${CLAUDE_PLUGIN_ROOT}/bin/backlog-workflow.ts" collisions <id>`) — changing References can
+   introduce a new overlap. Resolve any undep'd collision before finishing.
+5. **Report exactly what changed** — old vs new for each field touched — and leave the story in its
+   existing status. Amend mode plans; it does not deliver.
+
+## References drift — did a story touch what it declared?
+
+Delivery records the paths a story actually changed with `--modified-file`. To audit scope honesty,
+read those back (`backlog task <id> --plain`) and compare against the story's declared **References**
+using the same prefix rule. Any modified file that falls outside every declared Reference is
+**drift** — report the story, the undeclared path(s), and recommend either widening the References
+(via amend) or reverting the stray change. This is the planning-side mirror of the reviewer's
+scope-violation check.
 
 ---
 

@@ -29,13 +29,13 @@ describe("referencesCollide", () => {
 });
 
 describe("findCollisions", () => {
-  const target = { id: "DIP-7.5", references: ["skills/flow-deliver/SKILL.md"] };
+  const target = { id: "DIP-7.5", references: ["skills/backlog-deliver/SKILL.md"] };
 
   it("returns colliding stories and excludes the target itself", () => {
     const others = [
-      { id: "DIP-7.5", references: ["skills/flow-deliver/SKILL.md"] }, // same id, ignored
-      { id: "DIP-7.6", references: ["skills/flow-deliver/"] }, // dir prefix -> collides
-      { id: "DIP-7.7", references: ["skills/flow-plan/SKILL.md"] }, // disjoint
+      { id: "DIP-7.5", references: ["skills/backlog-deliver/SKILL.md"] }, // same id, ignored
+      { id: "DIP-7.6", references: ["skills/backlog-deliver/"] }, // dir prefix -> collides
+      { id: "DIP-7.7", references: ["skills/backlog-plan/SKILL.md"] }, // disjoint
     ];
     const hits = findCollisions(target, others);
     expect(hits.map((h) => h.id)).toEqual(["DIP-7.6"]);

@@ -3,7 +3,7 @@
  * context the entrypoint gathers, decide whether to allow the command or block it with a reason.
  *
  * Pure: no filesystem, no git, no process — every input is passed in, so every rule is unit-tested
- * without a real repo. The frozen rule set is DIP-7.2's decision (skills/flow-deliver/reference/
+ * without a real repo. The frozen rule set is DIP-7.2's decision (skills/backlog-deliver/reference/
  * review-and-pr.md § 1). The discriminating condition that keeps the guard off the delivery skill's
  * own commands is branch identity: commit/push are blocked only on (or targeting) the base branch,
  * never on an `<id>/<slug>` story branch.
