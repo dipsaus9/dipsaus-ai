@@ -1,15 +1,14 @@
 ---
-name: flow-init
-description: "[flow suite v2 — under construction, not yet active] Bootstrap the flow workflow in any repo: scan for stack, scripts and base branch, interview only for what the scan cannot settle, then write a schema-valid .claude/backlog-workflow.json and initialise a Backlog.md project when none exists. Part of the flow-* suite alongside flow-plan and flow-deliver. Invoked as /flow-init."
-disable-model-invocation: true
+name: backlog-init
+description: Bootstrap the backlog workflow in any repo: scan for stack, scripts and base branch, interview only for what the scan cannot settle, then write a schema-valid .claude/backlog-workflow.json and initialise a Backlog.md project when none exists. Part of the backlog-* suite alongside backlog-plan and backlog-deliver. Use when setting up a repo for the workflow, or invoked as /backlog-init.
 ---
 
-# flow-init — bootstrap the flow workflow in a repo
+# backlog-init — bootstrap the flow workflow in a repo
 
 Make the flow-* suite usable in a repo of any stack, without asking the user what the repo already
 answers. You **scan**, then **interview only the gaps**, then **write** a validated config and
 **initialise** a Backlog.md project if there is none. You never plan or deliver — that is
-`flow-plan` / `flow-deliver`.
+`backlog-plan` / `backlog-deliver`.
 
 **Authority:** the project's `CLAUDE.md` / `AGENTS.md` apply. The CLI is the only writer of backlog
 state; you write exactly one non-backlog file, `.claude/backlog-workflow.json`.
@@ -101,10 +100,10 @@ do not proceed with it on.
 
 Report: the detected stack(s) and package manager, the config path written, whether a backlog was
 initialised or reused, and — last — the **resolved verify command list** from Step 1.2, so the user
-sees exactly what `flow-deliver` will run in this repo before trusting it (AC#6). If the list is
+sees exactly what `backlog-deliver` will run in this repo before trusting it (AC#6). If the list is
 empty, say so and that delivery will fall back to each story's own Verify steps.
 
-Then hand off: the repo is ready for `flow-plan` to plan an epic and `flow-deliver` to deliver it.
+Then hand off: the repo is ready for `backlog-plan` to plan an epic and `backlog-deliver` to deliver it.
 
 ---
 

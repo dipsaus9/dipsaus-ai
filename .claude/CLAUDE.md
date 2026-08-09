@@ -1,18 +1,25 @@
 # dipsaus-ai
 
-Open-source toolkit of Claude / AI-CLI **skills + one MCP**, packaged as a **single Claude
-Code plugin** via a marketplace. GitHub-hosted, not published to npm.
+Open-source toolkit of Claude / AI-CLI **skills, hooks, an MCP + a workflow CLI**, packaged as a
+**single Claude Code plugin** via a marketplace. GitHub-hosted, not published to npm.
 
 ## Architecture
 - **Repo root IS the single plugin.** `.claude-plugin/{plugin,marketplace}.json` at root;
-  `skills/` and `.mcp.json` at root (plugin components must live inside the plugin dir).
+  `skills/`, `hooks/`, `agents/`, `bin/` and `.mcp.json` at root (plugin components must live
+  inside the plugin dir). `hooks/` holds the dad-joke hooks + the `backlog-guard` PreToolUse git
+  guard; `agents/` holds the `story-reviewer` subagent; `bin/backlog-workflow.ts` is the workflow
+  CLI (config schema/validate, References-collision, verify-detect) read by the backlog-* suite.
 - Install everything: `/plugin marketplace add dipsaus9/dipsaus-ai`.
 - Install one skill standalone: copy `skills/<name>/` into `~/.claude/skills/`.
 - Stack: **bun** (pkg manager/runtime), **oxlint** (lint), **Vitest** (test),
   **TypeScript** (`tsc --noEmit`). Dev dirs (`tests/`, `.claude/`) are ignored by the
   plugin loader.
-- Skills are self-contained: `SKILL.md` carries the standards inline, so a skill folder
-  works when copied out of the repo. Optional `reference/` for long-form contracts.
+- Most skills are self-contained: `SKILL.md` carries the standards inline, so a skill folder
+  works when copied out of the repo (e.g. `react-architecture`). The **backlog-\* workflow suite
+  is the exception — plugin-only**: `backlog-init` / `backlog-plan` / `backlog-deliver` share a bun
+  CLI (`bin/backlog-workflow.ts`), guard hooks (`hooks/backlog-guard/`) and a reviewer agent
+  (`agents/story-reviewer.md`), none of which survive copying one skill folder out. Optional
+  `reference/` for long-form contracts.
 - Every manifest description (`package.json`, `.claude-plugin/plugin.json`,
   `.claude-plugin/marketplace.json`) is user-facing. When the repo's surface changes,
   update all three — they drift silently otherwise.
@@ -42,17 +49,19 @@ bun run lint         # oxlint (correctness=error)
 bun run typecheck    # tsc --noEmit
 bun run test         # Vitest unit — deterministic, CI-safe
 ```
-CI runs exactly these three. Note `test` currently passes with **no test files**
-(`--passWithNoTests`) — the suite was removed in `968212f`, so `bun run test` green
-currently proves nothing. Any story that adds runtime code must add unit tests with it.
+CI runs exactly these three. The unit suite is real again (dad-joke hooks, the eval runner, and
+the `backlog-workflow` CLI + `backlog-guard` decision logic are covered), so `bun run test` green
+is meaningful. Any story that adds runtime code must add unit tests with it.
 
 ## Working agreement
 - **Commit freely on a story branch; ask everywhere else.** On a `<id>/<slug>` branch
   (`DIP-1.1/two-tier-joke-formatter`) commit without approval — split into small commits when it
   helps, and run lint/typecheck/test green immediately **before each** commit. On `main` or
   any non-story branch, the old rule stands: summarise the diff and wait for approval.
-- **You never open the PR.** Push once at the end, then print the compare link and let the
-  human open it. **Never `gh`/`glab`/host APIs — git CLI only.** Full rules:
-  `skills/backlog-deliver/SKILL.md` § Git contract.
+- **PR opening is per-repo.** Default (`pr.mode: link`): push once, print the compare link, the
+  human opens it — **git CLI only, no `gh`/`glab`/host APIs**. Opt-in (`pr.mode: create` in
+  `.claude/backlog-workflow.json`): delivery may run `gh pr create --draft`, degrading to a printed
+  link when `gh` is missing or unauthenticated. Full rules: `skills/backlog-deliver/SKILL.md`
+  § Git contract + `reference/review-and-pr.md`.
 - **Git identity.** Use the user's own git config — never pass `-c user.name`/`-c user.email`.
 - **Per-user state.** `.claude/settings.local.json` is git-ignored; `settings.json` is shared.

@@ -1,6 +1,6 @@
 ---
 name: backlog-deliver
-description: Drive a single backlog story (native id like DIP-1.1) from To Do to Done for any repo using Backlog.md (MrLesk/Backlog.md) + Claude. Reads the task file in full, gates on readiness, restates the contract, then runs a guarded implement->verify->commit loop on the story's frozen `<id>/<slug>` branch. Commits autonomously (every commit green, id-referenced), checks off acceptance criteria as they're met, closes the parent epic when its last story lands, pushes once, and reports which files changed and why plus a compare link the human opens the PR from. Uses the git CLI only — never gh/glab or a host API. Handles Type:spike stories via a research/interview loop. Use when asked to "deliver", "pick up", "implement", "do", or "complete" a story, or given a story id to take to done. Examples: "/backlog-deliver DIP-1.1", "pick up the next ready story", "deliver DIP-4.2".
+description: Drive a single backlog story (native id like DIP-1.1) from To Do to Done for any repo using Backlog.md (MrLesk/Backlog.md) + Claude. Reads the task file in full, gates on readiness, restates the contract, then runs a guarded implement->verify->commit loop in an isolated git worktree on the story's frozen `<id>/<slug>` branch. Commits autonomously (every commit green, id-referenced), gates the push on an independent reviewer, checks off acceptance criteria as they're met, closes the parent epic when its last story lands, pushes once, and opens or prints a PR per the repo's pr.mode. Handles Type:spike stories via a research/interview loop. Use when asked to "deliver", "pick up", "implement", "do", or "complete" a story, or given a story id to take to done. Examples: "/backlog-deliver DIP-1.1", "pick up the next ready story".
 ---
 
 # backlog-deliver — take one story from To Do to Done
@@ -38,74 +38,11 @@ rule; on conflict, stop and ask. When they and this skill agree, follow them.
 
 ## Git contract (branches, commits, delivery)
 
-Binding for every story. The spike flow follows the same rules for its doc-only commits.
-
-### Tooling
-
-Use the **`git` CLI only** — `git switch`, `git add`, `git commit`, `git push`. **Never `gh`,
-`glab`, `hub`, or a host's REST API**, for any purpose, even when installed and authenticated. You
-never open the PR; you print a link and the human opens it.
-
-### Branch — one story, one branch
-
-```
-<id>/<slug>            e.g.  DIP-1.1/two-tier-joke-formatter
-```
-
-- `<id>` is the story's native Backlog.md id, uppercase, verbatim (dots included). The branch is
-  what ties the commits to the story — no other prefix scheme (`feat/`, `fix/`, `story/`) is
-  allowed in front of it.
-- `<slug>` — 2–4 words drawn from the story title: lowercase, hyphenated, no id repeated, no type
-  prefix. Take it from the `Branch:` line in the task's description (`backlog-plan` writes it);
-  derive it yourself only when the line is absent.
-- Cut from an up-to-date base: `git switch <base> && git pull --ff-only`, then
-  `git switch -c <id>/<slug>`. The base is the remote's default branch
-  (`git symbolic-ref refs/remotes/origin/HEAD`, else ask).
-- Never reuse a branch across stories. **Never commit a story on the base branch.** Before every
-  commit, confirm `git branch --show-current` is this story's branch.
-
-### Commits — autonomous, green, and split when it helps
-
-Commits on the story branch need **no approval. Do not ask, do not present a diff for sign-off.**
-In exchange, every commit is held to:
-
-- **Green per commit.** Run the full resolved verify (below) immediately before **each** commit and
-  it must pass. A red verify, or one you didn't run, means no commit. There are no WIP commits —
-  every commit on the branch is a state that builds and passes.
-- **Split when splitting helps the reader.** Prefer several small commits over one blob whenever the
-  work has separable, independently revertible steps — a rename apart from the behaviour change it
-  enables, a schema/config change apart from the code that reads it, a new utility apart from its
-  first caller. One commit is right when the change is genuinely atomic. Never split so far that a
-  commit can't stand alone and stay green.
-- **Conventional Commits, id in the subject:**
-  `feat(scheduler): cap concurrent agents (DIP-1.2)`. Body only when the *why* isn't obvious from
-  the subject.
-- **Stage only this story's paths** — its References, plus the story's own task file under
-  `backlog/tasks/`. Never `git add -A` / `git add .`; never sweep in unrelated dirt. If unrelated
-  changes appear, stop (the readiness gate should have caught them).
-- Use the user's own git identity — never `-c user.name` / `-c user.email`. Never `--no-verify`.
-- Never amend, rebase, or force-push anything already pushed. Fix forward with a new commit.
-
-### Push — once, at the end
-
-`git push -u origin <id>/<slug>`, after the final verify and the close-out commit. Never push the
-base branch. No remote, or push refused → not a story failure: say so, the branch stays local,
-skip the link.
-
-### PR link — printed, never opened
-
-Derive the compare URL from `git remote get-url origin` (normalize `git@host:owner/repo.git` and
-`https://host/owner/repo.git` to `host` + `owner/repo`):
-
-| Host | Link |
-|---|---|
-| `github.com` | `https://github.com/<owner>/<repo>/compare/<base>...<branch>?expand=1` |
-| `gitlab.*` | `https://<host>/<owner>/<repo>/-/merge_requests/new?merge_request%5Bsource_branch%5D=<branch>` |
-| `bitbucket.org` | `https://bitbucket.org/<owner>/<repo>/pull-requests/new?source=<branch>&dest=<base>` |
-
-`git push` often prints the host's own create-PR link on stderr — if it does, prefer that verbatim
-over a constructed one. Unknown host → say the branch is pushed and give no link. URL-encode the
-branch (`/` → `%2F`) only where the host requires it; GitHub's compare path does not.
+The full contract — branch naming, autonomous green-per-commit rules, scoped staging, single
+push, and the printed-never-opened PR link — lives in **`reference/git-contract.md`**. It is
+binding for every story (the spike flow included). Read it when you cut the branch (Step 2),
+before **every** commit (Step 4), and at push + report (Steps 6–7). The rest of this skill assumes
+those rules; it does not restate them.
 
 ---
 
@@ -130,27 +67,66 @@ Per-story Verify steps (in the task's notes) run **in addition to** the repo bas
 
 ## Step 1 — Readiness gate (abort or ask on failure)
 
-Before touching code:
+The gate is **claim-aware and per-worktree**, not "clean tree on the base branch" — that old rule
+made parallel pickup impossible and blocked taking a second story while a first was in flight. The
+rules below are the decision recorded in **`reference/parallel-delivery.md`** (DIP-7.1); read it if
+any check is unclear. Run them in order, before touching code:
 
-1. **Well-formed.** The story meets the standard: one outcome, concrete title, objective
-   acceptance criteria, References present, Branch line present. If it carries a
-   `needs-refinement` / `needs-info` label, has open questions in its notes, or has vague/empty
-   acceptance criteria → **stop and ask to refine** (route the user to `backlog-plan`). A vague
-   story can't be driven to done.
-2. **Dependencies Done.** Every dependency is `Done`. If not, stop (continue only on explicit
+1. **Base is resolvable and current.** Resolve the base from
+   `git symbolic-ref refs/remotes/origin/HEAD` (else ask), then `git fetch` so the base tip and
+   remote `<id>/*` refs are fresh. No remote → ask.
+2. **Well-formed.** The story meets the standard: one outcome, concrete title, objective
+   acceptance criteria, References present, Branch line present. `needs-refinement` / `needs-info`
+   label, open questions in notes, or vague/empty criteria → **stop and ask to refine** (route to
+   `backlog-plan`). A vague story can't be driven to done.
+3. **Dependencies Done.** Every dependency is `Done`. If not, stop (continue only on explicit
    override).
-3. **Clean git + on the base branch**, up to date. Uncommitted changes → abort. This is what makes
-   autonomous commits safe: everything the branch accumulates from here is yours.
-4. **Not already in progress** — status is `To Do`, and `<id>/…` doesn't already exist locally or
-   on the remote (`git branch --list '<id>/*'`, `git ls-remote --heads origin '<id>/*'`). If it
-   does, stop and ask.
+4. **Not already claimed.** The claim is the **branch ref**, not the task status — a status change
+   committed in another worktree is invisible here (proven in `reference/parallel-delivery.md`), so
+   never key on it. Require all three empty of this id: `git branch --list '<id>/*'`,
+   `git ls-remote --heads origin '<id>/*'`, and `git worktree list`. A live `<id>/*` branch is an
+   in-flight claim → stop and ask. A **stale merged** `<id>/*` branch is a false positive → prune
+   it (`git branch -d`, and delete the merged remote branch) and re-check.
+5. **No References collision with an in-flight story.** Run
+   `bun "${CLAUDE_PLUGIN_ROOT}/bin/backlog-workflow.ts" collisions <id>`. It exits non-zero and
+   names every `To Do` / `In Progress` story whose References prefix-overlap this one. Non-zero →
+   **stop**: two colliding stories cannot be delivered at the same time. This is the check that
+   makes parallel pickup safe.
+6. **The worktree can be created clean** (worktree mode). `<worktree.path>/<id>` must not already
+   exist. The **main checkout's** working-tree state is irrelevant — this story never touches it —
+   so the gate does **not** require standing on the base branch with a clean tree. Cleanliness is
+   asserted for the new worktree, which is clean by construction.
+
+**Worktree disabled** (`worktree.enabled: false`, or no workflow config): fall back to the classic
+check — clean tree, on the base branch, up to date — and deliver on a branch in the main checkout.
 
 If the description says `Type: spike`, skip to **Spike flow** below (the code loop doesn't apply).
 
-## Step 2 — Start
+## Step 2 — Start (claim in an isolated worktree)
 
-1. Claim it: `backlog task edit <id> -s "In Progress"`.
-2. Cut the story branch per the git contract: base up to date, then `git switch -c <id>/<slug>`.
+Read `worktree.*` from `.claude/backlog-workflow.json` (via
+`bun "${CLAUDE_PLUGIN_ROOT}/bin/backlog-workflow.ts"` when a read helper is needed).
+
+**Worktree mode (`worktree.enabled: true`):**
+
+1. **Create the worktree and cut the branch in one step**, from the up-to-date base:
+   `git worktree add <worktree.path>/<id> -b <id>/<slug> <base>`. The `-b` makes the branch match
+   the story's frozen `Branch:` line verbatim, and the branch ref *is* the claim — it becomes
+   visible to every other worktree immediately, no push required. (This is why the built-in
+   `claude --worktree` is unsuitable: it would name the branch `worktree-<name>`.)
+2. **Install dependencies inside the new worktree** — a fresh worktree has none. Run
+   `worktree.install` there (e.g. `bun install`, `npm ci`, `uv sync`, `go mod download`); empty
+   string → skip. Resolved from config, never guessed.
+3. **Copy gitignored files** named in `worktree.includeGitignored` into the worktree before the
+   first verify (a fresh worktree carries none). Copy only what the list names — never a blanket
+   copy, and never `.env*` unless the list names it (constraint 4).
+4. **Claim the status:** `backlog task edit <id> -s "In Progress"`. This is the human-readable
+   marker; the machine claim is the branch ref from step 1.
+5. **Do everything from here inside `<worktree.path>/<id>`** — implement, verify and commit all run
+   in the worktree, never in the main checkout.
+
+**Worktree disabled:** claim the status, then cut the branch in place per the git contract —
+`git switch <base> && git pull --ff-only`, then `git switch -c <id>/<slug>`.
 
 ## Step 3 — Restate + plan
 
@@ -186,6 +162,30 @@ working tree is clean (everything is committed).
 - **Scope / criteria mismatch** → pause; amend the story via `backlog-plan` or spin a new story.
   Never silently expand scope.
 
+### Review gate — the real exit condition (before close-out)
+
+After the final green commit, an **independent reviewer** checks the work against the story
+contract before anything is pushed. The full protocol is in **`reference/review-and-pr.md`**
+(DIP-7.2); the essentials:
+
+1. **Spawn the reviewer** — subagent type **`dipsaus-ai:story-reviewer`** (read-only, ships in the
+   plugin's `agents/`). Give it **only** the diff (`git diff <base>...HEAD` + the changed-path
+   list) and the story's **outcome, acceptance criteria and References** — never your own plan or
+   reasoning. Independence is the point.
+2. **Read its verdict** — the JSON object `{ verdict, criteria[], scopeViolations[], findings[] }`.
+   `verdict` is `block` iff any acceptance criterion is `met: false` **or** `scopeViolations` is
+   non-empty. Everything else is **advisory** — recorded, never blocking.
+3. **On `block`:** feed the blocking findings back into the Step 4 loop and fix them, then
+   re-review. **Cap: 3 rounds.** After the **3rd** blocking verdict, **stop and escalate to the
+   user** with the outstanding findings — do **not** push, and leave the branch for a human. This
+   cap is what stops an autonomous run from burning a session on a disagreement it can't resolve.
+4. **Record it:** append the verdict and findings to the task through the CLI
+   (`backlog task edit <id> --append-notes "…"`), so the review survives the session.
+5. **`review.enabled: false`** (or no workflow config) → **skip this gate entirely**; the run
+   behaves exactly as it does today.
+
+Only once the reviewer returns `pass` (or the gate is disabled) do you proceed to close-out.
+
 ## Step 5 — Close out the story (on the branch)
 
 1. `backlog task edit <id> -s Done --final-summary "<what shipped, in one paragraph>"`.
@@ -201,10 +201,33 @@ working tree is clean (everything is committed).
    `chore(backlog): mark DIP-1.1 delivered, close epic DIP-1 (DIP-1.1)`. The task files under
    `backlog/tasks/` are tracked, so they belong on the branch with the work they describe.
 
-## Step 6 — Push
+## Step 6 — Push (then open/announce the PR, then tear the worktree down)
 
-`git push -u origin <id>/<slug>`. Keep the push output — it may carry the host's own create-PR
-link.
+1. `git push -u origin <id>/<slug>`. Keep the push output — it may carry the host's own create-PR
+   link.
+2. **PR mode** — read `pr.mode` from the workflow config (default `link`). Full rules in
+   `reference/review-and-pr.md`:
+   - **`link`** (default): print the compare URL exactly as today (derived per the git contract).
+     The human opens the PR. No host API — works the same on GitHub / GitLab / Bitbucket.
+   - **`create`**: **probe first** — `command -v gh`, then `gh auth status`. Both succeed →
+     `gh pr create --draft` with the story **outcome + acceptance criteria** as the body. If
+     **either** probe fails → **degrade to `link`**: print the compare URL and a one-line reason
+     (`gh not found` / `gh not authenticated`), and finish the story green. A successful delivery
+     **never** hinges on host-CLI auth.
+   - `create` is the **one documented exception** to the git-contract "git CLI only, never `gh`"
+     rule, and only when the repo opts in. The contract wording in `reference/git-contract.md` and
+     the project's `CLAUDE.md` are reconciled at cutover (DIP-7.11); until then `link` stays the
+     default so nothing changes for a repo that hasn't opted in.
+3. **Worktree teardown (worktree mode only), after the push:**
+   `git worktree remove <worktree.path>/<id>`. This **refuses** a worktree holding uncommitted or
+   untracked files (`fatal: … use --force`) — that refusal is the safety net. **Never pass
+   `--force`.** On refusal, **stop and surface the uncommitted changes** to the user: work left
+   over at teardown means the implement loop exited wrong. Removal **keeps the branch** `<id>/<slug>`
+   (and its pushed remote), so the PR survives. Prune a checkout deleted out of band with
+   `git worktree prune`.
+4. **Branch hygiene:** the `<id>/<slug>` branch stays until its PR merges, then it is deleted
+   (locally and on the remote). A stale merged branch is what re-triggers the duplicate-task-id
+   scan and shows up as a false in-flight claim at the next gate (see `reference/parallel-delivery.md`).
 
 ## Step 7 — Report (the deliverable summary)
 
@@ -220,12 +243,15 @@ Present, in this order:
 2. **Commits** — `git log --oneline <base>..HEAD`.
 3. **Evidence** — each acceptance criterion with the command output / observation that proves it,
    and any risks or follow-ups.
-4. **The PR link, last** — derived per the git contract, on its own line, ready to click:
-   ```
-   Open the PR:
-   https://github.com/<owner>/<repo>/compare/<base>...<id>%2F<slug>?expand=1
-   ```
-   You do not open it. You do not merge it.
+4. **The PR, last** — depends on `pr.mode` (Step 6):
+   - **`link`** (default, or a `create` that degraded): the compare URL on its own line, ready to
+     click. You do not open it, you do not merge it:
+     ```
+     Open the PR:
+     https://github.com/<owner>/<repo>/compare/<base>...<id>%2F<slug>?expand=1
+     ```
+   - **`create`** (succeeded): report the **draft PR URL** `gh` returned, and say it is a draft
+     awaiting the human's review and merge. You opened it as a draft; you never merge it.
 
 Then record any notable design decision to memory (one lesson per file + a `MEMORY.md` pointer).
 

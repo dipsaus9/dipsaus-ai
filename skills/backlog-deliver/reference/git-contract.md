@@ -1,6 +1,6 @@
 # Git contract (branches, commits, delivery)
 
-The binding delivery contract for `flow-deliver`. Read at Step 2 (cut the branch), before every
+The binding delivery contract for `backlog-deliver`. Read at Step 2 (cut the branch), before every
 commit in Step 4, and at Steps 6–7 (push + PR link). Binding for every story; the spike flow
 follows the same rules for its doc-only commits.
 

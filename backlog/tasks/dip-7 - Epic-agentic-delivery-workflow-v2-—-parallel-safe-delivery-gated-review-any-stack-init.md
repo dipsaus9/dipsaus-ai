@@ -3,9 +3,10 @@ id: DIP-7
 title: >-
   Epic: agentic delivery workflow v2 — parallel-safe delivery, gated review,
   any-stack init
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 10:49'
+updated_date: '2026-08-09 12:21'
 labels:
   - epic
 dependencies: []
@@ -25,9 +26,15 @@ Two spikes lead, because the two load-bearing mechanics are unverified: whether 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A second agent can pick up a ready story in its own worktree while another story is in flight, and is refused at the gate when the two stories' References collide
-- [ ] #2 Delivery is gated by an independent reviewer that sees only the diff and the story contract; PR creation is opt-in per repo and degrades to a printed compare link when gh is unavailable
-- [ ] #3 flow-init produces a schema-valid config and a working backlog in a repo of any supported stack, with verify commands resolved from the repo rather than assumed
-- [ ] #4 The git contract is enforced by shipped hooks, not only by skill prose, and those hooks are inert in repos with no workflow config
-- [ ] #5 The suite is cut over to backlog-init / backlog-plan / backlog-deliver with the old skills removed, and CLAUDE.md, README and all three manifests updated to match
+- [x] #1 A second agent can pick up a ready story in its own worktree while another story is in flight, and is refused at the gate when the two stories' References collide
+- [x] #2 Delivery is gated by an independent reviewer that sees only the diff and the story contract; PR creation is opt-in per repo and degrades to a printed compare link when gh is unavailable
+- [x] #3 flow-init produces a schema-valid config and a working backlog in a repo of any supported stack, with verify commands resolved from the repo rather than assumed
+- [x] #4 The git contract is enforced by shipped hooks, not only by skill prose, and those hooks are inert in repos with no workflow config
+- [x] #5 The suite is cut over to backlog-init / backlog-plan / backlog-deliver with the old skills removed, and CLAUDE.md, README and all three manifests updated to match
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Delivered the agentic delivery workflow v2 across 11 stories. Two spikes fixed the load-bearing mechanics (claim = branch ref not task status; guard hooks can gate git without blocking legitimate commits). The workflow CLI (bin/backlog-workflow.ts) makes config validation, References-collision and verify-detection deterministic. backlog-deliver picks up each story in an isolated git worktree behind a claim-aware, collision-checked readiness gate, gates the push on an independent story-reviewer subagent, and opens or prints a PR per pr.mode. backlog-plan gained amend mode and cross-epic collision refusal. backlog-init bootstraps any-stack repos. Guard hooks enforce the git contract (fail-open, no-op without config). The cutover renamed flow-* over the v1 skills, relaxed the PR ban and scoped the self-contained guarantee in CLAUDE.md (user-approved), and updated README + manifests. Follow-ups (orchestrator, eval harness, CI review) tracked in DIP-8.
+<!-- SECTION:FINAL_SUMMARY:END -->

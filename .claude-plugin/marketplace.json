@@ -3,12 +3,12 @@
   "owner": {
     "name": "dipsaus9"
   },
-  "description": "Dipsaus AI marketplace — install the dipsaus-ai plugin (skills + MCP) for Claude Code.",
+  "description": "Dipsaus AI marketplace — install the dipsaus-ai plugin (skills, hooks, a reviewer agent, a workflow CLI + an MCP) for Claude Code.",
   "plugins": [
     {
       "name": "dipsaus-ai",
       "source": "./",
-      "description": "Skills, hooks + an MCP for frontend / full-stack work with Claude Code.",
+      "description": "Skills, hooks, a reviewer agent, a workflow CLI + an MCP for Claude Code. Ships an agentic Backlog.md workflow (init/plan/deliver) with worktree-parallel delivery, a review gate and git-contract guard hooks.",
       "version": "0.1.0"
     }
   ]
