@@ -85,6 +85,7 @@ Dev-only directories (`tests/`, `.claude/`) are ignored by the plugin loader.
 | `backlog-init` | `/backlog-init` | Bootstraps the workflow in any repo: scans stack/scripts/base-branch, interviews only the gaps, writes a validated `.claude/backlog-workflow.json`, and runs `backlog init` when no backlog exists. |
 | `backlog-plan` | `/backlog-plan` | Grills you into a well-formed backlog: an epic + AI-first stories meeting a story standard, then **materializes on approval** via the Backlog.md CLI. Also **amends** an existing story and **refuses cross-epic scope collisions**. |
 | `backlog-deliver` | `/backlog-deliver DIP-1.1` | Drives **one** story from To Do to Done in an isolated git worktree on its `DIP-1.1/<slug>` branch: readiness gate → implement/verify/**commit** loop (autonomous, every commit green) → **independent reviewer gate** → one push → PR per the repo's `pr.mode` (printed link, or opt-in draft via `gh`). Handles `Type: spike` via research + interview. |
+| `backlog-run` | `/backlog-run` | Orchestrates **parallel** delivery: selects the N ready, non-colliding, unclaimed stories (N = `parallelism.maxAgents`), presents the batch for one approval, then dispatches one `backlog-deliver` worker per story (each in its own worktree), isolates any failure, and reports mixed per-story outcomes. |
 
 ## The dad-joke hook
 
@@ -154,9 +155,9 @@ A broken hook can never break your session: both entrypoints wrap their entire b
 exit 0. A malformed payload, a corrupt state file, a missing `jokes.json`, or an API timeout
 costs you a joke and nothing else.
 
-## Backlog workflow (init · plan · deliver)
+## Backlog workflow (init · plan · deliver · run)
 
-Three skills turn [Backlog.md](https://github.com/MrLesk/Backlog.md) (markdown-native tasks,
+Four skills turn [Backlog.md](https://github.com/MrLesk/Backlog.md) (markdown-native tasks,
 `backlog` CLI) into a standards-driven, AI-runnable workflow in **any** repo, of any stack. Unlike
 `react-architecture`, this suite is **plugin-only** — the skills share a bun CLI
 (`bin/backlog-workflow.ts`), guard hooks (`hooks/backlog-guard/`) and a reviewer agent
@@ -168,6 +169,9 @@ Three skills turn [Backlog.md](https://github.com/MrLesk/Backlog.md) (markdown-n
 /backlog-deliver DIP-1.1  → gate (claim + collisions) → worktree + branch DIP-1.1/<slug>
                             → implement → verify → commit (loop) → reviewer gate → push once
                             → PR per pr.mode (printed link, or opt-in draft via gh)
+/backlog-run              → select N ready non-colliding stories → approve batch
+                            → dispatch N backlog-deliver workers (one per story, own worktree)
+                            → isolate failures → mixed per-story report
 ```
 
 **Story standard** — every story: one outcome · concrete title · objective acceptance criteria ·
@@ -181,6 +185,12 @@ Full contract: `skills/backlog-plan/reference/`.
 `git worktree`, so several agents can run at once. Pickup is refused when a story is already claimed
 (its `<id>/<slug>` branch exists) or when its References collide with an in-flight story
 (`backlog-workflow collisions <id>`). See `skills/backlog-deliver/reference/parallel-delivery.md`.
+
+**Parallel orchestration** — `/backlog-run` is the dispatcher: it selects the N ready, non-colliding,
+unclaimed stories (N = `parallelism.maxAgents`), presents the batch for one approval, then runs one
+`backlog-deliver` worker per story (each a plain subagent owning its own worktree), serializing the
+pushes and isolating any failure so a stuck story never sinks the batch. See
+`skills/backlog-run/reference/orchestration.md`.
 
 **Review gate** — before the push, an independent `story-reviewer` subagent sees only the diff and
 the story contract and returns a JSON verdict; an unmet acceptance criterion or a scope violation

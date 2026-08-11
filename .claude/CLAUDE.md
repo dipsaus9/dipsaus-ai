@@ -16,10 +16,11 @@ Open-source toolkit of Claude / AI-CLI **skills, hooks, an MCP + a workflow CLI*
   plugin loader.
 - Most skills are self-contained: `SKILL.md` carries the standards inline, so a skill folder
   works when copied out of the repo (e.g. `react-architecture`). The **backlog-\* workflow suite
-  is the exception — plugin-only**: `backlog-init` / `backlog-plan` / `backlog-deliver` share a bun
-  CLI (`bin/backlog-workflow.ts`), guard hooks (`hooks/backlog-guard/`) and a reviewer agent
-  (`agents/story-reviewer.md`), none of which survive copying one skill folder out. Optional
-  `reference/` for long-form contracts.
+  is the exception — plugin-only**: `backlog-init` / `backlog-plan` / `backlog-deliver` /
+  `backlog-run` share a bun CLI (`bin/backlog-workflow.ts`), guard hooks (`hooks/backlog-guard/`)
+  and a reviewer agent (`agents/story-reviewer.md`), none of which survive copying one skill folder
+  out. `backlog-run` orchestrates parallel delivery (N `backlog-deliver` workers in worktrees).
+  Optional `reference/` for long-form contracts.
 - Every manifest description (`package.json`, `.claude-plugin/plugin.json`,
   `.claude-plugin/marketplace.json`) is user-facing. When the repo's surface changes,
   update all three — they drift silently otherwise.

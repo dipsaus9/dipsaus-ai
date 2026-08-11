@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Open-source toolkit of Claude / AI-CLI skills, hooks, a reviewer agent, a workflow CLI + an MCP, packaged as a single Claude Code plugin. Includes an agentic Backlog.md init/plan/deliver workflow.",
+  "description": "Open-source toolkit of Claude / AI-CLI skills, hooks, a reviewer agent, a workflow CLI + an MCP, packaged as a single Claude Code plugin. Includes an agentic Backlog.md init/plan/deliver/run workflow with a parallel orchestrator.",
   "license": "MIT",
   "author": "dipsaus9",
   "repository": {
