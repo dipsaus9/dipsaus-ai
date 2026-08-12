@@ -22,10 +22,10 @@ import { gradeDeliverRun, type DeliverExpected, type DeliverRunResult, type Scor
 import { judgeDelivery, type DeliverJudgeResult } from './deliver-judge'
 import { mapPool } from './pool'
 
-export const FIXTURES_DIR = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../deliver/fixtures',
-)
+const RUNNER_DIR = path.dirname(fileURLToPath(import.meta.url))
+export const FIXTURES_DIR = path.resolve(RUNNER_DIR, '../deliver/fixtures')
+/** Repo root = the plugin dir; passed to the headless run via --plugin-dir so ${CLAUDE_PLUGIN_ROOT} resolves. */
+export const PLUGIN_ROOT = path.resolve(RUNNER_DIR, '../../..')
 
 export interface StorySpec {
   title: string
@@ -95,22 +95,14 @@ export function setupCase(fx: DeliverFixture, tmpRoot?: string): CaseSandbox {
   const repoDir = path.join(root, 'work')
   const originDir = path.join(root, 'origin.git')
 
+  const base = 'main'
   copyTree(path.join(fx.dir, 'repo'), repoDir)
   execFileSync('git', ['init', '-q', '--bare', originDir])
   git(['init', '-q'], repoDir)
-  git(['add', '-A'], repoDir)
-  execFileSync(
-    'git',
-    ['-c', 'user.email=eval@eval', '-c', 'user.name=eval', 'commit', '-q', '-m', 'fixture initial state'],
-    { cwd: repoDir },
-  )
   git(['branch', '-M', 'main'], repoDir)
-  git(['remote', 'add', 'origin', originDir], repoDir)
-  git(['push', '-q', '-u', 'origin', 'main'], repoDir)
-  const base = 'main'
-  git(['symbolic-ref', 'HEAD', 'refs/heads/main'], originDir) // give origin a default branch
 
-  // Initialise backlog + create the story as a ready task via the CLI.
+  // Initialise backlog + create the story as a ready task via the CLI (before the first commit, so
+  // everything — repo, backlog, config — lands on main and a story-branch worktree inherits it).
   const prefix = (fx.workflow as { backlog?: { prefix?: string } }).backlog?.prefix ?? 'EVAL'
   execFileSync(
     'backlog',
@@ -129,7 +121,6 @@ export function setupCase(fx: DeliverFixture, tmpRoot?: string): CaseSandbox {
   )
   const taskId = createOut.match(new RegExp(`\\b${prefix}-\\d+(?:\\.\\d+)?\\b`))?.[0] ?? ''
   const expectedBranch = `${taskId}/${fx.story.branchSlug}`
-  // Finalize the Branch line now that the id exists.
   execFileSync(
     'backlog',
     ['task', 'edit', taskId, '-d', `${fx.story.outcome}\nType: deliverable\nBranch: ${expectedBranch}`],
@@ -140,23 +131,58 @@ export function setupCase(fx: DeliverFixture, tmpRoot?: string): CaseSandbox {
   mkdirSync(dotClaude, { recursive: true })
   execFileSync('cp', [path.join(fx.dir, 'backlog-workflow.json'), path.join(dotClaude, 'backlog-workflow.json')])
 
+  // One commit with everything, then publish to the local bare remote.
+  git(['add', '-A'], repoDir)
+  execFileSync(
+    'git',
+    ['-c', 'user.email=eval@eval', '-c', 'user.name=eval', 'commit', '-q', '-m', 'fixture initial state + backlog'],
+    { cwd: repoDir },
+  )
+  git(['remote', 'add', 'origin', originDir], repoDir)
+  git(['push', '-q', '-u', 'origin', 'main'], repoDir)
+  git(['symbolic-ref', 'HEAD', 'refs/heads/main'], originDir) // give origin a default branch
+
   return { root, repoDir, originDir, taskId, base, expectedBranch }
 }
 
-/** The billed seam: run backlog-deliver headless against the sandbox. Requires the plugin installed. */
+/**
+ * The billed seam: run backlog-deliver headless against the sandbox. The plugin is loaded for the
+ * session via `--plugin-dir PLUGIN_ROOT` (so `${CLAUDE_PLUGIN_ROOT}` resolves — DIP-10.1), rather
+ * than installed into `~/.claude`. Broad tool allowance because delivery edits files, runs git /
+ * verify / the backlog CLI (Bash), and spawns the story-reviewer subagent (Task).
+ */
 export async function deliverHeadless(sandbox: CaseSandbox, config: EvalConfig): Promise<void> {
-  await invokeClaude({
+  const result = await invokeClaude({
     bin: config.claudeBin,
     model: config.models[0] ?? 'claude-sonnet-5',
     systemAppend: '',
-    prompt: `Use the backlog-deliver skill to deliver story ${sandbox.taskId} end to end in this repo (${sandbox.repoDir}). Follow the skill exactly: readiness gate, worktree, implement/verify/commit loop, review gate, push. Do not ask for confirmation.`,
+    prompt: `Use the backlog-deliver skill to deliver story ${sandbox.taskId} end to end in this repo. Follow the skill exactly: readiness gate, worktree, implement/verify/commit loop, review gate, push. Do not ask for confirmation.`,
     timeoutMs: config.applyTimeoutMs,
+    cwd: sandbox.repoDir,
+    extraArgs: [
+      '--plugin-dir',
+      PLUGIN_ROOT,
+      '--permission-mode',
+      'acceptEdits',
+      '--allowedTools',
+      'Read,Edit,Write,Glob,Grep,Bash,Task',
+    ],
   })
+  if (!result.ok) throw new Error(`headless deliver failed: ${result.error ?? result.stderr.slice(0, 200)}`)
 }
 
-/** Read the delivered outcome from the sandbox — deterministic, no model. */
+/** Paths delivery is always allowed to touch beyond its References (git contract): its own task file. */
+const SCOPE_EXEMPT = [/^backlog\//, /^\.claude\//, /^\.worktrees\//]
+
+/**
+ * Read the delivered outcome from the sandbox — deterministic, no model. Task state (checked ACs,
+ * reviewer note) is read from the STORY BRANCH via `git show`, never the main checkout: a status
+ * change committed on the branch is invisible on main (DIP-7.1). The diff excludes the story's own
+ * task file and workflow scaffolding, which the git contract permits.
+ */
 export function captureRun(sandbox: CaseSandbox, exp: DeliverExpected): DeliverRunResult {
-  const { repoDir, originDir, base, expectedBranch, taskId } = sandbox
+  const { repoDir, originDir, base, expectedBranch } = sandbox
+  const branchRef = `origin/${expectedBranch}`
   const branchOnRemote = execFileSync('git', ['ls-remote', '--heads', originDir], { encoding: 'utf8' })
     .split('\n')
     .map((l) => l.split('refs/heads/')[1])
@@ -164,23 +190,42 @@ export function captureRun(sandbox: CaseSandbox, exp: DeliverExpected): DeliverR
   const branch = branchOnRemote ?? '(no matching branch pushed)'
 
   let modifiedFiles: string[] = []
-  let verifyGreen = false
+  let checkedAcs: number[] = []
   if (branchOnRemote) {
-    modifiedFiles = git(['diff', '--name-only', `origin/${base}...origin/${expectedBranch}`], repoDir)
+    const allChanged = git(['diff', '--name-only', `origin/${base}...${branchRef}`], repoDir)
       .split('\n')
       .filter((f) => f.length > 0)
-    verifyGreen = true // verify ran green per commit is the deliver contract; a pushed branch implies it
+    modifiedFiles = allChanged.filter((f) => !SCOPE_EXEMPT.some((re) => re.test(f)))
+
+    // Read the task file as it stands on the story branch (checked ACs live there, not on main).
+    const taskFile = git(['ls-tree', '-r', '--name-only', branchRef, 'backlog/tasks/'], repoDir)
+      .split('\n')
+      .find((f) => f.length > 0)
+    if (taskFile) {
+      const taskMd = git(['show', `${branchRef}:${taskFile}`], repoDir)
+      checkedAcs = [...taskMd.matchAll(/^- \[x\] #(\d+)/gm)].map((m) => Number(m[1]))
+    }
   }
 
-  const taskOut = execFileSync('backlog', ['task', taskId, '--plain'], { cwd: repoDir, encoding: 'utf8' })
-  const checkedAcs = [...taskOut.matchAll(/^- \[x\] #(\d+)/gm)].map((m) => Number(m[1]))
-  const reviewerVerdict = exp.reviewEnabled
-    ? /reviewer:\s*pass|verdict.*pass/i.test(taskOut)
-      ? 'pass'
-      : 'block'
-    : null
+  // A pushed branch implies verify was green per commit (the deliver contract) and — when review is
+  // enabled — that the review gate passed, since a blocking verdict stops the push (DIP-7.6).
+  const verifyGreen = branchOnRemote !== undefined
+  const reviewerVerdict = exp.reviewEnabled ? (branchOnRemote ? 'pass' : 'block') : null
 
   return { branch, verifyGreen, checkedAcs, modifiedFiles, reviewerVerdict }
+}
+
+/** The delivered code patch (base…branch), excluding scaffolding — this is what the quality judge reads. */
+export function captureDiff(sandbox: CaseSandbox): string {
+  const { repoDir, base, expectedBranch } = sandbox
+  try {
+    return git(
+      ['diff', `origin/${base}...origin/${expectedBranch}`, '--', '.', ':(exclude)backlog/**', ':(exclude).claude/**'],
+      repoDir,
+    )
+  } catch {
+    return ''
+  }
 }
 
 export function teardownCase(sandbox: CaseSandbox): void {
@@ -281,9 +326,10 @@ async function runDeliverCase(
     const exp = resolveExpected(fx, sandbox)
     const run = captureRun(sandbox, exp)
     const scorecard = gradeDeliverRun(run, exp)
+    const diff = captureDiff(sandbox)
     const judge = await judgeDelivery({
       config: options.config,
-      input: { storyOutcome: fx.story.outcome, acs: fx.story.acs, diff: run.modifiedFiles.join('\n') },
+      input: { storyOutcome: fx.story.outcome, acs: fx.story.acs, diff },
       deterministicPass: scorecard.pass,
       log,
     })
