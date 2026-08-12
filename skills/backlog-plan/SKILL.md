@@ -176,10 +176,13 @@ creates a tree.
    user explicitly confirms re-opening it — amending delivered work is a real decision, not a
    default. If it is `In Progress`, warn that a branch may already exist for it.
 2. **Amend through the CLI only** (never hand-edit `backlog/tasks/`):
-   - acceptance criteria — `--ac` adds, `--remove-ac <n>` removes;
-   - References — `--ref` adds (state which paths change and why);
-   - dependencies — `--dep` adds edges;
-   - description / plan / notes — `-d` / `--plan` / `--notes`.
+   - acceptance criteria — `--ac` **adds**, `--remove-ac <n>` removes;
+   - References — `--ref` **REPLACES the whole set** (it does *not* append like `--ac`). To add a
+     path, **re-pass every existing `--ref` plus the new one** in one edit; otherwise the omitted
+     References are silently dropped. State which paths change and why.
+   - dependencies — `--dep` **also REPLACES the whole set** — same rule: re-pass every existing
+     `--dep` plus the new one to add an edge.
+   - description / plan / notes — `-d` / `--plan` / `--notes` (each replaces that field).
 3. **Re-check the standard.** The amended story must still meet every required item — objective
    criteria, path-shaped References, a valid `Branch:` line. Amend mode is as strict as creation:
    it must not become the hole through which an unscoped story enters.
@@ -205,8 +208,10 @@ scope-violation check.
 - **Multi-line CLI input:** the CLI preserves input literally — `\n` sequences are NOT converted.
   Use real newlines inside quotes, or build the argument list programmatically (spawn with an args
   array) when the text is quoting-hostile. Avoid standalone `---` lines in any text field.
-- **`--ac` / `--ref` / `--dep` are repeatable** on both `create` and `edit`. On `edit`, `--ac`
-  *adds* criteria; remove with `--remove-ac <n>`.
+- **`--ac` / `--ref` / `--dep` are repeatable** on both `create` and `edit`, but they behave
+  differently on `edit`: `--ac` **adds** a criterion (remove with `--remove-ac <n>`), whereas
+  `--ref` and `--dep` **replace** their whole set. To add one References path or one dependency on
+  an edit, re-pass every existing value plus the new one — otherwise the omitted ones are dropped.
 - **Ids are native and immediate** — `create` prints the id; there is no backfill step. Epics get
   `DIP-n`; their subtasks get `DIP-n.m`.
 - **`--plain` on every read** — never parse the interactive TUI output.
