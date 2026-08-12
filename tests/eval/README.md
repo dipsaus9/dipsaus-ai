@@ -68,9 +68,28 @@ installed before the run (copying skill folders into a fixture is not enough). S
 
 **The deterministic pipeline is proven; the billed end-to-end run is DIP-10.6.** Setup → capture →
 grade → teardown run without a model and are exercised deterministically. The single billed seam is
-the headless `backlog-deliver` invocation; the first real run over the corpus (which needs the
-plugin installed) is DIP-10.6, with `review.enabled: false` fixtures as the fallback if headless
-mode mishandles the nested reviewer subagent.
+the headless `backlog-deliver` invocation, loaded via `--plugin-dir` (no `~/.claude` install).
+
+### First baseline (2026-08-12, `baseline/deliver.json`)
+
+Full corpus, real headless `backlog-deliver` runs, one measurement each. **Every fixture passed
+every deterministic dimension and the quality judge:**
+
+| Fixture | branch | verify | acs | scope | review | quality |
+|---|---|---|---|---|---|---|
+| `node-add-sum` | ✓ | ✓ | ✓ | ✓ | ✓ | pass |
+| `python-add-slugify` | ✓ | ✓ | ✓ | ✓ | ✓ | pass |
+| `docs-no-pipeline` | ✓ | ✓ | ✓ | ✓ | ✓ | pass |
+| `node-multi-wire` | ✓ | ✓ | ✓ | ✓ | ✓ | pass |
+
+Verdict: `backlog-deliver` delivers all four fixtures headlessly — single-file, multi-file, python,
+and no-pipeline — cutting the correct `<id>/<slug>` branch, checking its acceptance criteria, staying
+in scope, passing its own review gate, and producing a quality-judged implementation. The nested
+reviewer subagent and the guard hooks work under headless `--plugin-dir` loading, so the
+`review.enabled: false` fallback was not needed. Caveats: `verify` and `review` are contract-based
+proxies (a pushed branch implies green-per-commit and a passed review gate, since a blocking verdict
+stops the push); quality is a 3-vote judge majority. K=1 per fixture — rates are pass/fail, not
+frequencies. Re-measure after any change to the deliver skill or the grader.
 
 ## Policies
 
