@@ -8,7 +8,7 @@
     {
       "name": "dipsaus-ai",
       "source": "./",
-      "description": "Skills, hooks, a reviewer agent, a workflow CLI + an MCP for Claude Code. Ships an agentic Backlog.md workflow (init/plan/deliver) with worktree-parallel delivery, a review gate and git-contract guard hooks.",
+      "description": "Skills, hooks, a reviewer agent, a workflow CLI + an MCP for Claude Code. Ships an agentic Backlog.md workflow (init/plan/deliver/run) with worktree-parallel delivery, a parallel orchestrator, a review gate and git-contract guard hooks.",
       "version": "0.1.0"
     }
   ]

@@ -1,10 +1,10 @@
 ---
 id: DIP-9.3
 title: 'Register backlog-run in the suite: README, CLAUDE.md, manifests'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-09 15:22'
-updated_date: '2026-08-09 15:22'
+updated_date: '2026-08-11 11:03'
 labels:
   - story
 dependencies:
@@ -32,10 +32,10 @@ Branch: DIP-9.3/backlog-run-register
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 README documents /backlog-run (selection, batch gate, parallel dispatch, mixed report) in the backlog workflow section
-- [ ] #2 CLAUDE.md reflects backlog-run as part of the plugin-only suite
-- [ ] #3 package.json, .claude-plugin/plugin.json and .claude-plugin/marketplace.json descriptions mention the orchestrator
-- [ ] #4 bun run lint, typecheck and test are green; epic DIP-9 closed on delivery
+- [x] #1 README documents /backlog-run (selection, batch gate, parallel dispatch, mixed report) in the backlog workflow section
+- [x] #2 CLAUDE.md reflects backlog-run as part of the plugin-only suite
+- [x] #3 package.json, .claude-plugin/plugin.json and .claude-plugin/marketplace.json descriptions mention the orchestrator
+- [x] #4 bun run lint, typecheck and test are green; epic DIP-9 closed on delivery
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -49,3 +49,9 @@ Branch: DIP-9.3/backlog-run-register
 <!-- SECTION:NOTES:BEGIN -->
 Manifest descriptions drift silently (CLAUDE.md warns) — update all three. Depends on DIP-9.2 so the skill exists to document.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Registered backlog-run across the repo surface: README (workflow section header init·plan·deliver·run, flow diagram, skills-table row, and a Parallel orchestration paragraph), CLAUDE.md (backlog-run added to the plugin-only suite), and all three manifest descriptions (package.json, plugin.json, marketplace.json now name the init/plan/deliver/run orchestrator). Gates green. Closes epic DIP-9.
+<!-- SECTION:FINAL_SUMMARY:END -->
