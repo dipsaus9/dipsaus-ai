@@ -20,6 +20,7 @@ import { invokeClaude } from './claude'
 import type { EvalConfig } from './config'
 import { gradeDeliverRun, type DeliverExpected, type DeliverRunResult, type Scorecard } from './deliver-grade'
 import { judgeDelivery, type DeliverJudgeResult } from './deliver-judge'
+import { mapPool } from './pool'
 
 export const FIXTURES_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -265,33 +266,42 @@ export function deliverDiffPasses(diff: DeliverBaselineDiff): boolean {
   return diff.regressions.length === 0
 }
 
-/** Run the deliver corpus; returns one record per fixture. */
-export async function runDeliver(options: RunDeliverOptions): Promise<DeliverCaseRecord[]> {
+/** Deliver one fixture end to end: setup → deliver → capture → grade → judge → teardown. */
+async function runDeliverCase(
+  fx: DeliverFixture,
+  options: RunDeliverOptions,
+): Promise<DeliverCaseRecord> {
   const log = options.log ?? (() => {})
   const deliver = options.deliver ?? deliverHeadless
-  const fixtures = loadDeliverFixtures(options.filter)
-  const records: DeliverCaseRecord[] = []
-  for (const fx of fixtures) {
+  let sandbox: CaseSandbox | undefined
+  try {
     log(`deliver ${fx.name} — setup`)
-    let sandbox: CaseSandbox | undefined
-    try {
-      sandbox = setupCase(fx)
-      await deliver(sandbox, options.config)
-      const exp = resolveExpected(fx, sandbox)
-      const run = captureRun(sandbox, exp)
-      const scorecard = gradeDeliverRun(run, exp)
-      const judge = await judgeDelivery({
-        config: options.config,
-        input: { storyOutcome: fx.story.outcome, acs: fx.story.acs, diff: run.modifiedFiles.join('\n') },
-        deterministicPass: scorecard.pass,
-        log,
-      })
-      records.push({ fixture: fx.name, scorecard, judge })
-    } catch (e) {
-      records.push({ fixture: fx.name, error: (e as Error).message })
-    } finally {
-      if (sandbox) teardownCase(sandbox)
-    }
+    sandbox = setupCase(fx)
+    await deliver(sandbox, options.config)
+    const exp = resolveExpected(fx, sandbox)
+    const run = captureRun(sandbox, exp)
+    const scorecard = gradeDeliverRun(run, exp)
+    const judge = await judgeDelivery({
+      config: options.config,
+      input: { storyOutcome: fx.story.outcome, acs: fx.story.acs, diff: run.modifiedFiles.join('\n') },
+      deterministicPass: scorecard.pass,
+      log,
+    })
+    return { fixture: fx.name, scorecard, judge }
+  } catch (e) {
+    return { fixture: fx.name, error: (e as Error).message }
+  } finally {
+    if (sandbox) teardownCase(sandbox)
   }
-  return records
+}
+
+/**
+ * Run the deliver corpus; one record per fixture. Cases are fully isolated (separate temp repos +
+ * bare remotes), so they run concurrently through the shared pool at config.concurrency. A failed
+ * case is captured as an error record and re-run via `--filter <case>` (its own retry path), the
+ * same way the apply mode treats a stuck agentic run.
+ */
+export async function runDeliver(options: RunDeliverOptions): Promise<DeliverCaseRecord[]> {
+  const fixtures = loadDeliverFixtures(options.filter)
+  return mapPool(fixtures, options.config.concurrency, (fx) => runDeliverCase(fx, options))
 }
