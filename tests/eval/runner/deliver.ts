@@ -215,6 +215,19 @@ export function captureRun(sandbox: CaseSandbox, exp: DeliverExpected): DeliverR
   return { branch, verifyGreen, checkedAcs, modifiedFiles, reviewerVerdict }
 }
 
+/** The delivered code patch (base…branch), excluding scaffolding — this is what the quality judge reads. */
+export function captureDiff(sandbox: CaseSandbox): string {
+  const { repoDir, base, expectedBranch } = sandbox
+  try {
+    return git(
+      ['diff', `origin/${base}...origin/${expectedBranch}`, '--', '.', ':(exclude)backlog/**', ':(exclude).claude/**'],
+      repoDir,
+    )
+  } catch {
+    return ''
+  }
+}
+
 export function teardownCase(sandbox: CaseSandbox): void {
   rmSync(sandbox.root, { recursive: true, force: true })
 }
@@ -313,9 +326,10 @@ async function runDeliverCase(
     const exp = resolveExpected(fx, sandbox)
     const run = captureRun(sandbox, exp)
     const scorecard = gradeDeliverRun(run, exp)
+    const diff = captureDiff(sandbox)
     const judge = await judgeDelivery({
       config: options.config,
-      input: { storyOutcome: fx.story.outcome, acs: fx.story.acs, diff: run.modifiedFiles.join('\n') },
+      input: { storyOutcome: fx.story.outcome, acs: fx.story.acs, diff },
       deterministicPass: scorecard.pass,
       log,
     })
