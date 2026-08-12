@@ -22,10 +22,10 @@ import { gradeDeliverRun, type DeliverExpected, type DeliverRunResult, type Scor
 import { judgeDelivery, type DeliverJudgeResult } from './deliver-judge'
 import { mapPool } from './pool'
 
-export const FIXTURES_DIR = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../deliver/fixtures',
-)
+const RUNNER_DIR = path.dirname(fileURLToPath(import.meta.url))
+export const FIXTURES_DIR = path.resolve(RUNNER_DIR, '../deliver/fixtures')
+/** Repo root = the plugin dir; passed to the headless run via --plugin-dir so ${CLAUDE_PLUGIN_ROOT} resolves. */
+export const PLUGIN_ROOT = path.resolve(RUNNER_DIR, '../../..')
 
 export interface StorySpec {
   title: string
@@ -143,15 +143,30 @@ export function setupCase(fx: DeliverFixture, tmpRoot?: string): CaseSandbox {
   return { root, repoDir, originDir, taskId, base, expectedBranch }
 }
 
-/** The billed seam: run backlog-deliver headless against the sandbox. Requires the plugin installed. */
+/**
+ * The billed seam: run backlog-deliver headless against the sandbox. The plugin is loaded for the
+ * session via `--plugin-dir PLUGIN_ROOT` (so `${CLAUDE_PLUGIN_ROOT}` resolves — DIP-10.1), rather
+ * than installed into `~/.claude`. Broad tool allowance because delivery edits files, runs git /
+ * verify / the backlog CLI (Bash), and spawns the story-reviewer subagent (Task).
+ */
 export async function deliverHeadless(sandbox: CaseSandbox, config: EvalConfig): Promise<void> {
-  await invokeClaude({
+  const result = await invokeClaude({
     bin: config.claudeBin,
     model: config.models[0] ?? 'claude-sonnet-5',
     systemAppend: '',
-    prompt: `Use the backlog-deliver skill to deliver story ${sandbox.taskId} end to end in this repo (${sandbox.repoDir}). Follow the skill exactly: readiness gate, worktree, implement/verify/commit loop, review gate, push. Do not ask for confirmation.`,
+    prompt: `Use the backlog-deliver skill to deliver story ${sandbox.taskId} end to end in this repo. Follow the skill exactly: readiness gate, worktree, implement/verify/commit loop, review gate, push. Do not ask for confirmation.`,
     timeoutMs: config.applyTimeoutMs,
+    cwd: sandbox.repoDir,
+    extraArgs: [
+      '--plugin-dir',
+      PLUGIN_ROOT,
+      '--permission-mode',
+      'acceptEdits',
+      '--allowedTools',
+      'Read,Edit,Write,Glob,Grep,Bash,Task',
+    ],
   })
+  if (!result.ok) throw new Error(`headless deliver failed: ${result.error ?? result.stderr.slice(0, 200)}`)
 }
 
 /** Read the delivered outcome from the sandbox — deterministic, no model. */
