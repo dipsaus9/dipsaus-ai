@@ -21,7 +21,8 @@ fenced off from every CI gate:
 | `bun run test:eval` | review-mode eval, full matrix, diffs vs baseline | **billed** |
 | `bun run test:eval --mode apply` | apply-mode eval (sandbox + graders + judge) | **billed**, agentic |
 | `bun run test:eval --mode ab` | skill-on vs skill-off delta report | **billed**, ~2× |
-| `bun run test:eval --update-baseline` | rewrite the committed baseline from this run | **billed** |
+| `bun run test:eval --mode deliver` | run the `backlog-deliver` corpus in throwaway repos, grade + judge each | **billed**, agentic |
+| `bun run test:eval --update-baseline` | rewrite the committed baseline from this run (per `--mode`) | **billed** |
 | `bun run test:eval:fixtures` | the island's own vitest suite (fixture behavior tests) | free, deterministic |
 
 Flags: `--model` (repeatable), `--runs` (K), `--filter <substring of category/dir>`,
@@ -48,6 +49,28 @@ If a shell wrapper shadows `bun` (exit 127), use the binary directly:
 - **ab**: everything above, twice.
 
 Scale down first: `--filter derived-effect --runs 1` is a one-call smoke.
+
+## Deliver mode (`--mode deliver`)
+
+Evaluates the **agentic `backlog-deliver` skill**, not a review skill. Per fixture
+(`deliver/fixtures/<case>/`, see its README), the runner: materializes a throwaway git repo with a
+**local bare remote** as origin, `backlog init`s it and creates the story as a ready task, drops
+`.claude/backlog-workflow.json`, runs `backlog-deliver` headless, then grades the result with the
+deterministic grader (`runner/deliver-grade.ts`: branch, verify, ACs, scope, reviewer verdict) and
+the quality judge (`runner/deliver-judge.ts`, gated behind a deterministic pass), and tears the
+sandbox down. Results diff against `baseline/deliver.json` (per-fixture; a deterministic pass→fail
+is a regression); `--update-baseline` rewrites it. `--filter <case>` runs a subset.
+
+**Plugin must be installed.** The deliver skill reaches its CLI via `${CLAUDE_PLUGIN_ROOT}`, which
+only resolves for an **installed** plugin — so the eval environment must have the dipsaus-ai plugin
+installed before the run (copying skill folders into a fixture is not enough). See
+`deliver/reference/harness.md` (DIP-10.1).
+
+**The deterministic pipeline is proven; the billed end-to-end run is DIP-10.6.** Setup → capture →
+grade → teardown run without a model and are exercised deterministically. The single billed seam is
+the headless `backlog-deliver` invocation; the first real run over the corpus (which needs the
+plugin installed) is DIP-10.6, with `review.enabled: false` fixtures as the fallback if headless
+mode mishandles the nested reviewer subagent.
 
 ## Policies
 
