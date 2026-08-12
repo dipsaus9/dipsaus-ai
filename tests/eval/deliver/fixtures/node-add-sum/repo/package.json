@@ -1,0 +1,8 @@
+{
+  "name": "eval-node-add-sum",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

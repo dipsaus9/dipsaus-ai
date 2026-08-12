@@ -1,0 +1,14 @@
+{
+  "title": "Add a shout greeter and wire it into src/index.js",
+  "type": "feature",
+  "outcome": "Add src/shout.js exporting shout(text) => text.toUpperCase()+\"!\", and register it as greeters.shout in src/index.js so the test passes.",
+  "acs": [
+    "src/shout.js exports shout(text) returning the uppercased text with a trailing \"!\"",
+    "src/index.js registers it as greeters.shout",
+    "the test suite passes"
+  ],
+  "references": [
+    "src/"
+  ],
+  "branchSlug": "shout-greeter"
+}

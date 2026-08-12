@@ -1,0 +1,13 @@
+{
+  "title": "Add sum() utility in src/sum.js",
+  "type": "feature",
+  "outcome": "Add src/sum.js exporting sum(a, b) so the existing test/sum.test.js passes.",
+  "acs": [
+    "src/sum.js exports a sum(a, b) function returning a + b",
+    "the test suite (node --test) passes"
+  ],
+  "references": [
+    "src/"
+  ],
+  "branchSlug": "add-sum"
+}
