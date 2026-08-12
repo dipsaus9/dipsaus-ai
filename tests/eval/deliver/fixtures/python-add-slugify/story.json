@@ -1,0 +1,13 @@
+{
+  "title": "Add slugify() in src/slugify.py",
+  "type": "feature",
+  "outcome": "Add src/slugify.py with slugify(text) lowercasing and hyphenating words so tests/test_slugify.py passes.",
+  "acs": [
+    "src/slugify.py defines slugify(text) that lowercases and joins whitespace-separated words with hyphens",
+    "pytest passes"
+  ],
+  "references": [
+    "src/"
+  ],
+  "branchSlug": "add-slugify"
+}

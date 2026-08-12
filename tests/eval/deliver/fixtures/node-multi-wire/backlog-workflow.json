@@ -1,0 +1,24 @@
+{
+  "parallelism": {
+    "maxAgents": 1
+  },
+  "worktree": {
+    "enabled": true,
+    "path": ".worktrees",
+    "install": "",
+    "includeGitignored": []
+  },
+  "verify": [],
+  "pr": {
+    "mode": "link"
+  },
+  "review": {
+    "enabled": true,
+    "model": "",
+    "maxRounds": 3
+  },
+  "backlog": {
+    "dir": "backlog",
+    "prefix": "EVAL"
+  }
+}

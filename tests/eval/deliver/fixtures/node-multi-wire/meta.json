@@ -1,0 +1,5 @@
+{
+  "stack": "node",
+  "description": "Add a module and wire it into the index — multi-file scope",
+  "reviewEnabled": true
+}

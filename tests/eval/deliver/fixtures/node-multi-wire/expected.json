@@ -1,0 +1,12 @@
+{
+  "branchSlug": "shout-greeter",
+  "acs": [
+    1,
+    2,
+    3
+  ],
+  "references": [
+    "src/"
+  ],
+  "reviewEnabled": true
+}

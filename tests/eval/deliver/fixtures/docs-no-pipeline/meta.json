@@ -1,0 +1,5 @@
+{
+  "stack": "none",
+  "description": "Documentation change in a repo with no build pipeline",
+  "reviewEnabled": true
+}

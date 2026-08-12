@@ -1,0 +1,5 @@
+{
+  "stack": "python",
+  "description": "Add a slugify() function with a passing pytest",
+  "reviewEnabled": true
+}

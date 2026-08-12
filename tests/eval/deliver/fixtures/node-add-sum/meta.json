@@ -1,0 +1,5 @@
+{
+  "stack": "node",
+  "description": "Add a sum() utility with a passing test",
+  "reviewEnabled": true
+}

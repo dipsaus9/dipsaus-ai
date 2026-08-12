@@ -1,0 +1,13 @@
+{
+  "title": "Document the Ports section in CONFIG.md",
+  "type": "docs",
+  "outcome": "Add a \"## Ports\" section to CONFIG.md documenting the HTTP_PORT variable (default 8080).",
+  "acs": [
+    "CONFIG.md has a \"## Ports\" section",
+    "the section documents HTTP_PORT with its default of 8080"
+  ],
+  "references": [
+    "CONFIG.md"
+  ],
+  "branchSlug": "document-ports"
+}
