@@ -15,8 +15,16 @@ backlog). The mechanics you rely on are the DIP-9.1 decision in
 **`reference/orchestration.md`** — read it; the load-bearing constraints are repeated inline below.
 
 **Authority:** the project's `CLAUDE.md` / `AGENTS.md` apply. The CLI is the only writer of backlog
-state. This skill requires a workflow config (`.claude/backlog-workflow.json`) with
-`worktree.enabled: true` — without it, deliver stories one at a time with `backlog-deliver`.
+state. This skill requires a workflow config (`.claude/backlog-workflow.json`) — without one, run
+`backlog-init` first, or deliver stories one at a time with `backlog-deliver`. There is no
+`worktree.enabled` toggle to check (the key was removed in DIP-11.1): **`backlog-run` always
+isolates every worker in its own git worktree**, because parallel workers cannot share the main
+checkout. That is the run-vs-deliver split — see below.
+
+**run vs deliver — who isolates when.** `backlog-deliver` **auto-detects** isolation (DIP-11.4): it
+delivers in the main checkout when the repo is quiet and takes a worktree only under detected
+concurrency. `backlog-run` has no such choice — it dispatches N workers at once, so it **always**
+isolates, one `.worktrees/<id>` per worker. Concurrency is a given here, not a thing to detect.
 
 ---
 
@@ -36,9 +44,10 @@ state. This skill requires a workflow config (`.claude/backlog-workflow.json`) w
 
 ## Step 0 — Preconditions
 
-1. **Config present + worktree on.** Read `.claude/backlog-workflow.json`; require
-   `worktree.enabled: true` and note `parallelism.maxAgents` (= the cap **N**). No config, or
-   worktree off → stop and tell the user to use `backlog-deliver` (or `backlog-init` first).
+1. **Config present.** Read `.claude/backlog-workflow.json` and note `parallelism.maxAgents`
+   (= the cap **N**). No config → stop and tell the user to run `backlog-init` first (or deliver a
+   single story with `backlog-deliver`). There is no `worktree.enabled` key to check — run always
+   isolates.
 2. **Clean base, up to date.** On the base branch, clean tree, `git fetch` so branch refs and the
    base tip are fresh. The workers each isolate into their own worktree, but the main checkout must
    be clean to dispatch from.
