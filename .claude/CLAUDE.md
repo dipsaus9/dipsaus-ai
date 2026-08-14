@@ -21,6 +21,12 @@ Open-source toolkit of Claude / AI-CLI **skills, hooks, an MCP + a workflow CLI*
   and a reviewer agent (`agents/story-reviewer.md`), none of which survive copying one skill folder
   out. `backlog-run` orchestrates parallel delivery (N `backlog-deliver` workers in worktrees).
   Optional `reference/` for long-form contracts.
+- **Isolation is auto-detected, not configured.** The config's `worktree` object has **no on/off
+  flag** — it keeps only `path` / `install` / `includeGitignored`; `backlog-deliver`
+  delivers in the main checkout when the repo is quiet and cuts a `git worktree` only when it is
+  busy, while `backlog-run` always isolates its N workers. `backlog-init` additionally bootstraps an
+  empty (unborn-HEAD) repo — a purpose README plus one guard-permitted base commit — and leaves a
+  repo with history hands-off.
 - Every manifest description (`package.json`, `.claude-plugin/plugin.json`,
   `.claude-plugin/marketplace.json`) is user-facing. When the repo's surface changes,
   update all three — they drift silently otherwise.

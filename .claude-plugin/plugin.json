@@ -1,7 +1,7 @@
 {
   "name": "dipsaus-ai",
   "displayName": "Dipsaus AI",
-  "description": "Skills, hooks, a reviewer agent, a workflow CLI + an MCP for Claude or any AI CLI. Includes an agentic Backlog.md workflow (init/plan/deliver/run with worktree-parallel delivery, a parallel orchestrator, a review gate and git-contract guard hooks), a React architecture skill, and a dad-joke hook for long turns.",
+  "description": "Skills, hooks, a reviewer agent, a workflow CLI + an MCP for Claude or any AI CLI. Includes an agentic Backlog.md workflow (init/plan/deliver/run with auto-isolated delivery, empty-repo bootstrap, a worktree-parallel orchestrator, a review gate and git-contract guard hooks), a React architecture skill, and a dad-joke hook for long turns.",
   "version": "0.1.0",
   "author": {
     "name": "dipsaus9",
