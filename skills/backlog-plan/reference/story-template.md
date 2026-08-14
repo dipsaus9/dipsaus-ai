@@ -62,11 +62,14 @@ Branch: <id>/<slug>
 
 ## Spike variant
 
-For `Type: spike`, acceptance criteria state the decision to reach, and the outcome is a recorded
-finding rather than code:
+A spike is an **opt-out** — created only when an unknown needs delivery-time code experimentation
+that planning cannot settle from the desk (see `story-standard.md` § Optional). For `Type: spike`,
+acceptance criteria state the decision to reach, and the outcome is a recorded finding rather than
+code:
 
-- **Description**: the question to resolve + `Type: spike` + `Branch:` line (a spike commits its
-  recorded findings via the task file, so it gets a branch like any other story).
+- **Description**: the question to resolve + a **one-line justification** (why planning could not
+  settle this unknown in-session) + `Type: spike` + `Branch:` line (a spike commits its recorded
+  findings via the task file, so it gets a branch like any other story).
 - **Acceptance criteria**: "the question is answered with a documented rationale", "options
   compared / a recommendation chosen" — still objective and checkable.
 - **References**: still REQUIRED. A spike that only produces a decision scopes to its own task

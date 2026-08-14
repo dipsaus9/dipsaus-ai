@@ -1,6 +1,6 @@
 ---
 name: backlog-plan
-description: Interview the user into a well-formed backlog for any repo using Backlog.md (MrLesk/Backlog.md) + Claude. Runs a grill-style, one-question-at-a-time session, decomposes the work into an epic + AI-first stories that meet the story standard (native ids, acceptance criteria as done-when, dependencies, declared scopes via References, a named `<id>/<slug>` branch), then materializes it on approval via the CLI. Also amends an existing story (amend mode) and refuses cross-epic scope collisions. Plans only — never cuts a branch or commits. Use when asked to "plan a backlog", "create stories", "break this down into stories", "set up the backlog", or invoked as /backlog-plan.
+description: Interview the user into a well-formed backlog for any repo using Backlog.md (MrLesk/Backlog.md) + Claude. Runs a grill-style, one-question-at-a-time session, decomposes the work into an epic + AI-first stories that meet the story standard (native ids, acceptance criteria as done-when, dependencies, declared scopes via References, a named `<id>/<slug>` branch), then materializes it on approval via the CLI. Also amends an existing story (amend mode) and refuses cross-epic scope collisions. Challenges the goal before decomposing and resolves unknowns in-session (spikes are a justified opt-out). Writes no product code and cuts no story branch — it commits the backlog itself on a plan/<epic-id> branch and opens a PR per pr.mode. Use when asked to "plan a backlog", "create stories", "break this down into stories", "set up the backlog", or invoked as /backlog-plan.
 ---
 
 # backlog-plan — grill a well-formed backlog into existence
@@ -39,8 +39,14 @@ rule; on conflict, stop and ask. The CLI is the only writer — **never hand-edi
 - **No story ships unbranched.** Every story's description names the branch delivery will cut,
   `<id>/<slug>` (`DIP-1.1/two-tier-joke-formatter`). You freeze it here so delivery can't
   improvise a different slug on a re-run — see `reference/story-standard.md` § Branch.
-- **You plan; you never deliver.** This skill writes no code, cuts no branch, makes no commit. It
-  leaves stories in **To Do** on the base branch. `backlog-deliver` owns the git contract end to end.
+- **You plan; you don't deliver.** This skill writes no product code and cuts no story branch —
+  `backlog-deliver` owns the product git contract end to end, and every story it writes starts life
+  in **To Do**. The one thing planning *does* commit is the backlog itself: the new task files land
+  on a `plan/<epic-id>` branch (**never** on base) and push per `pr.mode`, exactly like a delivered
+  story — see Step 5.
+- **The interview needs no isolation.** Step 0–4 only read the repo and draft text, so they run in
+  the main checkout with no worktree. Isolation is a materialize-time concern (Step 5): the plan
+  branch takes its own worktree only when the main checkout is busy.
 - **Stories are written for an AI to read and write** — explicit, structured, no human-only prose.
 
 ---
@@ -77,6 +83,13 @@ read. Continue until scope, boundaries, and ordering are pinned.
 Surface, and resolve or explicitly defer, every open question — an unresolved one becomes a
 `needs-info` label on the story it blocks.
 
+**Challenge the goal first (required).** Before decomposing, do not take the stated goal at face
+value. Surface **at least one alternative approach** — a different design, a smaller slice, a
+buy-vs-build, or "don't build this at all" — and weigh it against the ask out loud. Then record the
+**chosen approach and why it beat the alternative(s)** on the epic (its description or an acceptance
+criterion). Decomposition may not begin until that justification exists — a backlog built on an
+unexamined goal is expensively wrong.
+
 ## Step 2 — Decompose against the standard
 
 Turn the resolved design into an **epic + stories**:
@@ -86,7 +99,12 @@ Turn the resolved design into an **epic + stories**:
 - **Stories (subtasks, `-p <epicId>`):** each meets `reference/story-standard.md` — one outcome,
   concrete title, objective done-when (acceptance criteria), real dependencies, pickup-sized,
   verifiable, **scoped** (References), **branched**. Split anything that needs "and".
-- Mark research/decision work `Type: spike` (in the description). Mark not-yet-ready work with a
+- **Spikes are opt-out, not the default.** An unknown is resolved **in-session** — by interviewing
+  the user and web search — and folded into a normal deliverable story. Create a `Type: spike` story
+  **only** when the unknown genuinely needs delivery-time code experimentation to settle (a
+  throwaway prototype, a runtime measurement) that planning cannot do from the desk. Every spike you
+  do create carries a **one-line justification** in its description — why planning could not settle
+  it — and a spike with no such justification is not ready. Mark not-yet-ready work with a
   `needs-refinement` / `needs-info` label instead of padding it with guesses.
 - Order stories by real dependencies (`--dep`).
 - **Then check the stories against each other for scope overlap.** Two stories with no dependency
@@ -137,14 +155,23 @@ References (`backlog task list -s "To Do" --plain` / `-s "In Progress" --plain`,
 (two paths collide when either is a prefix of the other on segment boundaries). A draft that
 collides with an in-flight story and has **no dependency edge** ordering them is **refused** — name
 both stories and resolve with the user (add the dependency, or resplit) first. (Drafts have no id
-yet, so this pre-check is manual; Step 3 below re-runs the same check via the CLI once ids exist.)
+yet, so this pre-check is manual; step 4 below re-runs the same check via the CLI once ids exist.)
 
-Then, in order:
+The backlog is materialized **on its own `plan/<epic-id>` branch, never on base** — the same git
+model a delivered story uses, so `backlog-guard` stays clean and the new tasks arrive by PR. Then,
+in order:
 
 1. **Epic:**
    `backlog task create "Epic: <name>" -d "<description>" --ac "…" [--ac …] -l epic --plain`
-   → note the assigned id (e.g. `DIP-4`).
-2. **Each story, in dependency order** — one `create` carries everything:
+   → note the assigned id (e.g. `DIP-4`). `backlog task create` only writes the task file
+   (`auto_commit` is `false`); nothing is committed yet.
+2. **Cut the plan branch.** With the epic id known, cut `plan/<epic-id>` from the up-to-date base
+   (`git switch <base> && git pull --ff-only && git switch -c plan/<epic-id>` — the uncommitted epic
+   file carries across). **When the main checkout is busy** (a dirty tree, or a delivery in flight),
+   do not disturb it: create the branch in its **own worktree** (`git worktree add <path>/plan-<epic-id>
+   -b plan/<epic-id> <base>`) and run the rest of materialize there. The interview (Steps 0–4) never
+   needed a worktree; only this write step does.
+3. **Each story, in dependency order** — one `create` carries everything:
    `backlog task create "<title>" -p <epicId> --type <spike|feature|chore|docs>
    -d "<outcome + Type + Branch>" --ac "…" [--ac …] --ref <path> [--ref …] [--plan "…"]
    [--notes "…"] [--dep <storyId> …] -l story --plain`
@@ -156,15 +183,25 @@ Then, in order:
      in the description — the live `backlog-deliver` still reads it to switch into the spike flow.
      Dropping that now-redundant line is **cutover work (DIP-7.11)**, once delivery reads
      `--type` instead; do not remove it here.
-3. **Verify no cross-epic collision (machine check).** For each newly created story, run
+4. **Verify no cross-epic collision (machine check).** For each newly created story, run
    `bun "${CLAUDE_PLUGIN_ROOT}/bin/backlog-workflow.ts" collisions <id>`. A non-zero result names
    an existing `To Do` / `In Progress` story whose References prefix-overlap this one; that pair is
    safe only if a dependency edge orders them. If it does not, **fix it now** (add the `--dep`
    edge, or amend one story's References to resplit) — an undep'd collision is exactly what breaks a
    parallel run. This backstops the pre-materialize check with the same logic delivery's gate uses.
-4. **Report:** list the created epic + story ids, each story's branch, its `--type`, and where the
-   task files live (`backlog/tasks/`). Leave every story in **To Do** — and leave the working tree
-   on the base branch. The delivery skill cuts the branches and makes the commits; you don't.
+5. **Commit and push the plan branch.** Stage only the new/changed task files under `backlog/`
+   (scoped, never `git add -A`) and commit on `plan/<epic-id>` with an id-referenced message
+   (`chore(backlog): plan <epic-id> — <name> (<epic-id>)`). Then push per `pr.mode` (read from
+   `.claude/backlog-workflow.json`, default `link`): **`link`** → `git push -u origin
+   plan/<epic-id>` and print the compare URL for the human to open; **`create`** → probe
+   `command -v gh` + `gh auth status`, and on success open a draft PR, else degrade to the printed
+   link. The plan branch is non-base, so the guard's `no-commit-on-base` / `no-push-base` rules do
+   not fire. **Worktree teardown** (worktree mode only): after the push, `git worktree remove`
+   (never `--force`). Every story stays in **To Do** — planning writes the backlog, delivery writes
+   the code.
+6. **Report:** list the created epic + story ids, each story's branch, its `--type`, where the task
+   files live (`backlog/tasks/`), and the **plan-branch PR link** (or the draft PR url in `create`
+   mode). The delivery skill cuts the *story* branches and makes the *code* commits; you don't.
 
 ## Amend mode — re-plan one existing story
 
