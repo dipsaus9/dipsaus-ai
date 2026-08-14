@@ -37,6 +37,13 @@ Branching, committing and delivery are a **fixed contract** owned by `backlog-de
 
 A repo that wants a different git workflow does not get one by config; it changes the skill.
 
+### Isolation is auto-detected, not configured
+
+Whether a story is delivered in an isolated git worktree or on a branch in the main checkout is
+**auto-detected** by `backlog-deliver`, not a config knob. The `worktree` object still tunes an
+isolated run (`path`, `install`, `includeGitignored`), but there is no `worktree.enabled` flag —
+a config that still carries one fails validation with an unknown-key issue at `worktree.enabled`.
+
 ## Base branch resolution
 
 The branch a story is cut from and compared against: the remote's default branch

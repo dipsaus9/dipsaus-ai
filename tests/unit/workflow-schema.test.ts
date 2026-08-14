@@ -3,7 +3,7 @@ import { parseConfig } from "../../src/workflow/schema";
 
 const VALID = {
   parallelism: { maxAgents: 3 },
-  worktree: { enabled: true, path: ".worktrees", install: "bun install", includeGitignored: [] },
+  worktree: { path: ".worktrees", install: "bun install", includeGitignored: [] },
   verify: ["bun run lint", "bun run test"],
   pr: { mode: "link" },
   review: { enabled: true, model: "", maxRounds: 3 },
@@ -21,6 +21,16 @@ describe("parseConfig", () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected failure");
     expect(result.issues.some((i) => i.path.includes("wat"))).toBe(true);
+  });
+
+  it("rejects a config that still carries the removed worktree.enabled key", () => {
+    const result = parseConfig({
+      ...VALID,
+      worktree: { ...VALID.worktree, enabled: true },
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected failure");
+    expect(result.issues.some((i) => i.path === "worktree.enabled")).toBe(true);
   });
 
   it("rejects an unknown nested key", () => {
