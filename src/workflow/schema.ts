@@ -22,7 +22,6 @@ export const WorkflowConfig = z
       .strict(),
     worktree: z
       .object({
-        enabled: z.boolean(),
         /** Where per-story worktrees are created, relative to the repo root. */
         path: z.string().min(1),
         /** Install command run inside a fresh worktree; empty string = skip. */
