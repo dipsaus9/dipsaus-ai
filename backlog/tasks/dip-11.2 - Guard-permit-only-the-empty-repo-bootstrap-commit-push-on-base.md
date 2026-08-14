@@ -1,0 +1,46 @@
+---
+id: DIP-11.2
+title: 'Guard: permit only the empty-repo bootstrap commit/push on base'
+status: To Do
+assignee: []
+created_date: '2026-08-14 11:07'
+labels:
+  - story
+dependencies: []
+references:
+  - hooks/backlog-guard/decision.ts
+  - hooks/backlog-guard/on-pre-tool-use.ts
+  - tests/unit/backlog-guard-decision.test.ts
+parent_task_id: DIP-11
+type: feature
+ordinal: 69000
+---
+
+## Description
+
+<!-- SECTION:DESCRIPTION:BEGIN -->
+Teach backlog-guard to permit only the empty-repo bootstrap on the base branch: allow a base commit when HEAD is unborn, and a base push when the remote branch does not yet exist. All other base protection stays.
+
+Type: deliverable
+Branch: DIP-11.2/guard-bootstrap-exceptions
+<!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 decide() accepts headUnborn and remoteBranchExists inputs and allows a git commit on base only when headUnborn is true
+- [ ] #2 decide() allows a git push targeting base only when remoteBranchExists is false; otherwise no-push-base still fires
+- [ ] #3 The entrypoint computes headUnborn (no commits) and remoteBranchExists (git ls-remote --heads) and passes them to decide; fail-open is preserved
+- [ ] #4 tests/unit/backlog-guard-decision.test.ts covers unborn+base commit allowed, born+base commit blocked, first push allowed, and subsequent push blocked
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Extend GuardInput with headUnborn and remoteBranchExists. Gate no-commit-on-base and no-push-base on them. Compute in the entrypoint via git rev-list --count HEAD (or an unborn-HEAD check) and git ls-remote --heads origin. Keep the try/catch fail-open posture.
+<!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Only these two exceptions; scoped-staging and never-no-verify stay unconditional. Verify: bun run test, bun run typecheck, bun run lint.
+<!-- SECTION:NOTES:END -->
