@@ -1,6 +1,6 @@
 ---
 name: backlog-deliver
-description: Drive a single backlog story (native id like DIP-1.1) from To Do to Done for any repo using Backlog.md (MrLesk/Backlog.md) + Claude. Reads the task file in full, gates on readiness, restates the contract, then runs a guarded implement->verify->commit loop in an isolated git worktree on the story's frozen `<id>/<slug>` branch. Commits autonomously (every commit green, id-referenced), gates the push on an independent reviewer, checks off acceptance criteria as they're met, closes the parent epic when its last story lands, pushes once, and opens or prints a PR per the repo's pr.mode. Handles Type:spike stories via a research/interview loop. Use when asked to "deliver", "pick up", "implement", "do", or "complete" a story, or given a story id to take to done. Examples: "/backlog-deliver DIP-1.1", "pick up the next ready story".
+description: Drive a single backlog story (native id like DIP-1.1) from To Do to Done for any repo using Backlog.md (MrLesk/Backlog.md) + Claude. Reads the task file in full, gates on readiness, restates the contract, then runs a guarded implement->verify->commit loop on the story's frozen `<id>/<slug>` branch with auto-detected isolation (delivers in the main checkout when the repo is quiet, in a git worktree when it is busy). Commits autonomously (every commit green, id-referenced), gates the push on an independent reviewer, checks off acceptance criteria as they're met, closes the parent epic when its last story lands, pushes once, and opens or prints a PR per the repo's pr.mode. Handles Type:spike stories via a research/interview loop. Use when asked to "deliver", "pick up", "implement", "do", or "complete" a story, or given a story id to take to done. Examples: "/backlog-deliver DIP-1.1", "pick up the next ready story".
 ---
 
 # backlog-deliver — take one story from To Do to Done
@@ -92,22 +92,40 @@ any check is unclear. Run them in order, before touching code:
    names every `To Do` / `In Progress` story whose References prefix-overlap this one. Non-zero →
    **stop**: two colliding stories cannot be delivered at the same time. This is the check that
    makes parallel pickup safe.
-6. **The worktree can be created clean** (worktree mode). `<worktree.path>/<id>` must not already
-   exist. The **main checkout's** working-tree state is irrelevant — this story never touches it —
-   so the gate does **not** require standing on the base branch with a clean tree. Cleanliness is
-   asserted for the new worktree, which is clean by construction.
+6. **Isolation is auto-detected — pick the lane from live repo state, never from config.** There is
+   no `worktree.enabled` flag (removed in DIP-11.1); the signal is whether the repo is **quiet** or
+   **busy** right now:
+   - **Quiet** — no other story is in flight (`git branch --list '*/*'` shows no live `<id>/*`
+     story branch) **and** no isolation worktree exists (`git worktree list` shows only the main
+     checkout) **and** the main checkout is clean on the base: deliver **in place** in the main
+     checkout.
+   - **Busy** — a live `<id>/*` story branch, an existing worktree, or a dirty main checkout:
+     deliver in an **isolated worktree** so the in-flight work is never disturbed.
 
-**Worktree disabled** (`worktree.enabled: false`, or no workflow config): fall back to the classic
-check — clean tree, on the base branch, up to date — and deliver on a branch in the main checkout.
+   In the worktree lane, `<worktree.path>/<id>` must not already exist; the worktree is clean by
+   construction, so the **main checkout's** tree state is irrelevant to it. In the in-place lane the
+   base must be clean and current, exactly as the classic check required.
 
 If the description says `Type: spike`, skip to **Spike flow** below (the code loop doesn't apply).
 
-## Step 2 — Start (claim in an isolated worktree)
+## Step 2 — Start (claim by cutting the story branch)
 
-Read `worktree.*` from `.claude/backlog-workflow.json` (via
-`bun "${CLAUDE_PLUGIN_ROOT}/bin/backlog-workflow.ts"` when a read helper is needed).
+The claim **is** the `<id>/<slug>` branch ref — shared across worktrees through the one `.git`, and
+cutting it is **atomic**: git refuses to create a branch that already exists, so a race has exactly
+one winner. Which lane you cut it in follows the auto-detection from Step 1.6.
 
-**Worktree mode (`worktree.enabled: true`):**
+**Repo quiet → deliver in the main checkout (in place).** Per the git contract:
+`git switch <base> && git pull --ff-only`, then `git switch -c <id>/<slug>`; then claim the status
+`backlog task edit <id> -s "In Progress"`. Implement, verify and commit here.
+- **A duplicate-branch failure is the race signal.** If `git switch -c` fails because `<id>/<slug>`
+  already exists, a concurrent claim landed first — **never commit over it.** Fall back cleanly to
+  the worktree lane below (the worktree's `-b` cut is a second atomic attempt); if the collision is
+  this exact story already in flight, stop and ask per the gate.
+
+**Repo busy → deliver in an isolated worktree.** Read `worktree.*` from
+`.claude/backlog-workflow.json` (via `bun "${CLAUDE_PLUGIN_ROOT}/bin/backlog-workflow.ts"` when a
+read helper is needed) — `worktree.path`, `worktree.install`, `worktree.includeGitignored`. There
+is **no `worktree.enabled` key** to read (removed in DIP-11.1).
 
 1. **Create the worktree and cut the branch in one step**, from the up-to-date base:
    `git worktree add <worktree.path>/<id> -b <id>/<slug> <base>`. The `-b` makes the branch match
@@ -124,9 +142,6 @@ Read `worktree.*` from `.claude/backlog-workflow.json` (via
    marker; the machine claim is the branch ref from step 1.
 5. **Do everything from here inside `<worktree.path>/<id>`** — implement, verify and commit all run
    in the worktree, never in the main checkout.
-
-**Worktree disabled:** claim the status, then cut the branch in place per the git contract —
-`git switch <base> && git pull --ff-only`, then `git switch -c <id>/<slug>`.
 
 ## Step 3 — Restate + plan
 
@@ -218,7 +233,8 @@ Only once the reviewer returns `pass` (or the gate is disabled) do you proceed t
      rule, and only when the repo opts in. The contract wording in `reference/git-contract.md` and
      the project's `CLAUDE.md` are reconciled at cutover (DIP-7.11); until then `link` stays the
      default so nothing changes for a repo that hasn't opted in.
-3. **Worktree teardown (worktree mode only), after the push:**
+3. **Worktree teardown (worktree lane only — skip when you delivered in the main checkout), after
+   the push:**
    `git worktree remove <worktree.path>/<id>`. This **refuses** a worktree holding uncommitted or
    untracked files (`fatal: … use --force`) — that refusal is the safety net. **Never pass
    `--force`.** On refusal, **stop and surface the uncommitted changes** to the user: work left
