@@ -23,6 +23,10 @@ export interface GuardInput {
   base: string
   /** pr.mode from the workflow config; governs whether host CLIs are allowed. */
   prMode: 'link' | 'create'
+  /** True when HEAD has no commits yet — the empty-repo bootstrap may commit on base. */
+  headUnborn: boolean
+  /** True when the base branch already exists on the remote — a second base push is blocked. */
+  remoteBranchExists: boolean
 }
 
 export type GuardDecision =
@@ -44,7 +48,7 @@ export function decide(input: GuardInput): GuardDecision {
   // No workflow config → this repo is not under the flow workflow; never interfere.
   if (!input.configPresent) return ALLOW
 
-  const { command, branch, base, prMode } = input
+  const { command, branch, base, prMode, headUnborn, remoteBranchExists } = input
 
   // Host CLIs (gh/glab) are blocked while PRs are link-only, whatever the git state.
   if (usesHostCli(command) && prMode === 'link') {
@@ -77,7 +81,9 @@ export function decide(input: GuardInput): GuardDecision {
   }
 
   // Commit on the base branch — the story must land on its own <id>/<slug> branch.
-  if (/\bgit\s+commit\b/.test(command) && branch === base) {
+  // Exception: the empty-repo bootstrap — with an unborn HEAD there is no history to branch from,
+  // so the first commit is allowed on base (backlog-init's bootstrap commit).
+  if (/\bgit\s+commit\b/.test(command) && branch === base && !headUnborn) {
     return {
       block: true,
       rule: 'no-commit-on-base',
@@ -86,7 +92,13 @@ export function decide(input: GuardInput): GuardDecision {
   }
 
   // Push the base branch — only the story branch is ever pushed.
-  if (/\bgit\s+push\b/.test(command) && new RegExp(`\\b${base}\\b`).test(command)) {
+  // Exception: the empty-repo bootstrap first push, when the base branch does not yet exist on the
+  // remote (backlog-init establishing the remote base). Every later base push still fires.
+  if (
+    /\bgit\s+push\b/.test(command) &&
+    new RegExp(`\\b${base}\\b`).test(command) &&
+    remoteBranchExists
+  ) {
     return {
       block: true,
       rule: 'no-push-base',

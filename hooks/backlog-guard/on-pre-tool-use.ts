@@ -59,7 +59,21 @@ try {
       gitOut(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], cwd).replace(/^origin\//, '') ||
       'main'
 
-    const decision = decide({ configPresent, command, branch, base, prMode })
+    // Empty-repo bootstrap signals. Both fail toward the allow side: a git error yields '' →
+    // headUnborn true / remoteBranchExists false, which only ever relaxes the base guard, never
+    // tightens it, keeping the hook fail-open.
+    const headUnborn = gitOut(['rev-parse', '--verify', 'HEAD'], cwd) === ''
+    const remoteBranchExists = gitOut(['ls-remote', '--heads', 'origin', base], cwd) !== ''
+
+    const decision = decide({
+      configPresent,
+      command,
+      branch,
+      base,
+      prMode,
+      headUnborn,
+      remoteBranchExists,
+    })
     if (decision.block) {
       process.stdout.write(
         JSON.stringify({
