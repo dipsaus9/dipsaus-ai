@@ -1,9 +1,10 @@
 ---
 id: DIP-11.1
 title: 'Config schema: remove worktree.enabled so isolation is auto-detected'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-14 11:07'
+updated_date: '2026-08-14 12:53'
 labels:
   - story
 dependencies: []
@@ -28,10 +29,10 @@ Branch: DIP-11.1/config-drop-worktree-enabled
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 WorkflowConfig no longer defines worktree.enabled; the remaining worktree keys (path, install, includeGitignored) are unchanged
-- [ ] #2 A config object containing worktree.enabled fails parseConfig with a field-level issue naming worktree.enabled as an unknown key
-- [ ] #3 tests/unit/workflow-schema.test.ts covers both the accepted shape (no enabled) and the rejected shape (enabled present)
-- [ ] #4 skills/backlog-plan/reference/config.md documents that isolation is auto-detected and no longer configured
+- [x] #1 WorkflowConfig no longer defines worktree.enabled; the remaining worktree keys (path, install, includeGitignored) are unchanged
+- [x] #2 A config object containing worktree.enabled fails parseConfig with a field-level issue naming worktree.enabled as an unknown key
+- [x] #3 tests/unit/workflow-schema.test.ts covers both the accepted shape (no enabled) and the rejected shape (enabled present)
+- [x] #4 skills/backlog-plan/reference/config.md documents that isolation is auto-detected and no longer configured
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -45,3 +46,9 @@ Delete the enabled field from the worktree object in schema.ts; rely on .strict(
 <!-- SECTION:NOTES:BEGIN -->
 Migration option (i) hard-remove approved: no soft-deprecation. This repo has no own .claude/backlog-workflow.json so nothing local breaks. Verify: bun run test, bun run typecheck, bun run lint.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Removed worktree.enabled from the workflow config schema: WorkflowConfig's worktree object now defines only path/install/includeGitignored, and .strict() rejects any config still carrying enabled with a field-level worktree.enabled unknown-key issue (proven by bin validate and a new unit test). workflow-schema.test.ts covers both the accepted shape (no enabled) and the rejected shape (enabled present); config.md documents that isolation is auto-detected, not configured.
+<!-- SECTION:FINAL_SUMMARY:END -->
