@@ -9,6 +9,8 @@ function ctx(over: Partial<GuardInput>): GuardInput {
     branch: "DIP-7.10/git-guard-hooks",
     base: "main",
     prMode: "link",
+    headUnborn: false,
+    remoteBranchExists: true,
     ...over,
   };
 }
@@ -61,6 +63,30 @@ describe("decide — blocking rules", () => {
     if (!d.block) throw new Error("expected block");
     expect(d.reason).toContain("no-host-cli-in-link-mode");
     expect(d.reason).toContain('pr.mode="create"');
+  });
+});
+
+describe("decide — empty-repo bootstrap exceptions", () => {
+  it("allows a commit on base when HEAD is unborn", () => {
+    const d = decide(ctx({ command: 'git commit -m "chore: bootstrap"', branch: "main", headUnborn: true }));
+    expect(d.block).toBe(false);
+  });
+
+  it("still blocks a commit on base once HEAD is born", () => {
+    const d = decide(ctx({ command: 'git commit -m "x"', branch: "main", headUnborn: false }));
+    expect(d.block).toBe(true);
+    if (d.block) expect(d.rule).toBe("no-commit-on-base");
+  });
+
+  it("allows the first base push when the remote branch does not exist", () => {
+    const d = decide(ctx({ command: "git push -u origin main", remoteBranchExists: false }));
+    expect(d.block).toBe(false);
+  });
+
+  it("still blocks a base push once the remote branch exists", () => {
+    const d = decide(ctx({ command: "git push origin main", remoteBranchExists: true }));
+    expect(d.block).toBe(true);
+    if (d.block) expect(d.rule).toBe("no-push-base");
   });
 });
 
