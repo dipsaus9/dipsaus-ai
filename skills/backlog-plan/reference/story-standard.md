@@ -69,9 +69,14 @@ The story's id owns a branch, and the branch is planned with the story:
 - **`needs-refinement` label** — the story is not yet ready; do not pick up until refined.
 - **`needs-info` label** — an open question blocks readiness; capture the question in the notes,
   ask, resolve before pickup.
-- **`Type: spike`** (description line) — a research/decision story. Its acceptance criteria state
-  "question answered / decision recorded with rationale", not "tests pass". Delivery resolves it
-  via web search + interview, and records findings in notes + final summary.
+- **`Type: spike`** (description line) — a research/decision story, and an **opt-out, not a
+  default**. Unknowns are resolved during planning (interview + web search) and folded into a normal
+  deliverable story; a spike is justified only when the unknown needs **delivery-time code
+  experimentation** planning cannot do from the desk. Every spike therefore carries a **one-line
+  justification** in its description — why planning could not settle it — and a spike without one is
+  **not ready**. Its acceptance criteria state "question answered / decision recorded with
+  rationale", not "tests pass". Delivery resolves it via web search + interview, and records
+  findings in notes + final summary.
 
 ## Story id — native, never invented
 
