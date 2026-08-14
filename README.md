@@ -165,8 +165,11 @@ Four skills turn [Backlog.md](https://github.com/MrLesk/Backlog.md) (markdown-na
 
 ```
 /backlog-init             → scan repo → interview gaps → write .claude/backlog-workflow.json (+ backlog init)
-/backlog-plan             → interview → draft epic + stories → approve → materialize (To Do)
-/backlog-deliver DIP-1.1  → gate (claim + collisions) → worktree + branch DIP-1.1/<slug>
+                            → empty repo? interview purpose → README + one bootstrap commit
+/backlog-plan             → challenge the goal → interview → draft epic + stories → approve
+                            → materialize on a plan/<epic-id> branch (PR per pr.mode)
+/backlog-deliver DIP-1.1  → gate (claim + collisions) → auto-isolate + branch DIP-1.1/<slug>
+                            (main checkout when quiet, git worktree when busy)
                             → implement → verify → commit (loop) → reviewer gate → push once
                             → PR per pr.mode (printed link, or opt-in draft via gh)
 /backlog-run              → select N ready non-colliding stories → approve batch
@@ -181,10 +184,14 @@ Optional: plan/notes, `needs-refinement`, `needs-info`, `Type: spike`. Ids are B
 the CLI. `backlog-plan` also **amends** a story and **refuses cross-epic References collisions**.
 Full contract: `skills/backlog-plan/reference/`.
 
-**Parallel-safe delivery** — with `worktree.enabled`, each story is delivered in its own
-`git worktree`, so several agents can run at once. Pickup is refused when a story is already claimed
-(its `<id>/<slug>` branch exists) or when its References collide with an in-flight story
-(`backlog-workflow collisions <id>`). See `skills/backlog-deliver/reference/parallel-delivery.md`.
+**Auto-isolated, parallel-safe delivery** — isolation is **auto-detected**, not a config flag:
+`backlog-deliver` works in the main checkout when the repo is quiet and cuts its own `git worktree`
+when it is busy (another story already in flight), so several
+agents can run at once. Pickup is refused when a story is already claimed (its `<id>/<slug>` branch
+exists) or when its References collide with an in-flight story (`backlog-workflow collisions <id>`).
+The run-vs-deliver split: **deliver** isolates only under detected concurrency, whereas **run**
+(below) dispatches N workers at once and therefore **always** isolates. See
+`skills/backlog-deliver/reference/parallel-delivery.md`.
 
 **Parallel orchestration** — `/backlog-run` is the dispatcher: it selects the N ready, non-colliding,
 unclaimed stories (N = `parallelism.maxAgents`), presents the batch for one approval, then runs one
@@ -206,8 +213,9 @@ commits on the base branch, `git add -A`, base-branch pushes, `--no-verify`, and
 link mode — and no-ops in any repo without a workflow config.
 
 **Config** — per-repo settings live in `.claude/backlog-workflow.json` (schema + reader in
-`bin/backlog-workflow.ts`): `parallelism.maxAgents`, `worktree`, `verify`, `pr.mode`, `review`,
-`backlog`. `backlog-init` writes and validates it. Backlog.md's own `backlog/config.yml` still
+`bin/backlog-workflow.ts`): `parallelism.maxAgents`, `worktree` (`path` / `install` /
+`includeGitignored` — isolation itself is auto-detected, with no on/off flag), `verify`,
+`pr.mode`, `review`, `backlog`. `backlog-init` writes and validates it. Backlog.md's own `backlog/config.yml` still
 carries `task_prefix` and must keep `auto_commit: false` (delivery owns every commit). Verify
 commands are resolved by `backlog-workflow verify-detect` (node/bun, python, go, rust), falling
 back to per-story checks + self-review — so a repo with no pipeline still works.
