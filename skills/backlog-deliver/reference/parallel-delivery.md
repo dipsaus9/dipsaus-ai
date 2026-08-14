@@ -184,9 +184,15 @@ per-worktree and claim-aware. In order:
    `In Progress` and commit it on that branch. The branch ref (step 3's signal) now exists for the
    next agent to see.
 
-Worktree mode is config-gated: with `worktree.enabled: false` the skill delivers on a branch in
-the main checkout exactly as today, and step 5 falls back to the classic "clean tree, on base"
-check.
+Isolation is **auto-detected, not config-gated** (DIP-11.4; the `worktree.enabled` key was removed
+in DIP-11.1). Step 5 branches on live repo state: when the repo is **quiet** — no other `<id>/*`
+story branch live and no existing worktree, main checkout clean on the base — the skill delivers
+on a branch **in the main checkout** and step 5 applies the classic "clean tree, on base" check.
+When the repo is **busy** — a live `<id>/*` branch, an existing worktree, or a dirty main checkout
+— it delivers in an isolated worktree per this section. The atomic `<id>/<slug>` branch cut is the
+claim in either lane; a duplicate-branch failure in the in-place lane is a lost race and falls back
+cleanly to a worktree. `worktree.path`, `worktree.install` and `worktree.includeGitignored` still
+configure the worktree when one is taken.
 
 ---
 
