@@ -77,6 +77,18 @@ Two safety properties, both observed:
 
 DIP-7.10 owns `hooks/hooks.json`; the prototype was never wired in.
 
+### The guard constrains the agent only — the human keeps a bypass
+
+`PreToolUse` fires **inside the agentic loop**: it runs for tool calls the model makes, not for
+commands a human types. A user-run `!` bang command (`! git push origin main`) executes outside the
+loop and never reaches the hook — verified empirically: bang commands leave no entry in a guard that
+logs every payload it receives. So the base-branch rules (`no-commit-on-base`, `no-push-base`) block
+the agent while leaving the human free to commit or push to base directly with `!`. This is by
+design, not a gap: there is no caller field in the payload to key a human/agent split on, and none is
+needed — the runtime already separates the two lanes. If the agent must land on base (e.g. an
+empty-repo bootstrap), that is relaxed by explicit git-state conditions (`headUnborn`,
+`remoteBranchExists`), never by guessing who invoked it.
+
 ---
 
 ## 2. Reviewer invocation (DIP-7.9 / DIP-7.6)
