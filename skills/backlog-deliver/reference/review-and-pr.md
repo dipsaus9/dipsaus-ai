@@ -103,8 +103,13 @@ subagent type **`dipsaus-ai:story-reviewer`** via the Agent/Task tool.
 
 Context it **receives** (assembled by DIP-7.6 and passed in the prompt): the story's outcome,
 acceptance criteria, and declared References, plus the diff (`git diff <base>...HEAD`) and the list
-of changed paths. Context it **does not receive**: the implementing agent's conversation, plan, or
-reasoning. Independence is the point — the verdict is worth having precisely because it was not
+of changed paths — **with this story's own backlog task file excluded from both**. That file is
+CLI-managed delivery bookkeeping (status, AC checkoffs, notes, final-summary) that every delivery
+mutates and that no story declares in its References; feeding it in would produce a spurious
+`scopeViolation` on every story. Build the diff with a pathspec that drops it, e.g.
+`git diff <base>...HEAD -- . ':(exclude)backlog/tasks/<this-story-file>.md'`. Acceptance criteria
+are judged from the code diff, never from the task file's checkboxes, so the exclusion costs nothing.
+Context it **does not receive**: the implementing agent's conversation, plan, or reasoning. Independence is the point — the verdict is worth having precisely because it was not
 produced by the author. Read-only enforced via `tools: [Read, Grep, Bash]` (Bash for
 `git diff`/`git show` only), modelled on `cavecrew-reviewer`.
 
