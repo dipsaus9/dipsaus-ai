@@ -195,8 +195,8 @@ in order:
    `.claude/backlog-workflow.json`, default `link`): **`link`** → `git push -u origin
    plan/<epic-id>` and print the compare URL for the human to open; **`create`** → probe
    `command -v gh` + `gh auth status`, and on success open a draft PR, else degrade to the printed
-   link. The plan branch is non-base, so the guard's `no-commit-on-base` / `no-push-base` rules do
-   not fire. **Worktree teardown** (worktree mode only): after the push, `git worktree remove`
+   link. Staging scoped (never `git add -A`) keeps the guard's `scoped-staging` rule from firing.
+   **Worktree teardown** (worktree mode only): after the push, `git worktree remove`
    (never `--force`). Every story stays in **To Do** — planning writes the backlog, delivery writes
    the code.
 6. **Report:** list the created epic + story ids, each story's branch, its `--type`, where the task

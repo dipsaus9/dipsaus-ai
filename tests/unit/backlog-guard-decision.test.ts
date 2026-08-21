@@ -1,47 +1,31 @@
 import { describe, expect, it } from "vitest";
 import { decide, type GuardInput } from "../../hooks/backlog-guard/decision";
 
-/** A base context: config present, on a story branch, link mode. Override per test. */
+/** A base context: config present, link mode. Override per test. */
 function ctx(over: Partial<GuardInput>): GuardInput {
   return {
     configPresent: true,
     command: "git status",
-    branch: "DIP-7.10/git-guard-hooks",
-    base: "main",
     prMode: "link",
-    headUnborn: false,
-    remoteBranchExists: true,
     ...over,
   };
 }
 
 describe("decide — no-op path", () => {
   it("allows everything when no workflow config is present", () => {
-    expect(decide(ctx({ configPresent: false, command: "git commit -m x", branch: "main" }))).toEqual({
+    expect(decide(ctx({ configPresent: false, command: "git add -A" }))).toEqual({
       block: false,
     });
   });
 });
 
 describe("decide — blocking rules", () => {
-  it("blocks commit on the base branch", () => {
-    const d = decide(ctx({ command: 'git commit -m "x"', branch: "main" }));
-    expect(d.block).toBe(true);
-    if (d.block) expect(d.rule).toBe("no-commit-on-base");
-  });
-
   it("blocks git add -A, --all and .", () => {
     for (const cmd of ["git add -A", "git add --all", "git add ."]) {
       const d = decide(ctx({ command: cmd }));
       expect(d.block, cmd).toBe(true);
       if (d.block) expect(d.rule).toBe("scoped-staging");
     }
-  });
-
-  it("blocks pushing the base branch", () => {
-    const d = decide(ctx({ command: "git push origin main" }));
-    expect(d.block).toBe(true);
-    if (d.block) expect(d.rule).toBe("no-push-base");
   });
 
   it("blocks --no-verify", () => {
@@ -66,27 +50,13 @@ describe("decide — blocking rules", () => {
   });
 });
 
-describe("decide — empty-repo bootstrap exceptions", () => {
-  it("allows a commit on base when HEAD is unborn", () => {
-    const d = decide(ctx({ command: 'git commit -m "chore: bootstrap"', branch: "main", headUnborn: true }));
-    expect(d.block).toBe(false);
+describe("decide — base branch is no longer policed", () => {
+  it("allows a commit on any branch", () => {
+    expect(decide(ctx({ command: 'git commit -m "x"' })).block).toBe(false);
   });
 
-  it("still blocks a commit on base once HEAD is born", () => {
-    const d = decide(ctx({ command: 'git commit -m "x"', branch: "main", headUnborn: false }));
-    expect(d.block).toBe(true);
-    if (d.block) expect(d.rule).toBe("no-commit-on-base");
-  });
-
-  it("allows the first base push when the remote branch does not exist", () => {
-    const d = decide(ctx({ command: "git push -u origin main", remoteBranchExists: false }));
-    expect(d.block).toBe(false);
-  });
-
-  it("still blocks a base push once the remote branch exists", () => {
-    const d = decide(ctx({ command: "git push origin main", remoteBranchExists: true }));
-    expect(d.block).toBe(true);
-    if (d.block) expect(d.rule).toBe("no-push-base");
+  it("allows pushing any branch, base included", () => {
+    expect(decide(ctx({ command: "git push origin main" })).block).toBe(false);
   });
 });
 
@@ -106,10 +76,5 @@ describe("decide — legitimate delivery commands pass", () => {
 
   it("allows non-git, non-host commands", () => {
     expect(decide(ctx({ command: "bun run test" })).block).toBe(false);
-  });
-
-  it("does not confuse a branch whose name contains the base as a substring", () => {
-    // pushing "mainline-feature" must not trip no-push-base for base "main"
-    expect(decide(ctx({ command: "git push -u origin DIP-9.1/mainline-feature" })).block).toBe(false);
   });
 });

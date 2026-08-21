@@ -30,15 +30,15 @@ than trying a workaround.
 A throwaway `PreToolUse` guard driven with crafted payloads in a scratch git repo:
 
 ```
-ON BASE BRANCH (main), config present:
-  git commit -m x            -> DENY  no-commit-on-base
+CONFIG present:
   git add -A                 -> DENY  scoped-staging
-  git push origin main       -> DENY  no-push-base
   git commit --no-verify -m x-> DENY  never-no-verify
   gh pr create               -> DENY  no-host-cli-in-link-mode
+  git commit -m x            -> ALLOW (base branch is not policed)
+  git push origin main       -> ALLOW (base branch is not policed)
   bun run test               -> ALLOW (exit 0, no output)
 NO CONFIG present:
-  git commit -m x (on base)  -> ALLOW (exit 0)   # no-op path
+  git add -A                 -> ALLOW (exit 0)   # no-op path
 ```
 
 **The no-op path is the first check in the guard:** if `<cwd>/.claude/backlog-workflow.json` does
@@ -47,11 +47,10 @@ plugin.
 
 ### AC#2 — the guard does not block the delivery skill's own commands
 
-The delivery skill always operates on an `<id>/<slug>` **story** branch, never on the base branch.
-So the discriminating condition is **branch identity**, proven:
+The remaining rules key only on the command shape, so the delivery skill's own commands pass on any
+branch:
 
 ```
-ON STORY BRANCH (DIP-9.1/x):
   git add skills/foo.ts            -> ALLOW
   git commit -m "feat: x (DIP-9.1)"-> ALLOW
   git push -u origin DIP-9.1/x     -> ALLOW
@@ -61,17 +60,14 @@ Precise rules for DIP-7.10 to implement:
 
 | Rule id | Deny when | Notes |
 |---|---|---|
-| `no-commit-on-base` | `git commit` **and** current branch == base | base = `git symbolic-ref --short refs/remotes/origin/HEAD` minus `origin/`, fallback `main` |
-| `no-push-base` | `git push` **and** the command names the base branch | |
 | `scoped-staging` | `git add -A` / `git add --all` / `git add .` | force scoped staging; never blanket |
 | `never-no-verify` | any git command with `--no-verify` | |
 | `no-host-cli-in-link-mode` | command starts with `gh`/`glab` **and** `pr.mode == "link"` | relaxed by setting `pr.mode: "create"` |
 
 Two safety properties, both observed:
 
-- **Crash-safe.** The guard wraps everything in try/catch and exits 0 on any error. In the scratch
-  run `git symbolic-ref refs/remotes/origin/HEAD` failed (no remote) and the guard fell back to
-  `main` and kept working — a guard that throws must never block real work.
+- **Crash-safe.** The guard wraps everything in try/catch and exits 0 on any error — a guard that
+  throws must never block real work.
 - **Fail-open, not fail-closed.** Every non-matching command and every error path exits 0. A guard
   that blocked on uncertainty would break the very stories that fix it.
 
@@ -80,14 +76,12 @@ DIP-7.10 owns `hooks/hooks.json`; the prototype was never wired in.
 ### The guard constrains the agent only — the human keeps a bypass
 
 `PreToolUse` fires **inside the agentic loop**: it runs for tool calls the model makes, not for
-commands a human types. A user-run `!` bang command (`! git push origin main`) executes outside the
-loop and never reaches the hook — verified empirically: bang commands leave no entry in a guard that
-logs every payload it receives. So the base-branch rules (`no-commit-on-base`, `no-push-base`) block
-the agent while leaving the human free to commit or push to base directly with `!`. This is by
-design, not a gap: there is no caller field in the payload to key a human/agent split on, and none is
-needed — the runtime already separates the two lanes. If the agent must land on base (e.g. an
-empty-repo bootstrap), that is relaxed by explicit git-state conditions (`headUnborn`,
-`remoteBranchExists`), never by guessing who invoked it.
+commands a human types. A user-run `!` bang command (`! git add -A`) executes outside the loop and
+never reaches the hook — verified empirically: bang commands leave no entry in a guard that logs
+every payload it receives. So the remaining rules (`scoped-staging`, `never-no-verify`,
+`no-host-cli-in-link-mode`) bind the agent while leaving the human free to run the same command
+directly with `!`. This is by design, not a gap: there is no caller field in the payload to key a
+human/agent split on, and none is needed — the runtime already separates the two lanes.
 
 ---
 
@@ -180,8 +174,9 @@ opts into `pr.mode: create`" — the CLAUDE.md change is owned by the cutover st
 
 ## Summary of frozen contracts
 
-- **Guard** = a `PreToolUse`/`Bash` hook; first check is the no-config no-op; five branch-/shape-based
-  deny rules; crash-safe and fail-open. Discriminator = base branch vs `<id>/<slug>` story branch.
+- **Guard** = a `PreToolUse`/`Bash` hook; first check is the no-config no-op; three command-shape
+  deny rules (`scoped-staging`, `never-no-verify`, `no-host-cli-in-link-mode`); crash-safe and
+  fail-open. The base branch is no longer policed.
 - **Reviewer** = `agents/story-reviewer.md`, invoked as `dipsaus-ai:story-reviewer`, read-only, fed
   only the diff + story contract, returns the **JSON verdict object** above.
 - **Loop** = blocking is unmet-AC-or-scope-violation only; **3 rounds** then escalate; advisory

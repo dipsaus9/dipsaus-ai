@@ -1,9 +1,8 @@
 #!/usr/bin/env bun
 /**
- * PreToolUse hook. Enforces the flow git contract that prose can only ask for: no commit on the
- * base branch, no blanket staging, no base-branch push, no --no-verify, and no gh/glab while PRs
- * are link-only. The block/allow logic is the pure `decide` in ./decision.ts; this entrypoint only
- * gathers repo context and speaks the hook protocol.
+ * PreToolUse hook. Enforces the flow git contract that prose can only ask for: no blanket staging,
+ * no --no-verify, and no gh/glab while PRs are link-only. The block/allow logic is the pure `decide`
+ * in ./decision.ts; this entrypoint only reads the config and speaks the hook protocol.
  *
  * Two invariants, both load-bearing (see hooks/dad-joke/on-post-tool-use.ts for the same posture):
  * - **Fail-open.** Everything is wrapped in try/catch that exits 0. A guard that throws — or that
@@ -14,21 +13,9 @@
  * Blocks via the PreToolUse deny channel: hookSpecificOutput.permissionDecision = "deny" with a
  * reason that names the rule and the config key (if any) that would relax it.
  */
-import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 
-import { resolveGitCwd } from './cwd'
 import { decide } from './decision'
-
-function gitOut(args: string[], cwd: string): string {
-  try {
-    return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
-      .toString()
-      .trim()
-  } catch {
-    return ''
-  }
-}
 
 try {
   const payload = JSON.parse(readFileSync(0, 'utf8')) as {
@@ -55,34 +42,7 @@ try {
       }
     }
 
-    // Resolve git state in the directory the command actually runs in, not the harness cwd: a
-    // `cd .worktrees/<id> && git commit` lands on a story branch even when payload.cwd is pinned to
-    // the base-branch main checkout. Without this the guard would read base and block the worktree
-    // lane backlog-run mandates.
-    const gitCwd = resolveGitCwd(command, cwd)
-
-    const branch = gitOut(['rev-parse', '--abbrev-ref', 'HEAD'], gitCwd)
-    const base =
-      gitOut(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], gitCwd).replace(
-        /^origin\//,
-        '',
-      ) || 'main'
-
-    // Empty-repo bootstrap signals. Both fail toward the allow side: a git error yields '' →
-    // headUnborn true / remoteBranchExists false, which only ever relaxes the base guard, never
-    // tightens it, keeping the hook fail-open.
-    const headUnborn = gitOut(['rev-parse', '--verify', 'HEAD'], gitCwd) === ''
-    const remoteBranchExists = gitOut(['ls-remote', '--heads', 'origin', base], gitCwd) !== ''
-
-    const decision = decide({
-      configPresent,
-      command,
-      branch,
-      base,
-      prMode,
-      headUnborn,
-      remoteBranchExists,
-    })
+    const decision = decide({ configPresent, command, prMode })
     if (decision.block) {
       process.stdout.write(
         JSON.stringify({
