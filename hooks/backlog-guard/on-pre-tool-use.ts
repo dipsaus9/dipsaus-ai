@@ -17,6 +17,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 
+import { resolveGitCwd } from './cwd'
 import { decide } from './decision'
 
 function gitOut(args: string[], cwd: string): string {
@@ -54,16 +55,24 @@ try {
       }
     }
 
-    const branch = gitOut(['rev-parse', '--abbrev-ref', 'HEAD'], cwd)
+    // Resolve git state in the directory the command actually runs in, not the harness cwd: a
+    // `cd .worktrees/<id> && git commit` lands on a story branch even when payload.cwd is pinned to
+    // the base-branch main checkout. Without this the guard would read base and block the worktree
+    // lane backlog-run mandates.
+    const gitCwd = resolveGitCwd(command, cwd)
+
+    const branch = gitOut(['rev-parse', '--abbrev-ref', 'HEAD'], gitCwd)
     const base =
-      gitOut(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], cwd).replace(/^origin\//, '') ||
-      'main'
+      gitOut(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], gitCwd).replace(
+        /^origin\//,
+        '',
+      ) || 'main'
 
     // Empty-repo bootstrap signals. Both fail toward the allow side: a git error yields '' →
     // headUnborn true / remoteBranchExists false, which only ever relaxes the base guard, never
     // tightens it, keeping the hook fail-open.
-    const headUnborn = gitOut(['rev-parse', '--verify', 'HEAD'], cwd) === ''
-    const remoteBranchExists = gitOut(['ls-remote', '--heads', 'origin', base], cwd) !== ''
+    const headUnborn = gitOut(['rev-parse', '--verify', 'HEAD'], gitCwd) === ''
+    const remoteBranchExists = gitOut(['ls-remote', '--heads', 'origin', base], gitCwd) !== ''
 
     const decision = decide({
       configPresent,
