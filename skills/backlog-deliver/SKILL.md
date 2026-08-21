@@ -184,9 +184,15 @@ contract before anything is pushed. The full protocol is in **`reference/review-
 (DIP-7.2); the essentials:
 
 1. **Spawn the reviewer** — subagent type **`dipsaus-ai:story-reviewer`** (read-only, ships in the
-   plugin's `agents/`). Give it **only** the diff (`git diff <base>...HEAD` + the changed-path
-   list) and the story's **outcome, acceptance criteria and References** — never your own plan or
-   reasoning. Independence is the point.
+   plugin's `agents/`). Give it **only** the diff and the changed-path list and the story's
+   **outcome, acceptance criteria and References** — never your own plan or reasoning. Independence
+   is the point. **Exclude this story's own backlog task file from both the diff and the
+   changed-path list** — it is CLI-managed delivery bookkeeping (status, AC checkoffs, notes,
+   final-summary) that every delivery mutates and that is never a declared Reference, so leaving it
+   in would trip a spurious `scopeViolation` on every single story. Build the diff with a pathspec
+   that drops it, e.g. `git diff <base>...HEAD -- . ':(exclude)backlog/tasks/<this-story-file>.md'`
+   (use the exact task-file path you read at intake). The reviewer judges acceptance criteria from
+   the code diff, not from the task file's checkboxes, so nothing is lost.
 2. **Read its verdict** — the JSON object `{ verdict, criteria[], scopeViolations[], findings[] }`.
    `verdict` is `block` iff any acceptance criterion is `met: false` **or** `scopeViolations` is
    non-empty. Everything else is **advisory** — recorded, never blocking.
@@ -217,6 +223,17 @@ Only once the reviewer returns `pass` (or the gate is disabled) do you proceed t
    `backlog/tasks/` are tracked, so they belong on the branch with the work they describe.
 
 ## Step 6 — Push (then open/announce the PR, then tear the worktree down)
+
+**Before you push (ALWAYS): sync with the latest base and resolve conflicts.** A branch was cut
+from the base as it was at Step 0; by push time the base has usually moved. So: `git fetch origin`,
+then merge the up-to-date base into the story branch (`git merge origin/<base>` — do not rebase a
+branch whose remote already exists). If the merge reports conflicts, **resolve them** — honour both
+sides' intent, never a blind take-ours/take-theirs — then re-run the **full verify** so every check
+is green on the merged tree, and commit the merge. **A collision with another story is resolved
+HERE, at PR-open time — never by an artificial dependency edge in planning.** Two stories touching
+the same file is normal; the planner does not add a `--dep` to serialise them, and delivery reconciles
+them at this merge. Only proceed to push once the branch cleanly contains the latest base and verify
+is green — the PR must open conflict-free.
 
 1. `git push -u origin <id>/<slug>`. Keep the push output — it may carry the host's own create-PR
    link.
